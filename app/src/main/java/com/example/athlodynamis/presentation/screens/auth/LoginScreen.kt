@@ -8,15 +8,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,7 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.athlodynamis.presentation.components.AthloColors
+import com.example.athlodynamis.presentation.components.AthloRadius
 
 @Composable
 fun LoginScreen(
@@ -39,131 +52,218 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(AthloColors.Background)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(190.dp)
-                .background(
-                    color = Color(0xFF0D1B2A),
-                    shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFF1E6BB8), RoundedCornerShape(14.dp))
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = "Logo",
-                        tint = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "AthloDynamis",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(28.dp),
-            verticalArrangement = Arrangement.Top
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(horizontal = 22.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Bem-vindo de volta",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            LoginHeroCard()
 
-            Text(
-                text = "Inicia sessão na tua conta",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.DarkGray
-            )
+            Spacer(modifier = Modifier.height(26.dp))
 
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = "EMAIL",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Black
-            )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                placeholder = { Text("Insira o seu email") },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "PASSWORD",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Black
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                placeholder = { Text("Insira a sua palavra-passe") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
-            )
-
-            TextButton(
-                onClick = {},
-                modifier = Modifier.align(Alignment.End)
+                shape = RoundedCornerShape(AthloRadius.ExtraLarge),
+                colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Text("Esqueceu-se da palavra-passe?")
-            }
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.Top
+                ) {
+                    Text(
+                        text = "Bem-vindo de volta",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AthloColors.TextPrimary
+                    )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-            Button(
-                onClick = onLoginClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1E6BB8)
-                ),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text(
-                    text = "Entrar",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+                    Text(
+                        text = "Inicia sessão na tua conta",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AthloColors.TextSecondary
+                    )
 
-            Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(30.dp))
 
-            TextButton(
-                onClick = onRegisterClick,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text("Não tens conta? Criar conta")
+                    Text(
+                        text = "EMAIL",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = { Text("Insira o seu email") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Mail,
+                                contentDescription = "Email",
+                                tint = AthloColors.TextMuted
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(18.dp),
+                        colors = authTextFieldColors()
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "PASSWORD",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = { Text("Insira a sua palavra-passe") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Password",
+                                tint = AthloColors.TextMuted
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = authTextFieldColors()
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    TextButton(
+                        onClick = {},
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "Esqueceu-se da palavra-passe?",
+                            color = AthloColors.Blue,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Button(
+                        onClick = onLoginClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AthloColors.Blue
+                        ),
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        Text(
+                            text = "Entrar",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(
+                        onClick = onRegisterClick,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Não tens conta? Criar conta",
+                            color = AthloColors.Blue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun LoginHeroCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(210.dp),
+        shape = RoundedCornerShape(AthloRadius.ExtraLarge),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.DarkNavy),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(62.dp)
+                    .background(AthloColors.Blue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Language,
+                    contentDescription = "Logo",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "AthloDynamis",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Gestão inteligente de torneios e equipas",
+                color = Color(0xFFC8DCEF),
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun authTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = AthloColors.Blue,
+    unfocusedBorderColor = Color(0xFFE5E7EB),
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+    cursorColor = AthloColors.Blue,
+    focusedTextColor = AthloColors.TextPrimary,
+    unfocusedTextColor = AthloColors.TextPrimary,
+    focusedPlaceholderColor = AthloColors.TextMuted,
+    unfocusedPlaceholderColor = AthloColors.TextMuted
+)
