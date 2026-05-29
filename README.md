@@ -1,4 +1,4 @@
-# EScore
+# AthloDynamis
 
 Aplicação móvel Android para gestão de eventos desportivos, permitindo criar torneios, gerir equipas e jogadores, calendarizar jogos e acompanhar resultados em tempo real.
 
