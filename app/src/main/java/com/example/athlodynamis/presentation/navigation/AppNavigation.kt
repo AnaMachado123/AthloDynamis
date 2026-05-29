@@ -1,6 +1,9 @@
 package com.example.athlodynamis.presentation.navigation
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -16,15 +19,39 @@ import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+
+    val sharedPreferences = remember {
+        context.getSharedPreferences("athlo_preferences", Context.MODE_PRIVATE)
+    }
+
+    val hasSeenOnboarding = remember {
+        sharedPreferences.getBoolean("has_seen_onboarding", false)
+    }
+
+    val startDestination = if (hasSeenOnboarding) {
+        Screen.Login.route
+    } else {
+        Screen.Onboarding.route
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Onboarding.route
+        startDestination = startDestination
     ) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onStartClick = {
-                    navController.navigate(Screen.Login.route)
+                    sharedPreferences
+                        .edit()
+                        .putBoolean("has_seen_onboarding", true)
+                        .apply()
+
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Onboarding.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
@@ -32,7 +59,11 @@ fun AppNavigation() {
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginClick = {
-                    navController.navigate(Screen.Home.route)
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) {
+                            inclusive = true
+                        }
+                    }
                 },
                 onRegisterClick = {
                     navController.navigate(Screen.Register.route)
@@ -43,7 +74,11 @@ fun AppNavigation() {
         composable(Screen.Register.route) {
             RegisterScreen(
                 onRegisterClick = {
-                    navController.navigate(Screen.Home.route)
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Register.route) {
+                            inclusive = true
+                        }
+                    }
                 },
                 onBackClick = {
                     navController.popBackStack()
