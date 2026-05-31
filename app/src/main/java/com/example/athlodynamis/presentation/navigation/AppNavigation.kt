@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
+import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
 
 @Composable
 fun AppNavigation() {
@@ -97,6 +98,15 @@ fun AppNavigation() {
 
         composable(Screen.Events.route) {
             EventsScreen(navController = navController)
+        }
+
+        composable(Screen.TournamentDetail.route) { backStackEntry ->
+            val tournamentId = backStackEntry.arguments?.getString("tournamentId") ?: ""
+
+            TournamentDetailScreen(
+                tournamentId = tournamentId,
+                navController = navController
+            )
         }
 
         composable(Screen.Teams.route) {
