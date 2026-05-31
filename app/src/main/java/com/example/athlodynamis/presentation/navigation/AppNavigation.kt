@@ -15,6 +15,11 @@ import com.example.athlodynamis.presentation.screens.notifications.Notifications
 import com.example.athlodynamis.presentation.screens.onboarding.OnboardingScreen
 import com.example.athlodynamis.presentation.screens.stats.StatsScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
+import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
+import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 
 @Composable
 fun AppNavigation() {
@@ -96,6 +101,44 @@ fun AppNavigation() {
 
         composable(Screen.Teams.route) {
             TeamsScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.TeamDetail.route,
+            arguments = listOf(
+                navArgument("teamId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+            val teamId = backStackEntry.arguments?.getInt("teamId") ?: 1
+
+            TeamDetailScreen(
+                navController = navController,
+                teamId = teamId
+            )
+        }
+
+        composable(Screen.CreateTeam.route) {
+            CreateTeamScreen(
+                navController = navController
+            )
+        }
+
+        composable(
+            route = Screen.EditTeam.route,
+            arguments = listOf(
+                navArgument("teamId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+            val teamId = backStackEntry.arguments?.getInt("teamId") ?: 1
+
+            EditTeamScreen(
+                navController = navController,
+                teamId = teamId
+            )
         }
 
         composable(Screen.Stats.route) {

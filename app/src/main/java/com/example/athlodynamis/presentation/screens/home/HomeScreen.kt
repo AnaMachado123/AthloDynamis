@@ -47,6 +47,7 @@ import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 
 enum class UserRole {
     ORGANIZER,
@@ -87,7 +88,10 @@ fun HomeScreen(navController: NavController) {
             }
         },
         bottomBar = {
-            AthloBottomBar(navController = navController)
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Home.route
+            )
         }
     ) { innerPadding ->
         LazyColumn(
