@@ -37,6 +37,7 @@ object MockTournaments {
     val matches = listOf(
         Match(
             id = "1",
+            tournamentId = "2",
             time = "10:00",
             teamA = "Equipa 1",
             teamB = "Equipa 2",
@@ -46,6 +47,7 @@ object MockTournaments {
         ),
         Match(
             id = "2",
+            tournamentId = "2",
             time = "12:00",
             teamA = "Equipa 3",
             teamB = "Equipa 4",
@@ -53,6 +55,16 @@ object MockTournaments {
             scoreB = 2,
             status = "A decorrer",
             minute = "33'"
+        ),
+        Match(
+            id = "3",
+            tournamentId = "1",
+            time = "15:00",
+            teamA = "Equipa 5",
+            teamB = "Equipa 6",
+            scoreA = null,
+            scoreB = null,
+            status = "Agendado"
         )
     )
 
@@ -128,5 +140,8 @@ object MockTournaments {
 
     fun getTournamentById(id: String): Tournament {
         return tournaments.find { it.id == id } ?: tournaments.first()
+    }
+    fun getMatchById(id: String): Match {
+        return matches.find { it.id == id } ?: matches.first()
     }
 }
