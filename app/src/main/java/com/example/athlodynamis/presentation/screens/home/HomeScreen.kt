@@ -75,14 +75,16 @@ fun HomeScreen(navController: NavController) {
         floatingActionButton = {
             if (userRole == UserRole.ORGANIZER) {
                 FloatingActionButton(
-                    onClick = { },
+                    onClick = {
+                        navController.navigate(Screen.CreateTeam.route)
+                    },
                     containerColor = AthloColors.Blue,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Adicionar"
+                        contentDescription = "Criar equipa"
                     )
                 }
             }
@@ -106,7 +108,7 @@ fun HomeScreen(navController: NavController) {
 
                 when (userRole) {
                     UserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
-                    UserRole.PLAYER -> PlayerHomeContent()
+                    UserRole.PLAYER -> PlayerHomeContent(navController = navController)
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -127,7 +129,10 @@ private fun OrganizerHomeContent(
             DashboardStat("6", "Torneios ativos"),
             DashboardStat("3", "Jogos hoje"),
             DashboardStat("348", "Atletas")
-        )
+        ),
+        onProfileClick = {
+            navController.navigate(Screen.Profile.route)
+        }
     )
 
     Spacer(modifier = Modifier.height(22.dp))
@@ -181,7 +186,7 @@ private fun OrganizerHomeContent(
 }
 
 @Composable
-private fun PlayerHomeContent() {
+private fun PlayerHomeContent(navController: NavController){
     DashboardHeader(
         name = "Gonçalo Magalhães",
         initials = "GM",
@@ -189,7 +194,10 @@ private fun PlayerHomeContent() {
             DashboardStat("2", "Próximos jogos"),
             DashboardStat("19", "Golos"),
             DashboardStat("3", "Troféus")
-        )
+        ),
+        onProfileClick = {
+            navController.navigate(Screen.Profile.route)
+        }
     )
 
     Spacer(modifier = Modifier.height(22.dp))
@@ -240,7 +248,8 @@ private fun PlayerHomeContent() {
 private fun DashboardHeader(
     name: String,
     initials: String,
-    stats: List<DashboardStat>
+    stats: List<DashboardStat>,
+    onProfileClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -278,7 +287,8 @@ private fun DashboardHeader(
                 Box(
                     modifier = Modifier
                         .size(42.dp)
-                        .background(AthloColors.Blue, CircleShape),
+                        .background(AthloColors.Blue, CircleShape)
+                        .clickable { onProfileClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

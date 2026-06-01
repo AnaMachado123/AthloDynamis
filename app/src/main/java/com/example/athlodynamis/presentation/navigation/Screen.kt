@@ -4,9 +4,16 @@ sealed class Screen(val route: String) {
     data object Onboarding : Screen("onboarding")
     data object Login : Screen("login")
     data object Register : Screen("register")
+
     data object Home : Screen("home")
+    data object Management : Screen("management")
     data object Events : Screen("events")
     data object Teams : Screen("teams")
+    data object Stats : Screen("stats")
+    data object Notifications : Screen("notifications")
+
+    data object Profile : Screen("profile")
+    data object EditProfile : Screen("edit_profile")
 
     data object TeamDetail : Screen("team_detail/{teamId}") {
         fun createRoute(teamId: Int): String = "team_detail/$teamId"
@@ -26,6 +33,21 @@ sealed class Screen(val route: String) {
         fun createRoute(matchId: String): String = "match_detail/$matchId"
     }
 
-    data object Stats : Screen("stats")
-    data object Notifications : Screen("notifications")
+    data object CreateEvent : Screen("create_event")
+
+    data object EditEvent : Screen("edit_event/{eventId}") {
+        fun createRoute(eventId: String): String = "edit_event/$eventId"
+    }
+
+    data object AddMatch : Screen("add_match/{eventId}") {
+        fun createRoute(eventId: String): String = "add_match/$eventId"
+    }
+
+    data object EditMatch : Screen("edit_match/{matchId}") {
+        fun createRoute(matchId: String): String = "edit_match/$matchId"
+    }
+
+    data object ManageLiveMatch : Screen("manage_live_match/{matchId}") {
+        fun createRoute(matchId: String): String = "manage_live_match/$matchId"
+    }
 }

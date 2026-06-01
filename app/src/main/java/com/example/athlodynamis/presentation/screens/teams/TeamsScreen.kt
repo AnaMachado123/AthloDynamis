@@ -20,17 +20,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,14 +61,21 @@ fun TeamsScreen(navController: NavController) {
     val viewModel: TeamsViewModel = viewModel()
     val allTeams by viewModel.teams.collectAsState()
 
+    var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
 
-    val filters = listOf("Todos", "Futebol", "Basquetebol", "Voleibol", "Ténis")
+    val teams = allTeams.filter { team ->
+        val matchesSearch =
+            team.name.contains(searchText, ignoreCase = true) ||
+                    team.acronym.contains(searchText, ignoreCase = true) ||
+                    team.sport.contains(searchText, ignoreCase = true)
 
-    val teams = if (selectedFilter == "Todos") {
-        allTeams
-    } else {
-        allTeams.filter { it.sport == selectedFilter }
+        val matchesFilter = when (selectedFilter) {
+            "Todos" -> true
+            else -> team.sport == selectedFilter
+        }
+
+        matchesSearch && matchesFilter
     }
 
     Scaffold(
@@ -82,40 +91,39 @@ fun TeamsScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 96.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
-                TeamsHeader()
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TeamsHeader(
+                    totalTeams = allTeams.size
+                )
             }
 
             item {
-                PaddedContent {
-                    SearchBox()
-                }
+                SearchBox(
+                    searchText = searchText,
+                    onSearchChange = { searchText = it }
+                )
             }
 
             item {
-                PaddedContent {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        filters.forEach { filter ->
-                            FilterChip(
-                                selected = selectedFilter == filter,
-                                onClick = { selectedFilter = filter },
-                                label = { Text(filter) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = AthloColors.Blue,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
+                TeamFilterRows(
+                    selectedFilter = selectedFilter,
+                    onFilterClick = { selectedFilter = it }
+                )
             }
 
-            items(teams) { team ->
-                PaddedContent {
+            if (teams.isEmpty()) {
+                item {
+                    EmptyTeamsCard()
+                }
+            } else {
+                items(teams) { team ->
                     TeamListCard(
                         team = team,
                         onClick = {
@@ -126,25 +134,33 @@ fun TeamsScreen(navController: NavController) {
             }
 
             item {
-                PaddedContent {
-                    Button(
-                        onClick = {
-                            navController.navigate(Screen.CreateTeam.route)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AthloColors.Blue
-                        )
-                    ) {
-                        Text(
-                            text = "Criar equipa",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                Button(
+                    onClick = {
+                        navController.navigate(Screen.CreateTeam.route)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AthloColors.Blue
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Criar equipa",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Criar equipa",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -152,50 +168,108 @@ fun TeamsScreen(navController: NavController) {
 }
 
 @Composable
-private fun PaddedContent(
-    content: @Composable () -> Unit
+private fun TeamsHeader(
+    totalTeams: Int
 ) {
-    Box(
-        modifier = Modifier.padding(horizontal = 22.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.ExtraLarge),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.DarkNavy),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
-        content()
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AthloColors.Navy)
+                    .padding(horizontal = 22.dp, vertical = 22.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column {
+                        Text(
+                            text = "Equipas",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Lista de Equipas",
+                            color = Color(0xFF8EC5F4),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
+                    AdminBadge()
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                HeaderStatBox(
+                    value = totalTeams.toString(),
+                    label = "Equipas",
+                    modifier = Modifier.weight(1f)
+                )
+
+                HeaderStatBox(
+                    value = "4",
+                    label = "Modalidades",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun TeamsHeader() {
+private fun HeaderStatBox(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(132.dp)
-            .background(AthloColors.DarkNavy)
-            .padding(horizontal = 24.dp, vertical = 22.dp)
+        modifier = modifier
+            .height(74.dp)
+            .background(
+                color = Color(0xFF244A70),
+                shape = RoundedCornerShape(20.dp)
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.align(Alignment.CenterStart)
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Equipas",
+                text = value,
                 color = Color.White,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
             )
 
+            Spacer(modifier = Modifier.height(2.dp))
+
             Text(
-                text = "Lista de Equipas",
-                color = Color(0xFF8EC5F4),
-                style = MaterialTheme.typography.bodyMedium
+                text = label,
+                color = Color(0xFFC8DCEF),
+                style = MaterialTheme.typography.labelSmall
             )
         }
-
-        AdminBadge(
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
     }
 }
 
 @Composable
-private fun AdminBadge(modifier: Modifier = Modifier) {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
@@ -221,30 +295,109 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SearchBox() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(Color(0xFF10243A), RoundedCornerShape(14.dp))
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+private fun SearchBox(
+    searchText: String,
+    onSearchChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchText,
+        onValueChange = onSearchChange,
+        placeholder = { Text("Pesquisar equipa...") },
+        leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Pesquisar",
-                tint = Color(0xFF9CA3AF)
+                tint = AthloColors.TextMuted
+            )
+        },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AthloColors.Blue,
+            unfocusedBorderColor = Color(0xFFE5E7EB),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            cursorColor = AthloColors.Blue,
+            focusedTextColor = AthloColors.TextPrimary,
+            unfocusedTextColor = AthloColors.TextPrimary,
+            focusedPlaceholderColor = AthloColors.TextMuted,
+            unfocusedPlaceholderColor = AthloColors.TextMuted
+        )
+    )
+}
+
+@Composable
+private fun TeamFilterRows(
+    selectedFilter: String,
+    onFilterClick: (String) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterPill(
+                text = "Todos",
+                selected = selectedFilter == "Todos",
+                onClick = { onFilterClick("Todos") }
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            FilterPill(
+                text = "Futebol",
+                selected = selectedFilter == "Futebol",
+                onClick = { onFilterClick("Futebol") }
+            )
 
-            Text(
-                text = "Pesquisar equipa...",
-                color = Color(0xFF9CA3AF),
-                style = MaterialTheme.typography.bodySmall
+            FilterPill(
+                text = "Basquetebol",
+                selected = selectedFilter == "Basquetebol",
+                onClick = { onFilterClick("Basquetebol") }
             )
         }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterPill(
+                text = "Voleibol",
+                selected = selectedFilter == "Voleibol",
+                onClick = { onFilterClick("Voleibol") }
+            )
+
+            FilterPill(
+                text = "Ténis",
+                selected = selectedFilter == "Ténis",
+                onClick = { onFilterClick("Ténis") }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterPill(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(
+                if (selected) AthloColors.Blue else Color.White
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) Color.White else AthloColors.TextSecondary,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
 }
 
@@ -267,12 +420,22 @@ private fun TeamListCard(
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            TeamLogoBox(
+                acronym = team.acronym
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     text = team.acronym,
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelMedium
                 )
+
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
                     text = team.name,
@@ -281,9 +444,11 @@ private fun TeamListCard(
                     fontWeight = FontWeight.ExtraBold
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     SmallBadge(
                         text = "${team.playersCount} Jogadores",
                         background = AthloColors.InfoBg,
@@ -292,8 +457,8 @@ private fun TeamListCard(
 
                     SmallBadge(
                         text = team.sport,
-                        background = AthloColors.SuccessBg,
-                        textColor = Color(0xFF3F7A28)
+                        background = sportColor(team.sport),
+                        textColor = sportTextColor(team.sport)
                     )
                 }
             }
@@ -302,15 +467,87 @@ private fun TeamListCard(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(AthloColors.NeutralBg),
+                    .background(AthloColors.SoftBlue),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = "Abrir equipa",
-                    tint = AthloColors.TextMuted
+                    tint = AthloColors.Blue,
+                    modifier = Modifier.size(20.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TeamLogoBox(
+    acronym: String
+) {
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .background(AthloColors.SoftBlue, RoundedCornerShape(16.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Groups,
+            contentDescription = "Equipa",
+            tint = AthloColors.Blue,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Text(
+            text = acronym.take(1),
+            color = Color.Transparent
+        )
+    }
+}
+
+@Composable
+private fun EmptyTeamsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(58.dp)
+                    .background(AthloColors.SoftBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Sem equipas",
+                    tint = AthloColors.Blue
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Nenhuma equipa encontrada",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Tenta alterar a pesquisa ou o filtro selecionado.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -330,7 +567,28 @@ private fun SmallBadge(
             text = text,
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
         )
+    }
+}
+
+private fun sportColor(sport: String): Color {
+    return when (sport) {
+        "Futebol" -> AthloColors.SuccessBg
+        "Basquetebol" -> AthloColors.WarningBg
+        "Voleibol" -> AthloColors.InfoBg
+        "Ténis" -> AthloColors.SoftBlue
+        else -> AthloColors.NeutralBg
+    }
+}
+
+private fun sportTextColor(sport: String): Color {
+    return when (sport) {
+        "Futebol" -> Color(0xFF3F7A28)
+        "Basquetebol" -> Color(0xFF9A6B22)
+        "Voleibol" -> AthloColors.Blue
+        "Ténis" -> AthloColors.Blue
+        else -> AthloColors.TextSecondary
     }
 }

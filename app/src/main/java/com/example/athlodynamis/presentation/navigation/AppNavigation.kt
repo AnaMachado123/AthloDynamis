@@ -4,24 +4,33 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.athlodynamis.presentation.screens.auth.LoginScreen
 import com.example.athlodynamis.presentation.screens.auth.RegisterScreen
+import com.example.athlodynamis.presentation.screens.events.AddMatchScreen
+import com.example.athlodynamis.presentation.screens.events.CreateEventScreen
+import com.example.athlodynamis.presentation.screens.events.EditEventScreen
+import com.example.athlodynamis.presentation.screens.events.EditMatchScreen
 import com.example.athlodynamis.presentation.screens.events.EventsScreen
+import com.example.athlodynamis.presentation.screens.events.ManageLiveMatchScreen
+import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
 import com.example.athlodynamis.presentation.screens.home.HomeScreen
+import com.example.athlodynamis.presentation.screens.management.ManagementScreen
+import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
 import com.example.athlodynamis.presentation.screens.notifications.NotificationsScreen
 import com.example.athlodynamis.presentation.screens.onboarding.OnboardingScreen
+import com.example.athlodynamis.presentation.screens.profile.EditProfileScreen
+import com.example.athlodynamis.presentation.screens.profile.ProfileScreen
 import com.example.athlodynamis.presentation.screens.stats.StatsScreen
-import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
-import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
-import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
+import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
+import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -96,16 +105,95 @@ fun AppNavigation() {
             HomeScreen(navController = navController)
         }
 
+        composable(Screen.Management.route) {
+            ManagementScreen(navController = navController)
+        }
+
         composable(Screen.Events.route) {
             EventsScreen(navController = navController)
         }
 
-        composable(Screen.TournamentDetail.route) { backStackEntry ->
-            val tournamentId = backStackEntry.arguments?.getString("tournamentId") ?: ""
+        composable(Screen.CreateEvent.route) {
+            CreateEventScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.EditEvent.route,
+            arguments = listOf(
+                navArgument("eventId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId") ?: "1"
+
+            EditEventScreen(
+                navController = navController,
+                eventId = eventId
+            )
+        }
+
+        composable(
+            route = Screen.TournamentDetail.route,
+            arguments = listOf(
+                navArgument("tournamentId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val tournamentId = backStackEntry.arguments?.getString("tournamentId") ?: "1"
 
             TournamentDetailScreen(
                 tournamentId = tournamentId,
                 navController = navController
+            )
+        }
+
+        composable(
+            route = Screen.AddMatch.route,
+            arguments = listOf(
+                navArgument("eventId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId") ?: "1"
+
+            AddMatchScreen(
+                navController = navController,
+                eventId = eventId
+            )
+        }
+
+        composable(
+            route = Screen.EditMatch.route,
+            arguments = listOf(
+                navArgument("matchId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: "1"
+
+            EditMatchScreen(
+                navController = navController,
+                matchId = matchId
+            )
+        }
+
+        composable(
+            route = Screen.ManageLiveMatch.route,
+            arguments = listOf(
+                navArgument("matchId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: "1"
+
+            ManageLiveMatchScreen(
+                navController = navController,
+                matchId = matchId
             )
         }
 
@@ -124,6 +212,7 @@ fun AppNavigation() {
                 navController = navController
             )
         }
+
         composable(Screen.Teams.route) {
             TeamsScreen(navController = navController)
         }
@@ -145,9 +234,7 @@ fun AppNavigation() {
         }
 
         composable(Screen.CreateTeam.route) {
-            CreateTeamScreen(
-                navController = navController
-            )
+            CreateTeamScreen(navController = navController)
         }
 
         composable(
@@ -172,6 +259,14 @@ fun AppNavigation() {
 
         composable(Screen.Notifications.route) {
             NotificationsScreen(navController = navController)
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(navController = navController)
         }
     }
 }

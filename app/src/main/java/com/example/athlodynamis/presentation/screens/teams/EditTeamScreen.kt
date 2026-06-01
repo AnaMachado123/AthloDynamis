@@ -2,14 +2,49 @@ package com.example.athlodynamis.presentation.screens.teams
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,8 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.data.repository.TeamRepository
 import com.example.athlodynamis.presentation.components.AthloColors
+import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 
 @Composable
@@ -27,18 +62,20 @@ fun EditTeamScreen(
     teamId: Int
 ) {
     val viewModel: TeamsViewModel = viewModel()
-    val team = remember(teamId) {
-        TeamRepository.getTeamById(teamId)
-    }
+    val teams by viewModel.teams.collectAsState()
+
+    val team = teams.firstOrNull { it.id == teamId }
 
     if (team == null) {
-        Text("Equipa não encontrada")
+        EditTeamNotFoundScreen(
+            onBackClick = { navController.popBackStack() }
+        )
         return
     }
 
-    var teamName by remember { mutableStateOf(team.name) }
-    var selectedSport by remember { mutableStateOf(team.sport) }
-    var selectedLevel by remember { mutableStateOf("Avançado") }
+    var teamName by remember(teamId) { mutableStateOf(team.name) }
+    var selectedSport by remember(teamId) { mutableStateOf(team.sport) }
+    var selectedLevel by remember(teamId) { mutableStateOf("Avançado") }
 
     Scaffold(
         containerColor = AthloColors.Background
@@ -47,137 +84,57 @@ fun EditTeamScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            Spacer(modifier = Modifier.height(10.dp))
+
             EditTeamHeader(
                 onBackClick = { navController.popBackStack() }
             )
 
-            Column(
+            EditTeamFormCard(
+                teamName = teamName,
+                onTeamNameChange = { teamName = it },
+                selectedSport = selectedSport,
+                onSportChange = { selectedSport = it },
+                selectedLevel = selectedLevel,
+                onLevelChange = { selectedLevel = it }
+            )
+
+            SaveButton(
+                enabled = teamName.isNotBlank(),
+                onClick = {
+                    if (teamName.isNotBlank()) {
+                        viewModel.updateTeam(
+                            teamId = teamId,
+                            name = teamName.trim(),
+                            sport = selectedSport,
+                            level = selectedLevel
+                        )
+
+                        navController.popBackStack()
+                    }
+                }
+            )
+
+            OutlinedButton(
+                onClick = { navController.popBackStack() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 28.dp, vertical = 24.dp)
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Text(
-                    text = "Editar equipa",
-                    color = AthloColors.TextPrimary,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold
+                    text = "Cancelar",
+                    fontWeight = FontWeight.Bold,
+                    color = AthloColors.TextSecondary
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Atualiza os dados da equipa",
-                    color = AthloColors.TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(modifier = Modifier.height(30.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        FieldLabel("Nome")
-
-                        OutlinedTextField(
-                            value = teamName,
-                            onValueChange = { teamName = it },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = formTextFieldColors()
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        FieldLabel("Modalidade")
-
-                        AthloDropdown(
-                            selectedValue = selectedSport,
-                            options = listOf("Futebol", "Basquetebol", "Ténis", "Voleibol"),
-                            onValueSelected = { selectedSport = it }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        FieldLabel("Nível")
-
-                        AthloDropdown(
-                            selectedValue = selectedLevel,
-                            options = listOf("Avançado", "Médio", "Pivô", "Líbero", "Passador", "Base"),
-                            onValueSelected = { selectedLevel = it }
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        FieldLabel("Escudo")
-
-                        Button(
-                            onClick = { },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Blue)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Upload,
-                                contentDescription = "Carregar escudo",
-                                tint = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Text(
-                                text = "Carregar",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Button(
-                    onClick = {
-                        if (teamName.isNotBlank()) {
-                            viewModel.updateTeam(
-                                teamId = teamId,
-                                name = teamName.trim(),
-                                sport = selectedSport,
-                                level = selectedLevel
-                            )
-
-                            navController.popBackStack()
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .width(180.dp)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Blue)
-                ) {
-                    Text(
-                        text = "Guardar",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -186,47 +143,233 @@ fun EditTeamScreen(
 private fun EditTeamHeader(
     onBackClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(132.dp)
-            .background(AthloColors.DarkNavy)
-            .padding(horizontal = 24.dp, vertical = 22.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.ExtraLarge),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.DarkNavy),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AthloColors.Navy)
+                    .padding(horizontal = 22.dp, vertical = 22.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "‹ cancelar",
+                        color = Color(0xFF8EC5F4),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { onBackClick() }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column {
+                            Text(
+                                text = "Equipas",
+                                color = Color.White,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = "Editar equipa",
+                                color = Color(0xFF8EC5F4),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+
+                        AdminBadge()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditTeamFormCard(
+    teamName: String,
+    onTeamNameChange: (String) -> Unit,
+    selectedSport: String,
+    onSportChange: (String) -> Unit,
+    selectedLevel: String,
+    onLevelChange: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.ExtraLarge),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "‹ cancelar",
-                color = Color(0xFF8EC5F4),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.clickable { onBackClick() }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Equipas",
-                color = Color.White,
+                text = "Editar equipa",
+                color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
             )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text = "Editar equipa",
-                color = Color(0xFF8EC5F4),
+                text = "Atualiza os dados da equipa",
+                color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
 
-        AdminBadge(
-            modifier = Modifier.align(Alignment.CenterEnd)
+            Spacer(modifier = Modifier.height(28.dp))
+
+            FieldLabel("Nome")
+
+            OutlinedTextField(
+                value = teamName,
+                onValueChange = onTeamNameChange,
+                placeholder = { Text("Nome da equipa") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = formTextFieldColors()
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            FieldLabel("Modalidade")
+
+            AthloDropdown(
+                selectedValue = selectedSport,
+                options = listOf("Futebol", "Basquetebol", "Ténis", "Voleibol"),
+                onValueSelected = onSportChange,
+                icon = Icons.Default.SportsSoccer
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            FieldLabel("Nível")
+
+            AthloDropdown(
+                selectedValue = selectedLevel,
+                options = listOf("Avançado", "Médio", "Iniciante", "Pivô", "Líbero", "Passador", "Base"),
+                onValueSelected = onLevelChange,
+                icon = Icons.Default.Star
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            FieldLabel("Escudo")
+
+            UploadShieldButton()
+        }
+    }
+}
+
+@Composable
+private fun UploadShieldButton() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.SoftBlue),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { }
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(AthloColors.Blue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = "Escudo",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 14.dp)
+            ) {
+                Text(
+                    text = "Carregar escudo",
+                    color = AthloColors.TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "Preparado para futura implementação",
+                    color = AthloColors.TextSecondary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.Upload,
+                contentDescription = "Carregar",
+                tint = AthloColors.Blue
+            )
+        }
+    }
+}
+
+@Composable
+private fun SaveButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AthloColors.Blue,
+            disabledContainerColor = Color(0xFFBFD7EF)
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Save,
+            contentDescription = "Guardar",
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = "Guardar alterações",
+            color = Color.White,
+            fontWeight = FontWeight.Bold
         )
     }
 }
 
 @Composable
-private fun AdminBadge(modifier: Modifier = Modifier) {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
@@ -266,7 +409,8 @@ private fun FieldLabel(text: String) {
 private fun AthloDropdown(
     selectedValue: String,
     options: List<String>,
-    onValueSelected: (String) -> Unit
+    onValueSelected: (String) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -274,34 +418,54 @@ private fun AthloDropdown(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFFF3F1E9), RoundedCornerShape(10.dp))
+                .height(58.dp)
+                .background(Color.White, RoundedCornerShape(18.dp))
                 .clickable { expanded = true }
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = selectedValue,
-                color = AthloColors.TextPrimary,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = selectedValue,
+                    tint = AthloColors.TextMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = selectedValue,
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Abrir opções",
-                tint = AthloColors.DarkNavy
+                tint = AthloColors.TextMuted
             )
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color(0xFFF3F1E9))
+            modifier = Modifier.background(Color.White)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option, style = MaterialTheme.typography.bodySmall) },
+                    text = {
+                        Text(
+                            text = option,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AthloColors.TextPrimary
+                        )
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false
@@ -313,12 +477,64 @@ private fun AthloDropdown(
 }
 
 @Composable
+private fun EditTeamNotFoundScreen(
+    onBackClick: () -> Unit
+) {
+    Scaffold(
+        containerColor = AthloColors.Background
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(AthloRadius.Large),
+                colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(26.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Equipa não encontrada",
+                        color = AthloColors.TextPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = onBackClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Blue),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text(
+                            text = "Voltar",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun formTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Color(0xFFE5E7EB),
+    focusedBorderColor = AthloColors.Blue,
     unfocusedBorderColor = Color(0xFFE5E7EB),
-    focusedContainerColor = Color(0xFFF3F1E9),
-    unfocusedContainerColor = Color(0xFFF3F1E9),
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
     cursorColor = AthloColors.Blue,
     focusedTextColor = AthloColors.TextPrimary,
-    unfocusedTextColor = AthloColors.TextPrimary
+    unfocusedTextColor = AthloColors.TextPrimary,
+    focusedPlaceholderColor = AthloColors.TextMuted,
+    unfocusedPlaceholderColor = AthloColors.TextMuted
 )
