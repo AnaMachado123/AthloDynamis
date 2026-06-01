@@ -1,40 +1,76 @@
 package com.example.athlodynamis.presentation.screens.matches
 
-import android.R.attr.textColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.SportsVolleyball
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.athlodynamis.data.mock.MockTournaments
 import com.example.athlodynamis.domain.model.Match
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.navigation.Screen
 
 @Composable
 fun MatchDetailScreen(
     matchId: String,
-    navController: NavController
+    navController: NavController,
+    userRole: AthloUserRole
 ) {
     val match = MockTournaments.getMatchById(matchId)
-    val tournament =
-        MockTournaments.getTournamentById(match.tournamentId)
+    val tournament = MockTournaments.getTournamentById(match.tournamentId)
+
+    val isAdmin = userRole == AthloUserRole.ADMIN
+    val canManageMatch = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+    val isLiveMatch = match.status == "A decorrer"
+
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Events.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -42,7 +78,8 @@ fun MatchDetailScreen(
                 .padding(innerPadding)
                 .navigationBarsPadding()
                 .padding(horizontal = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -50,7 +87,12 @@ fun MatchDetailScreen(
                 MatchHeader(
                     tournamentName = tournament.name,
                     sport = tournament.sport,
-                    onBackClick = { navController.popBackStack() }
+                    isAdmin = isAdmin,
+                    canManageMatch = canManageMatch,
+                    onBackClick = { navController.popBackStack() },
+                    onEditClick = {
+                        navController.navigate(Screen.EditMatch.createRoute(matchId))
+                    }
                 )
             }
 
@@ -66,6 +108,30 @@ fun MatchDetailScreen(
                 MatchEventsCard(match = match)
             }
 
+            if (canManageMatch && isLiveMatch) {
+                item {
+                    Button(
+                        onClick = {
+                            navController.navigate(Screen.ManageLiveMatch.createRoute(matchId))
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AthloColors.Blue
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        Text(
+                            text = "Gerir jogo ao vivo",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             item {
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -77,7 +143,10 @@ fun MatchDetailScreen(
 private fun MatchHeader(
     tournamentName: String,
     sport: String,
-    onBackClick: () -> Unit
+    isAdmin: Boolean,
+    canManageMatch: Boolean,
+    onBackClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -85,46 +154,68 @@ private fun MatchHeader(
         colors = CardDefaults.cardColors(containerColor = AthloColors.Navy),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(22.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(22.dp)
         ) {
-            Row(
-                modifier = Modifier.clickable { onBackClick() },
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBackIosNew,
-                    contentDescription = "Voltar",
-                    tint = Color(0xFF8DC5F0),
-                    modifier = Modifier.size(14.dp)
-                )
+                Row(
+                    modifier = Modifier.clickable { onBackClick() },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Voltar",
+                        tint = Color(0xFF8DC5F0),
+                        modifier = Modifier.size(14.dp)
+                    )
 
-                Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "voltar",
+                        color = Color(0xFF8DC5F0),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "voltar",
+                    text = "Detalhe Jogo",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "$tournamentName - $sport",
                     color = Color(0xFF8DC5F0),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.align(Alignment.TopEnd),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (isAdmin) {
+                    AdminBadge()
+                }
 
-            Text(
-                text = "Detalhe Jogo",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "$tournamentName - $sport",
-                color = Color(0xFF8DC5F0),
-                style = MaterialTheme.typography.bodyLarge
-            )
+                if (canManageMatch) {
+                    EditBadge(
+                        onClick = onEditClick
+                    )
+                }
+            }
         }
     }
 }
@@ -154,8 +245,8 @@ private fun MatchScoreSection(match: Match) {
             TeamBlock(
                 acronym = "EQP",
                 teamName = match.teamA,
-                background = Color(0xFFD7EBFF),
-                textColor = AthloColors.Blue
+                background = if (match.teamA.contains("1")) Color(0xFFD7EBFF) else Color(0xFFF8FFB0),
+                textColor = if (match.teamA.contains("1")) AthloColors.Blue else Color(0xFFD4DD00)
             )
 
             Row(
@@ -177,8 +268,8 @@ private fun MatchScoreSection(match: Match) {
             TeamBlock(
                 acronym = "EQP",
                 teamName = match.teamB,
-                background = Color(0xFFE8F3DD),
-                textColor = Color(0xFF5F9E6E)
+                background = if (match.teamB.contains("2")) Color(0xFFE8F3DD) else Color(0xFFFFEFD7),
+                textColor = if (match.teamB.contains("2")) Color(0xFF5F9E6E) else Color(0xFF9A6B22)
             )
         }
 
@@ -251,22 +342,16 @@ private fun ScoreDarkBox(score: String) {
 }
 
 @Composable
-
 private fun StatusPillLarge(status: String) {
-
     val background = when (status) {
         "A decorrer" -> AthloColors.DangerBg
-
         "Agendado" -> Color(0xFFDCEBFF)
-
         else -> AthloColors.Navy
     }
 
     val textColor = when (status) {
         "A decorrer" -> Color(0xFFC83755)
-
         "Agendado" -> AthloColors.Blue
-
         else -> Color.White
     }
 
@@ -329,13 +414,12 @@ private fun EmptyEventsState() {
             modifier = Modifier
                 .size(72.dp)
                 .border(
-                    2.dp,
-                    Color(0xFFB5B5B5),
-                    CircleShape
+                    width = 2.dp,
+                    color = Color(0xFFB5B5B5),
+                    shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
-
             Text(
                 text = "i",
                 color = AthloColors.TextMuted,
@@ -367,7 +451,7 @@ private fun LiveEvents() {
         minute = "38'",
         playerName = "Rui Moreira",
         team = "Equipa 3",
-        teamColor = Color(0xFFE8F3DD)
+        teamColor = Color(0xFFF8FFB0)
     )
 }
 
@@ -382,14 +466,22 @@ private fun FinishedEvents() {
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Divider(modifier = Modifier.weight(1f), color = Color(0xFFCFCFCF))
+        Divider(
+            modifier = Modifier.weight(1f),
+            color = Color(0xFFCFCFCF)
+        )
+
         Text(
             text = "Intervalo",
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 14.dp)
         )
-        Divider(modifier = Modifier.weight(1f), color = Color(0xFFCFCFCF))
+
+        Divider(
+            modifier = Modifier.weight(1f),
+            color = Color(0xFFCFCFCF)
+        )
     }
 
     EventRow("70'", "João Silva", "Equipa 1", Color(0xFFD7EBFF))
@@ -425,7 +517,7 @@ private fun EventRow(
         ) {
             Icon(
                 imageVector = Icons.Outlined.SportsVolleyball,
-                contentDescription = null,
+                contentDescription = "Golo",
                 tint = AthloColors.Navy,
                 modifier = Modifier.size(22.dp)
             )
@@ -463,5 +555,60 @@ private fun EventRow(
                 style = MaterialTheme.typography.labelSmall
             )
         }
+    }
+}
+
+@Composable
+private fun AdminBadge() {
+    Row(
+        modifier = Modifier
+            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Admin",
+            tint = AthloColors.DarkNavy,
+            modifier = Modifier.size(14.dp)
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
+@Composable
+private fun EditBadge(
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .background(Color(0xFF76B982), RoundedCornerShape(999.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Editar jogo",
+            tint = Color.White,
+            modifier = Modifier.size(13.dp)
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Text(
+            text = "Editar",
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }

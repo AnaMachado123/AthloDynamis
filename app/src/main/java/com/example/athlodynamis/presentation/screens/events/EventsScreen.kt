@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,23 +15,20 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -49,14 +47,22 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.athlodynamis.data.mock.MockTournaments
 import com.example.athlodynamis.domain.model.Tournament
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 
 @Composable
-fun EventsScreen(navController: NavController) {
+fun EventsScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+
+    val isAdmin = userRole == AthloUserRole.ADMIN
+    val canCreateEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
     val tournaments = MockTournaments.tournaments.filter { tournament ->
         val matchesSearch =
@@ -79,15 +85,21 @@ fun EventsScreen(navController: NavController) {
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
-            EventsBottomBar(navController = navController)
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Events.route,
+                userRole = userRole
+            )
         }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .navigationBarsPadding()
                 .padding(horizontal = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -97,16 +109,27 @@ fun EventsScreen(navController: NavController) {
                     onSearchChange = { searchText = it },
                     selectedFilter = selectedFilter,
                     onFilterClick = { selectedFilter = it },
-                    total = MockTournaments.tournaments.size
+                    total = if (isAdmin) 24 else MockTournaments.tournaments.size,
+                    userRole = userRole
                 )
             }
 
-            items(tournaments.size) { index ->
+            item {
+                EventsSectionTitle(
+                    userRole = userRole,
+                    canCreateEvent = canCreateEvent,
+                    onCreateEventClick = {
+                        navController.navigate(Screen.CreateEvent.route)
+                    }
+                )
+            }
+
+            items(tournaments) { tournament ->
                 TournamentCard(
-                    tournament = tournaments[index],
+                    tournament = tournament,
                     onClick = {
                         navController.navigate(
-                            Screen.TournamentDetail.createRoute(tournaments[index].id)
+                            Screen.TournamentDetail.createRoute(tournament.id)
                         )
                     }
                 )
@@ -125,8 +148,11 @@ private fun EventsHeader(
     onSearchChange: (String) -> Unit,
     selectedFilter: String,
     onFilterClick: (String) -> Unit,
-    total: Int
+    total: Int,
+    userRole: AthloUserRole
 ) {
+    val isAdmin = userRole == AthloUserRole.ADMIN
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.ExtraLarge),
@@ -140,27 +166,37 @@ private fun EventsHeader(
                     .background(AthloColors.Navy)
                     .padding(horizontal = 22.dp, vertical = 22.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Eventos",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "Eventos Disponíveis",
+                            text = "Eventos",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = if (isAdmin) {
+                                "Vista Global - $total torneios na plataforma"
+                            } else {
+                                "Eventos Disponíveis"
+                            },
                             color = Color(0xFF8DC5F0),
                             style = MaterialTheme.typography.titleMedium
                         )
+                    }
 
+                    if (isAdmin) {
+                        AdminBadge()
+                    } else {
                         StatusPill(
                             text = "$total torneios",
                             background = AthloColors.SuccessBg,
@@ -171,7 +207,9 @@ private fun EventsHeader(
             }
 
             Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)
+                modifier = Modifier
+                    .background(AthloColors.DarkNavy)
+                    .padding(horizontal = 18.dp, vertical = 18.dp)
             ) {
                 OutlinedTextField(
                     value = searchText,
@@ -212,6 +250,61 @@ private fun EventsHeader(
 }
 
 @Composable
+private fun EventsSectionTitle(
+    userRole: AthloUserRole,
+    canCreateEvent: Boolean,
+    onCreateEventClick: () -> Unit
+) {
+    val title = when (userRole) {
+        AthloUserRole.ADMIN -> "Todos os eventos"
+        AthloUserRole.ORGANIZER -> "Os meus eventos"
+        AthloUserRole.PLAYER -> "Eventos disponíveis"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        if (canCreateEvent) {
+            Button(
+                onClick = onCreateEventClick,
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.Blue
+                ),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Criar Evento",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.size(6.dp))
+
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = "Criar evento",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun FilterRows(
     selectedFilter: String,
     onFilterClick: (String) -> Unit
@@ -219,53 +312,34 @@ private fun FilterRows(
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChipPill("Todos", selectedFilter == "Todos") {
+                onFilterClick("Todos")
+            }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChipPill(
-                text = "Todos",
-                selected = selectedFilter == "Todos",
-                onClick = { onFilterClick("Todos") }
-            )
+            FilterChipPill("Agendado", selectedFilter == "Agendado") {
+                onFilterClick("Agendado")
+            }
 
-            FilterChipPill(
-                text = "Agendado",
-                selected = selectedFilter == "Agendado",
-                onClick = { onFilterClick("Agendado") }
-            )
-
-            FilterChipPill(
-                text = "A decorrer",
-                selected = selectedFilter == "A decorrer",
-                onClick = { onFilterClick("A decorrer") }
-            )
+            FilterChipPill("A decorrer", selectedFilter == "A decorrer") {
+                onFilterClick("A decorrer")
+            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChipPill(
-                text = "Em preparação",
-                selected = selectedFilter == "Em preparação",
-                onClick = { onFilterClick("Em preparação") }
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChipPill("Em preparação", selectedFilter == "Em preparação") {
+                onFilterClick("Em preparação")
+            }
 
-            FilterChipPill(
-                text = "Futebol",
-                selected = selectedFilter == "Futebol",
-                onClick = { onFilterClick("Futebol") }
-            )
+            FilterChipPill("Futebol", selectedFilter == "Futebol") {
+                onFilterClick("Futebol")
+            }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChipPill(
-                text = "Basquetebol",
-                selected = selectedFilter == "Basquetebol",
-                onClick = { onFilterClick("Basquetebol") }
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChipPill("Basquetebol", selectedFilter == "Basquetebol") {
+                onFilterClick("Basquetebol")
+            }
         }
     }
 }
@@ -360,9 +434,7 @@ private fun TournamentTags(tournament: Tournament) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusPill(
                 text = tournament.sport,
                 background = sportColor(tournament.sport),
@@ -376,9 +448,7 @@ private fun TournamentTags(tournament: Tournament) {
             )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusPill(
                 text = tournament.format,
                 background = AthloColors.NeutralBg,
@@ -406,6 +476,32 @@ private fun StatusPill(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun AdminBadge() {
+    Row(
+        modifier = Modifier
+            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Admin",
+            tint = AthloColors.DarkNavy,
+            modifier = Modifier.size(14.dp)
+        )
+
+        Spacer(modifier = Modifier.size(4.dp))
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -445,89 +541,3 @@ private fun statusTextColor(status: String): Color {
         else -> AthloColors.TextSecondary
     }
 }
-
-@Composable
-private fun EventsBottomBar(navController: NavController) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 10.dp,
-        modifier = Modifier
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-            .navigationBarsPadding()
-            .clip(RoundedCornerShape(28.dp))
-    ) {
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Home.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = "Início"
-                )
-            },
-            label = { Text("Início") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = true,
-            onClick = { },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = "Eventos"
-                )
-            },
-            label = { Text("Eventos") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Teams.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Groups,
-                    contentDescription = "Equipas"
-                )
-            },
-            label = { Text("Equipas") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Stats.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.BarChart,
-                    contentDescription = "Stats"
-                )
-            },
-            label = { Text("Stats") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Notifications.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notificações"
-                )
-            },
-            label = { Text("Notif.") },
-            colors = bottomBarItemColors()
-        )
-    }
-}
-
-@Composable
-private fun bottomBarItemColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = AthloColors.Blue,
-    selectedTextColor = AthloColors.Blue,
-    indicatorColor = AthloColors.SoftBlue,
-    unselectedIconColor = AthloColors.TextMuted,
-    unselectedTextColor = AthloColors.TextMuted
-)

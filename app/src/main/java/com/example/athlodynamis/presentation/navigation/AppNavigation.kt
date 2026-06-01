@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.screens.auth.LoginScreen
 import com.example.athlodynamis.presentation.screens.auth.RegisterScreen
 import com.example.athlodynamis.presentation.screens.events.AddMatchScreen
@@ -22,6 +23,7 @@ import com.example.athlodynamis.presentation.screens.home.HomeScreen
 import com.example.athlodynamis.presentation.screens.management.ManagementScreen
 import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
 import com.example.athlodynamis.presentation.screens.notifications.NotificationsScreen
+import com.example.athlodynamis.presentation.screens.offline.OfflineScreen
 import com.example.athlodynamis.presentation.screens.onboarding.OnboardingScreen
 import com.example.athlodynamis.presentation.screens.profile.EditProfileScreen
 import com.example.athlodynamis.presentation.screens.profile.ProfileScreen
@@ -30,11 +32,33 @@ import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
+import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
+import com.example.athlodynamis.presentation.screens.teams.AddPlayersScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
+
+    /*
+     * TEMPORÁRIO PARA TESTAR:
+     *
+     * ADMIN -> vê Home/Admin, Eventos/Admin e tab Gestão
+     * ORGANIZER -> vê Home/Organizador e Eventos/Organizador
+     * PLAYER -> vê Home/Jogador e Eventos/Jogador
+     *
+     * Depois isto vem do login/ViewModel.
+     */
+    val currentUserRole = AthloUserRole.PLAYER
+
+    /*
+     * TEMPORÁRIO:
+     * Se quiseres testar a Home offline do jogador:
+     *
+     * val currentUserRole = AthloUserRole.PLAYER
+     * val isOffline = true
+     */
+    val isOffline = false
 
     val sharedPreferences = remember {
         context.getSharedPreferences("athlo_preferences", Context.MODE_PRIVATE)
@@ -102,15 +126,33 @@ fun AppNavigation() {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
+            if (isOffline && currentUserRole == AthloUserRole.PLAYER) {
+                OfflineScreen(navController = navController)
+            } else {
+                HomeScreen(
+                    navController = navController,
+                    userRole = currentUserRole
+                )
+            }
+        }
+
+        composable(Screen.Offline.route) {
+            OfflineScreen(navController = navController)
         }
 
         composable(Screen.Management.route) {
             ManagementScreen(navController = navController)
         }
 
+        composable(Screen.PendingRequests.route) {
+            PendingRequestsScreen(navController = navController)
+        }
+
         composable(Screen.Events.route) {
-            EventsScreen(navController = navController)
+            EventsScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(Screen.CreateEvent.route) {
@@ -129,7 +171,8 @@ fun AppNavigation() {
 
             EditEventScreen(
                 navController = navController,
-                eventId = eventId
+                eventId = eventId,
+                userRole = currentUserRole
             )
         }
 
@@ -145,7 +188,8 @@ fun AppNavigation() {
 
             TournamentDetailScreen(
                 tournamentId = tournamentId,
-                navController = navController
+                navController = navController,
+                userRole = currentUserRole
             )
         }
 
@@ -161,7 +205,8 @@ fun AppNavigation() {
 
             AddMatchScreen(
                 navController = navController,
-                eventId = eventId
+                eventId = eventId,
+                userRole = currentUserRole
             )
         }
 
@@ -177,7 +222,8 @@ fun AppNavigation() {
 
             EditMatchScreen(
                 navController = navController,
-                matchId = matchId
+                matchId = matchId,
+                userRole = currentUserRole
             )
         }
 
@@ -193,7 +239,8 @@ fun AppNavigation() {
 
             ManageLiveMatchScreen(
                 navController = navController,
-                matchId = matchId
+                matchId = matchId,
+                userRole = currentUserRole
             )
         }
 
@@ -209,12 +256,16 @@ fun AppNavigation() {
 
             MatchDetailScreen(
                 matchId = matchId,
-                navController = navController
+                navController = navController,
+                userRole = currentUserRole
             )
         }
 
         composable(Screen.Teams.route) {
-            TeamsScreen(navController = navController)
+            TeamsScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(
@@ -229,7 +280,8 @@ fun AppNavigation() {
 
             TeamDetailScreen(
                 navController = navController,
-                teamId = teamId
+                teamId = teamId,
+                userRole = currentUserRole
             )
         }
 
@@ -254,7 +306,10 @@ fun AppNavigation() {
         }
 
         composable(Screen.Stats.route) {
-            StatsScreen(navController = navController)
+            StatsScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(Screen.Notifications.route) {
@@ -262,11 +317,31 @@ fun AppNavigation() {
         }
 
         composable(Screen.Profile.route) {
-            ProfileScreen(navController = navController)
+            ProfileScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(Screen.EditProfile.route) {
             EditProfileScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.AddPlayers.route,
+            arguments = listOf(
+                navArgument("teamId") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+            val teamId = backStackEntry.arguments?.getInt("teamId") ?: 1
+
+            AddPlayersScreen(
+                navController = navController,
+                teamId = teamId,
+                userRole = currentUserRole
+            )
         }
     }
 }

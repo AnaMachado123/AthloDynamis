@@ -50,4 +50,12 @@ sealed class Screen(val route: String) {
     data object ManageLiveMatch : Screen("manage_live_match/{matchId}") {
         fun createRoute(matchId: String): String = "manage_live_match/$matchId"
     }
+
+    data object Offline : Screen("offline")
+
+    data object PendingRequests : Screen("pending_requests")
+
+    data object AddPlayers : Screen("add_players/{teamId}") {
+        fun createRoute(teamId: Int): String = "add_players/$teamId"
+    }
 }

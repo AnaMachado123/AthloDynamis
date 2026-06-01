@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,61 +20,51 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import com.example.athlodynamis.presentation.components.AthloBottomBar
-
-enum class UserRole {
-    ORGANIZER,
-    PLAYER
-}
 
 data class DashboardStat(
     val value: String,
     val label: String
 )
 
-@Composable
-fun HomeScreen(navController: NavController) {
-    /*
-     * Para testar:
-     * UserRole.ORGANIZER = ecrã do organizador
-     * UserRole.PLAYER = ecrã do jogador
-     *
-     * Depois, quando houver login real, isto passa a vir do utilizador autenticado.
-     */
-    val userRole = remember { UserRole.ORGANIZER }
+data class RecentUser(
+    val position: Int,
+    val initials: String,
+    val name: String,
+    val time: String,
+    val color: Color
+)
 
+@Composable
+fun HomeScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     Scaffold(
         containerColor = AthloColors.Background,
         floatingActionButton = {
-            if (userRole == UserRole.ORGANIZER) {
+            if (userRole == AthloUserRole.ORGANIZER) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(Screen.CreateTeam.route)
@@ -92,7 +83,8 @@ fun HomeScreen(navController: NavController) {
         bottomBar = {
             AthloBottomBar(
                 navController = navController,
-                currentRoute = Screen.Home.route
+                currentRoute = Screen.Home.route,
+                userRole = userRole
             )
         }
     ) { innerPadding ->
@@ -100,15 +92,18 @@ fun HomeScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .navigationBarsPadding()
                 .padding(horizontal = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(6.dp))
 
                 when (userRole) {
-                    UserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
-                    UserRole.PLAYER -> PlayerHomeContent(navController = navController)
+                    AthloUserRole.ADMIN -> AdminHomeContent(navController = navController)
+                    AthloUserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
+                    AthloUserRole.PLAYER -> PlayerHomeContent(navController = navController)
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -117,11 +112,181 @@ fun HomeScreen(navController: NavController) {
     }
 }
 
+/* ---------------------------------------------------------
+   ADMIN HOME
+--------------------------------------------------------- */
+
+@Composable
+private fun AdminHomeContent(
+    navController: NavController
+) {
+    DashboardHeader(
+        name = "Gonçalo Magalhães",
+        initials = "GM",
+        stats = listOf(
+            DashboardStat("24", "Eventos"),
+            DashboardStat("1.2K", "Utilizadores"),
+            DashboardStat("18", "Organizadores")
+        ),
+        showAdminBadge = true,
+        onProfileClick = {
+            navController.navigate(Screen.Profile.route)
+        }
+    )
+
+    Spacer(modifier = Modifier.height(28.dp))
+
+    PendingRequestsCard()
+
+    Spacer(modifier = Modifier.height(26.dp))
+
+    SectionTitle(title = "Últimos registos")
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    RecentRegistrationsCard()
+}
+
+@Composable
+private fun PendingRequestsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7CC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(Color(0xFFFFD928), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.WarningAmber,
+                    contentDescription = "Pedidos pendentes",
+                    tint = Color(0xFF6B5A00),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(start = 16.dp)
+            ) {
+                Text(
+                    text = "3 pedidos pendentes",
+                    color = Color(0xFF7A5B00),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = "Aprovação de organizadores",
+                    color = Color(0xFFB48A00),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentRegistrationsCard() {
+    val users = listOf(
+        RecentUser(1, "JS", "João Santos", "há 2h", Color(0xFFD7EBFF)),
+        RecentUser(2, "CS", "Carlos Silva", "há 3h", Color(0xFFF8FFB0)),
+        RecentUser(3, "MP", "Miguel Pinto", "há 8h", Color(0xFFDFF3D8)),
+        RecentUser(4, "AF", "Ana Ferreira", "há 1d", Color(0xFFE3D7FF))
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            users.forEachIndexed { index, user ->
+                RecentUserRow(user = user)
+
+                if (index < users.lastIndex) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFE5E7EB))
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentUserRow(user: RecentUser) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = user.position.toString(),
+            color = AthloColors.TextMuted,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(28.dp)
+        )
+
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(user.color, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = user.initials,
+                color = AthloColors.Blue,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+
+        Column(
+            modifier = Modifier.padding(start = 14.dp)
+        ) {
+            Text(
+                text = user.name,
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = user.time,
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+/* ---------------------------------------------------------
+   ORGANIZER HOME
+--------------------------------------------------------- */
+
 @Composable
 private fun OrganizerHomeContent(
     navController: NavController
 ) {
-
     DashboardHeader(
         name = "Gonçalo Magalhães",
         initials = "GM",
@@ -130,6 +295,7 @@ private fun OrganizerHomeContent(
             DashboardStat("3", "Jogos hoje"),
             DashboardStat("348", "Atletas")
         ),
+        showAdminBadge = false,
         onProfileClick = {
             navController.navigate(Screen.Profile.route)
         }
@@ -165,9 +331,7 @@ private fun OrganizerHomeContent(
         title = "Torneio de Braga",
         tags = listOf("Futebol", "A decorrer", "Grupos"),
         onClick = {
-            navController.navigate(
-                Screen.TournamentDetail.createRoute("2")
-            )
+            navController.navigate(Screen.TournamentDetail.createRoute("2"))
         }
     )
 
@@ -178,15 +342,19 @@ private fun OrganizerHomeContent(
         title = "Torneio Regional Basquetebol",
         tags = listOf("Basquetebol", "Em preparação", "Eliminatórias"),
         onClick = {
-            navController.navigate(
-                Screen.TournamentDetail.createRoute("3")
-            )
+            navController.navigate(Screen.TournamentDetail.createRoute("3"))
         }
     )
 }
 
+/* ---------------------------------------------------------
+   PLAYER HOME
+--------------------------------------------------------- */
+
 @Composable
-private fun PlayerHomeContent(navController: NavController){
+private fun PlayerHomeContent(
+    navController: NavController
+) {
     DashboardHeader(
         name = "Gonçalo Magalhães",
         initials = "GM",
@@ -195,6 +363,7 @@ private fun PlayerHomeContent(navController: NavController){
             DashboardStat("19", "Golos"),
             DashboardStat("3", "Troféus")
         ),
+        showAdminBadge = false,
         onProfileClick = {
             navController.navigate(Screen.Profile.route)
         }
@@ -214,7 +383,9 @@ private fun PlayerHomeContent(navController: NavController){
         scoreB = "-",
         status = "Agendado",
         minute = "",
-        onClick = {}
+        onClick = {
+            navController.navigate(Screen.MatchDetail.createRoute("1"))
+        }
     )
 
     Spacer(modifier = Modifier.height(22.dp))
@@ -244,11 +415,16 @@ private fun PlayerHomeContent(navController: NavController){
     )
 }
 
+/* ---------------------------------------------------------
+   SHARED COMPONENTS
+--------------------------------------------------------- */
+
 @Composable
 private fun DashboardHeader(
     name: String,
     initials: String,
     stats: List<DashboardStat>,
+    showAdminBadge: Boolean,
     onProfileClick: () -> Unit
 ) {
     Card(
@@ -267,7 +443,9 @@ private fun DashboardHeader(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = "Bom dia",
                         color = Color(0xFFBBD7EF),
@@ -276,12 +454,22 @@ private fun DashboardHeader(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    Text(
-                        text = name,
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = name,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+
+                        if (showAdminBadge) {
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            AdminBadge()
+                        }
+                    }
                 }
 
                 Box(
@@ -314,6 +502,32 @@ private fun DashboardHeader(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AdminBadge() {
+    Row(
+        modifier = Modifier
+            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Admin",
+            tint = AthloColors.DarkNavy,
+            modifier = Modifier.size(13.dp)
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }
 
@@ -375,7 +589,7 @@ private fun LiveMatchCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick()},
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -473,7 +687,7 @@ private fun EventCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {onClick()},
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -682,89 +896,3 @@ private fun StatusPill(
         )
     }
 }
-
-@Composable
-private fun AthloBottomBar(navController: NavController) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 10.dp,
-        modifier = Modifier
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-            .navigationBarsPadding()
-            .clip(RoundedCornerShape(28.dp))
-    ) {
-        NavigationBarItem(
-            selected = true,
-            onClick = { },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = "Início"
-                )
-            },
-            label = { Text("Início") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Events.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = "Eventos"
-                )
-            },
-            label = { Text("Eventos") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Teams.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Groups,
-                    contentDescription = "Equipas"
-                )
-            },
-            label = { Text("Equipas") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Stats.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.BarChart,
-                    contentDescription = "Stats"
-                )
-            },
-            label = { Text("Stats") },
-            colors = bottomBarItemColors()
-        )
-
-        NavigationBarItem(
-            selected = false,
-            onClick = { navController.navigate(Screen.Notifications.route) },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notificações"
-                )
-            },
-            label = { Text("Notif.") },
-            colors = bottomBarItemColors()
-        )
-    }
-}
-
-@Composable
-private fun bottomBarItemColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = AthloColors.Blue,
-    selectedTextColor = AthloColors.Blue,
-    indicatorColor = AthloColors.SoftBlue,
-    unselectedIconColor = AthloColors.TextMuted,
-    unselectedTextColor = AthloColors.TextMuted
-)

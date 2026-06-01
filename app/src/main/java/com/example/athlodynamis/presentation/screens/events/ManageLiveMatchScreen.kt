@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,18 +21,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,16 +47,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.navigation.Screen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageLiveMatchScreen(
     navController: NavController,
-    matchId: String
+    matchId: String,
+    userRole: AthloUserRole
 ) {
-    var scoreA by remember { mutableStateOf(1) }
-    var scoreB by remember { mutableStateOf(0) }
+    val currentMatchId = matchId
+
+    var scoreA by remember { mutableIntStateOf(1) }
+    var scoreB by remember { mutableIntStateOf(0) }
+
+    var selectedGoalTeam by remember { mutableStateOf("Equipa 3") }
+    var selectedPlayer by remember { mutableStateOf("Carlos Silva") }
+
+    var showPlayerPicker by remember { mutableStateOf(false) }
+    var showGoalSuccess by remember { mutableStateOf(false) }
+
+    var lastGoalEvent by remember {
+        mutableStateOf<LiveMatchEvent?>(null)
+    }
+
     var events by remember {
         mutableStateOf(
             listOf(
@@ -65,7 +89,14 @@ fun ManageLiveMatchScreen(
     }
 
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Events.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -79,7 +110,11 @@ fun ManageLiveMatchScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             ManageMatchHeader(
-                onBackClick = { navController.popBackStack() }
+                matchId = currentMatchId,
+                userRole = userRole,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
 
             LiveScoreCard(
@@ -95,13 +130,9 @@ fun ManageLiveMatchScreen(
                     text = "Golo Equipa 3",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        scoreA += 1
-                        events = events + LiveMatchEvent(
-                            minute = "42'",
-                            type = "Golo",
-                            player = "Jogador Equipa 3",
-                            team = "Equipa 3"
-                        )
+                        selectedGoalTeam = "Equipa 3"
+                        selectedPlayer = "Carlos Silva"
+                        showPlayerPicker = true
                     }
                 )
 
@@ -109,13 +140,9 @@ fun ManageLiveMatchScreen(
                     text = "Golo Equipa 4",
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        scoreB += 1
-                        events = events + LiveMatchEvent(
-                            minute = "42'",
-                            type = "Golo",
-                            player = "Jogador Equipa 4",
-                            team = "Equipa 4"
-                        )
+                        selectedGoalTeam = "Equipa 4"
+                        selectedPlayer = "Carlos Silva"
+                        showPlayerPicker = true
                     }
                 )
             }
@@ -124,6 +151,63 @@ fun ManageLiveMatchScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showPlayerPicker) {
+        GoalPlayerPickerSheet(
+            team = selectedGoalTeam,
+            selectedPlayer = selectedPlayer,
+            onPlayerSelected = {
+                selectedPlayer = it
+            },
+            onDismiss = {
+                showPlayerPicker = false
+            },
+            onConfirm = {
+                showPlayerPicker = false
+
+                if (selectedGoalTeam == "Equipa 3") {
+                    scoreA += 1
+                } else {
+                    scoreB += 1
+                }
+
+                val newGoal = LiveMatchEvent(
+                    minute = "43'",
+                    type = "Golo",
+                    player = selectedPlayer,
+                    team = selectedGoalTeam
+                )
+
+                lastGoalEvent = newGoal
+                events = events + newGoal
+                showGoalSuccess = true
+            }
+        )
+    }
+
+    if (showGoalSuccess && lastGoalEvent != null) {
+        GoalSuccessSheet(
+            goalEvent = lastGoalEvent!!,
+            scoreA = scoreA,
+            scoreB = scoreB,
+            onUndo = {
+                lastGoalEvent?.let { goal ->
+                    if (goal.team == "Equipa 3") {
+                        scoreA = (scoreA - 1).coerceAtLeast(0)
+                    } else {
+                        scoreB = (scoreB - 1).coerceAtLeast(0)
+                    }
+                }
+
+                events = events.dropLast(1)
+                lastGoalEvent = null
+                showGoalSuccess = false
+            },
+            onContinue = {
+                showGoalSuccess = false
+            }
+        )
     }
 }
 
@@ -136,8 +220,12 @@ data class LiveMatchEvent(
 
 @Composable
 private fun ManageMatchHeader(
+    matchId: String,
+    userRole: AthloUserRole,
     onBackClick: () -> Unit
 ) {
+    val isAdmin = userRole == AthloUserRole.ADMIN
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.ExtraLarge),
@@ -156,7 +244,9 @@ private fun ManageMatchHeader(
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                    modifier = Modifier.clickable {
+                        onBackClick()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -175,36 +265,20 @@ private fun ManageMatchHeader(
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
+
+                Text(
+                    text = "Jogo #$matchId",
+                    color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
 
-            AdminBadge(modifier = Modifier.align(Alignment.TopEnd))
+            if (isAdmin) {
+                AdminBadge(
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun AdminBadge(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
-            tint = AthloColors.DarkNavy,
-            modifier = Modifier.size(14.dp)
-        )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        Text(
-            text = "ADMIN",
-            color = AthloColors.DarkNavy,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.ExtraBold
-        )
     }
 }
 
@@ -238,7 +312,9 @@ private fun LiveScoreCard(
                 TeamSide(
                     acronym = "EQP",
                     name = "Equipa 3",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    background = Color(0xFFF8FFB0),
+                    textColor = Color(0xFFD4DD00)
                 )
 
                 ScoreBox(score = scoreA.toString())
@@ -255,11 +331,22 @@ private fun LiveScoreCard(
                 TeamSide(
                     acronym = "EQP",
                     name = "Equipa 4",
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    background = Color(0xFFFFEFD7),
+                    textColor = Color(0xFF9A6B22)
                 )
             }
 
             Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "• 38’",
+                color = Color(0xFFC83755),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             StatusPill(
                 text = "A decorrer",
@@ -274,7 +361,9 @@ private fun LiveScoreCard(
 private fun TeamSide(
     acronym: String,
     name: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    background: Color,
+    textColor: Color
 ) {
     Column(
         modifier = modifier,
@@ -283,12 +372,12 @@ private fun TeamSide(
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(AthloColors.WarningBg, RoundedCornerShape(14.dp)),
+                .background(background, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = acronym,
-                color = AthloColors.Blue,
+                color = textColor,
                 fontWeight = FontWeight.ExtraBold
             )
         }
@@ -312,35 +401,46 @@ private fun GoalButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(60.dp),
+        modifier = modifier.height(64.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Navy),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AthloColors.Navy
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = text,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = text,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
 
-        Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-        Text(
-            text = text,
-            color = Color.White,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
+            Text(
+                text = text,
+                color = Color.White,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
 @Composable
-private fun EventsOfGameCard(events: List<LiveMatchEvent>) {
+private fun EventsOfGameCard(
+    events: List<LiveMatchEvent>
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
-        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFBFAF5)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -365,7 +465,9 @@ private fun EventsOfGameCard(events: List<LiveMatchEvent>) {
 }
 
 @Composable
-private fun LiveEventRow(event: LiveMatchEvent) {
+private fun LiveEventRow(
+    event: LiveMatchEvent
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -411,14 +513,332 @@ private fun LiveEventRow(event: LiveMatchEvent) {
 
         StatusPill(
             text = event.team,
-            background = AthloColors.WarningBg,
-            textColor = Color(0xFF9A6B22)
+            background = if (event.team == "Equipa 3") {
+                Color(0xFFF8FFB0)
+            } else {
+                Color(0xFFFFEFD7)
+            },
+            textColor = if (event.team == "Equipa 3") {
+                Color(0xFFD4DD00)
+            } else {
+                Color(0xFF9A6B22)
+            }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ScoreBox(score: String) {
+private fun GoalPlayerPickerSheet(
+    team: String,
+    selectedPlayer: String,
+    onPlayerSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
+    val players = listOf(
+        "João Santos",
+        "Carlos Silva",
+        "Miguel Pinto",
+        "Ana Ferreira",
+        "Rui Moreira",
+        "Diana Santos"
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(
+            topStart = 28.dp,
+            topEnd = 28.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = "Quem marcou o golo?",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Seleciona o jogador marcador",
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            StatusPill(
+                text = "$team · 43'",
+                background = AthloColors.SoftBlue,
+                textColor = AthloColors.Blue
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            players.forEachIndexed { index, player ->
+                PlayerPickerRow(
+                    position = index + 1,
+                    player = player,
+                    selected = selectedPlayer == player,
+                    onClick = {
+                        onPlayerSelected(player)
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.Navy
+                )
+            ) {
+                Text(
+                    text = "Confirmar golo - $selectedPlayer",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun PlayerPickerRow(
+    position: Int,
+    player: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = position.toString(),
+            color = AthloColors.TextMuted,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.width(28.dp)
+        )
+
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(
+                    if (selected) {
+                        AthloColors.Blue
+                    } else {
+                        Color(0xFFD7EBFF)
+                    },
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = player.initials(),
+                color = if (selected) {
+                    Color.White
+                } else {
+                    AthloColors.Blue
+                },
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Text(
+            text = player,
+            color = AthloColors.TextPrimary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (selected) {
+                FontWeight.ExtraBold
+            } else {
+                FontWeight.Medium
+            },
+            modifier = Modifier.padding(start = 14.dp)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color(0xFFE5E7EB))
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GoalSuccessSheet(
+    goalEvent: LiveMatchEvent,
+    scoreA: Int,
+    scoreB: Int,
+    onUndo: () -> Unit,
+    onContinue: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onContinue,
+        sheetState = sheetState,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(
+            topStart = 28.dp,
+            topEnd = 28.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp, vertical = 26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(104.dp)
+                    .background(AthloColors.SuccessBg, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Golo registado",
+                    tint = Color(0xFF4D8B4A),
+                    modifier = Modifier.size(52.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Golo registado!",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "O marcador foi atualizado",
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Row(
+                modifier = Modifier
+                    .background(
+                        AthloColors.NeutralBg,
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SportsSoccer,
+                    contentDescription = "Golo",
+                    tint = Color(0xFF4D8B4A),
+                    modifier = Modifier.size(18.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column {
+                    Text(
+                        text = goalEvent.player,
+                        color = AthloColors.TextPrimary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "${goalEvent.team} · ${goalEvent.minute}",
+                        color = AthloColors.TextMuted,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(18.dp))
+
+                Text(
+                    text = "$scoreA - $scoreB",
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onUndo,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AthloColors.NeutralBg
+                    )
+                ) {
+                    Text(
+                        text = "Desfazer",
+                        color = AthloColors.TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Button(
+                    onClick = onContinue,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AthloColors.Navy
+                    )
+                ) {
+                    Text(
+                        text = "Continuar",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun ScoreBox(
+    score: String
+) {
     Box(
         modifier = Modifier
             .background(AthloColors.Navy, RoundedCornerShape(12.dp))
@@ -453,4 +873,41 @@ private fun StatusPill(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+@Composable
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Admin",
+            tint = AthloColors.DarkNavy,
+            modifier = Modifier.size(14.dp)
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
+private fun String.initials(): String {
+    return split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") {
+            it.first().uppercase()
+        }
 }

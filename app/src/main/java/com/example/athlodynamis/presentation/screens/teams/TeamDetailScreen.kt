@@ -53,20 +53,25 @@ import androidx.navigation.NavController
 import com.example.athlodynamis.data.mock.MockPlayers
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.domain.model.Team
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 
 @Composable
 fun TeamDetailScreen(
     navController: NavController,
-    teamId: Int
+    teamId: Int,
+    userRole: AthloUserRole
 ) {
     val viewModel: TeamsViewModel = viewModel()
     val teams by viewModel.teams.collectAsState()
 
     val team = teams.firstOrNull { it.id == teamId }
+    val isAdmin = userRole == AthloUserRole.ADMIN
+    val canManageTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
     if (team == null) {
         TeamNotFoundScreen(
@@ -80,7 +85,14 @@ fun TeamDetailScreen(
     }
 
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Teams.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -89,7 +101,7 @@ fun TeamDetailScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
-            contentPadding = PaddingValues(bottom = 96.dp)
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -97,7 +109,10 @@ fun TeamDetailScreen(
                 DetailHeader(
                     title = "Equipas",
                     subtitle = "Detalhes da equipa",
-                    onBackClick = { navController.popBackStack() }
+                    isAdmin = isAdmin,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
                 )
             }
 
@@ -115,19 +130,28 @@ fun TeamDetailScreen(
                 }
             } else {
                 items(players) { player ->
-                    PlayerRow(player = player)
+                    PlayerRow(
+                        player = player,
+                        canRemovePlayer = canManageTeam
+                    )
                 }
             }
 
-            item {
-                ActionButtons(
-                    onAddPlayerClick = {
-                        // Futuramente: navegar para AddPlayersScreen
-                    },
-                    onEditTeamClick = {
-                        navController.navigate(Screen.EditTeam.createRoute(team.id))
-                    }
-                )
+            if (canManageTeam) {
+                item {
+                    ActionButtons(
+                        onAddPlayerClick = {
+                            navController.navigate(
+                                Screen.AddPlayers.createRoute(team.id)
+                            )
+                        },
+                        onEditTeamClick = {
+                            navController.navigate(
+                                Screen.EditTeam.createRoute(team.id)
+                            )
+                        }
+                    )
+                }
             }
 
             item {
@@ -159,7 +183,21 @@ fun TeamDetailScreen(
             }
 
             item {
-                DeleteTeamButton()
+                RegisteredEventCard(
+                    date = "22 jul - 25 jul",
+                    title = "Torneio Regional Basquetebol",
+                    tags = listOf("Basquetebol", "Em preparação", "Eliminatórias")
+                )
+            }
+
+            if (isAdmin) {
+                item {
+                    DeleteTeamButton()
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -169,6 +207,7 @@ fun TeamDetailScreen(
 private fun DetailHeader(
     title: String,
     subtitle: String,
+    isAdmin: Boolean,
     onBackClick: () -> Unit
 ) {
     Card(
@@ -177,58 +216,56 @@ private fun DetailHeader(
         colors = CardDefaults.cardColors(containerColor = AthloColors.DarkNavy),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(AthloColors.Navy)
-                    .padding(horizontal = 22.dp, vertical = 22.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "‹ voltar",
-                        color = Color(0xFF8EC5F4),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .padding(bottom = 12.dp)
-                            .clickable { onBackClick() }
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column {
-                            Text(
-                                text = title,
-                                color = Color.White,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = subtitle,
-                                color = Color(0xFF8EC5F4),
-                                style = MaterialTheme.typography.titleMedium
-                            )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AthloColors.Navy)
+                .padding(horizontal = 22.dp, vertical = 22.dp)
+        ) {
+            Column {
+                Text(
+                    text = "‹ voltar",
+                    color = Color(0xFF8EC5F4),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .clickable {
+                            onBackClick()
                         }
+                )
 
-                        AdminBadge()
-                    }
-                }
+                Text(
+                    text = title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = subtitle,
+                    color = Color(0xFF8EC5F4),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            if (isAdmin) {
+                AdminBadge(
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AdminBadge() {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -333,7 +370,10 @@ private fun SectionTitle(title: String) {
 }
 
 @Composable
-private fun PlayerRow(player: Player) {
+private fun PlayerRow(
+    player: Player,
+    canRemovePlayer: Boolean
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Medium),
@@ -381,18 +421,20 @@ private fun PlayerRow(player: Player) {
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(AthloColors.DangerBg, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remover jogador",
-                    tint = Color(0xFFCC1F2F),
-                    modifier = Modifier.size(18.dp)
-                )
+            if (canRemovePlayer) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(AthloColors.DangerBg, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remover jogador",
+                        tint = Color(0xFFCC1F2F),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -755,8 +797,11 @@ private fun tagBackground(tag: String): Color {
         "Futebol" -> AthloColors.SuccessBg
         "A decorrer" -> AthloColors.SuccessBg
         "Agendado" -> Color(0xFFD7EBFF)
+        "Basquetebol" -> AthloColors.WarningBg
+        "Em preparação" -> AthloColors.WarningBg
         "Grupos" -> AthloColors.NeutralBg
         "Liga" -> AthloColors.NeutralBg
+        "Eliminatórias" -> AthloColors.NeutralBg
         else -> AthloColors.NeutralBg
     }
 }
@@ -767,6 +812,8 @@ private fun tagTextColor(tag: String): Color {
         "Futebol" -> Color(0xFF3F7A28)
         "A decorrer" -> Color(0xFF3F7A28)
         "Agendado" -> AthloColors.Blue
+        "Basquetebol" -> Color(0xFF9A6B22)
+        "Em preparação" -> Color(0xFF9A6B22)
         else -> AthloColors.TextSecondary
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,14 +47,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.navigation.Screen
 
 @Composable
 fun EditEventScreen(
     navController: NavController,
-    eventId: String
+    eventId: String,
+    userRole: AthloUserRole
 ) {
+    val currentEventId = eventId
+    val isAdmin = userRole == AthloUserRole.ADMIN
+
     var eventName by remember { mutableStateOf("Torneio de Ténis Distrital") }
     var selectedSport by remember { mutableStateOf("Ténis") }
     var selectedFormat by remember { mutableStateOf("Liga") }
@@ -66,7 +74,14 @@ fun EditEventScreen(
     var team2Checked by remember { mutableStateOf(true) }
 
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Events.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -79,10 +94,14 @@ fun EditEventScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            AdminEventHeader(
+            EventEditHeader(
                 title = "Editar Evento",
                 backText = "‹ cancelar",
-                onBackClick = { navController.popBackStack() }
+                isAdmin = isAdmin,
+                eventId = currentEventId,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
 
             Card(
@@ -91,9 +110,15 @@ fun EditEventScreen(
                 colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(
+                    modifier = Modifier.padding(24.dp)
+                ) {
                     FieldLabel("Nome do torneio")
-                    AthloTextField(eventName, { eventName = it }, "Nome do torneio")
+                    AthloTextField(
+                        value = eventName,
+                        onValueChange = { eventName = it },
+                        placeholder = "Nome do torneio"
+                    )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
@@ -115,22 +140,36 @@ fun EditEventScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Column(modifier = Modifier.weight(1f)) {
                             FieldLabel("Data início")
-                            AthloTextField(startDate, { startDate = it }, "Data início")
+                            AthloTextField(
+                                value = startDate,
+                                onValueChange = { startDate = it },
+                                placeholder = "Data início"
+                            )
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
                             FieldLabel("Data fim")
-                            AthloTextField(endDate, { endDate = it }, "Data fim")
+                            AthloTextField(
+                                value = endDate,
+                                onValueChange = { endDate = it },
+                                placeholder = "Data fim"
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
 
                     FieldLabel("Local")
-                    AthloTextField(location, { location = it }, "Local")
+                    AthloTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        placeholder = "Local"
+                    )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
@@ -157,43 +196,79 @@ fun EditEventScreen(
                         text = "Equipa 2"
                     )
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    if (isAdmin) {
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Mudar Organizador")
-                    AthloDropdown(
-                        selectedValue = organizer,
-                        options = listOf("Carlos Moedas", "Carlos Mendes", "Ana Carvalho"),
-                        onValueSelected = { organizer = it }
-                    )
+                        FieldLabel("Mudar Organizador")
+                        AthloDropdown(
+                            selectedValue = organizer,
+                            options = listOf("Carlos Moedas", "Carlos Mendes", "Ana Carvalho"),
+                            onValueSelected = { organizer = it }
+                        )
+                    }
                 }
             }
 
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    navController.popBackStack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Blue),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.Blue
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                Icon(Icons.Default.Save, contentDescription = "Guardar", tint = Color.White)
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = "Guardar",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Guardar Alterações", color = Color.White, fontWeight = FontWeight.Bold)
+
+                Text(
+                    text = "Guardar Alterações",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
-            Button(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD01E1E)),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = "Apagar", tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Apagar evento", color = Color.White, fontWeight = FontWeight.Bold)
+            if (isAdmin) {
+                Button(
+                    onClick = {
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD01E1E)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Apagar",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Apagar evento",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -202,9 +277,11 @@ fun EditEventScreen(
 }
 
 @Composable
-private fun AdminEventHeader(
+private fun EventEditHeader(
     title: String,
     backText: String,
+    isAdmin: Boolean,
+    eventId: String,
     onBackClick: () -> Unit
 ) {
     Card(
@@ -225,7 +302,9 @@ private fun AdminEventHeader(
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                    modifier = Modifier.clickable {
+                        onBackClick()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -236,15 +315,27 @@ private fun AdminEventHeader(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
                 )
+
+                Text(
+                    text = "Evento #$eventId",
+                    color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
 
-            AdminBadge(modifier = Modifier.align(Alignment.TopEnd))
+            if (isAdmin) {
+                AdminBadge(
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun AdminBadge(modifier: Modifier = Modifier) {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
@@ -257,8 +348,15 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
+
         Spacer(modifier = Modifier.width(4.dp))
-        Text("ADMIN", color = AthloColors.DarkNavy, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold)
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }
 
@@ -292,7 +390,9 @@ private fun TeamCheckboxRow(
 }
 
 @Composable
-private fun FieldLabel(text: String) {
+private fun FieldLabel(
+    text: String
+) {
     Text(
         text = text,
         color = AthloColors.TextPrimary,
@@ -311,7 +411,9 @@ private fun AthloTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
+        placeholder = {
+            Text(placeholder)
+        },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -333,7 +435,9 @@ private fun AthloDropdown(
     options: List<String>,
     onValueSelected: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember {
+        mutableStateOf(false)
+    }
 
     Box {
         Row(
@@ -341,12 +445,18 @@ private fun AthloDropdown(
                 .fillMaxWidth()
                 .height(56.dp)
                 .background(Color.White, RoundedCornerShape(16.dp))
-                .clickable { expanded = true }
+                .clickable {
+                    expanded = true
+                }
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(selectedValue, color = AthloColors.TextPrimary, fontWeight = FontWeight.Medium)
+            Text(
+                text = selectedValue,
+                color = AthloColors.TextPrimary,
+                fontWeight = FontWeight.Medium
+            )
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
@@ -357,12 +467,19 @@ private fun AthloDropdown(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = {
+                expanded = false
+            },
             modifier = Modifier.background(Color.White)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option, color = AthloColors.TextPrimary) },
+                    text = {
+                        Text(
+                            text = option,
+                            color = AthloColors.TextPrimary
+                        )
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false
@@ -379,17 +496,35 @@ private fun ChoiceRows(
     selected: String,
     onSelected: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             options.take(3).forEach { option ->
-                ChoicePill(option, selected == option) { onSelected(option) }
+                ChoicePill(
+                    text = option,
+                    selected = selected == option,
+                    onClick = {
+                        onSelected(option)
+                    }
+                )
             }
         }
 
         if (options.size > 3) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 options.drop(3).forEach { option ->
-                    ChoicePill(option, selected == option) { onSelected(option) }
+                    ChoicePill(
+                        text = option,
+                        selected = selected == option,
+                        onClick = {
+                            onSelected(option)
+                        }
+                    )
                 }
             }
         }
@@ -404,13 +539,26 @@ private fun ChoicePill(
 ) {
     Box(
         modifier = Modifier
-            .background(if (selected) AthloColors.SoftBlue else AthloColors.NeutralBg, RoundedCornerShape(999.dp))
-            .clickable { onClick() }
+            .background(
+                if (selected) {
+                    AthloColors.SoftBlue
+                } else {
+                    AthloColors.NeutralBg
+                },
+                RoundedCornerShape(999.dp)
+            )
+            .clickable {
+                onClick()
+            }
             .padding(horizontal = 12.dp, vertical = 7.dp)
     ) {
         Text(
             text = text,
-            color = if (selected) AthloColors.Blue else AthloColors.TextSecondary,
+            color = if (selected) {
+                AthloColors.Blue
+            } else {
+                AthloColors.TextSecondary
+            },
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
         )

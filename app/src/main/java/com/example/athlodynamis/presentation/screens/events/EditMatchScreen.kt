@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,21 +44,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.navigation.Screen
 
 @Composable
 fun EditMatchScreen(
     navController: NavController,
-    matchId: String
+    matchId: String,
+    userRole: AthloUserRole
 ) {
+    val currentMatchId = matchId
+    val isAdmin = userRole == AthloUserRole.ADMIN
+
     var startDate by remember { mutableStateOf("26/04/2025") }
     var endDate by remember { mutableStateOf("30/04/2025") }
     var teamA by remember { mutableStateOf("Equipa 1") }
     var teamB by remember { mutableStateOf("Equipa 2") }
 
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Events.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -70,11 +85,15 @@ fun EditMatchScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            MatchAdminHeader(
+            MatchEditHeader(
                 title = "Editar Jogo",
                 subtitle = "Torneio de Braga",
                 backText = "‹ cancelar",
-                onBackClick = { navController.popBackStack() }
+                isAdmin = isAdmin,
+                matchId = currentMatchId,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
 
             Card(
@@ -86,7 +105,9 @@ fun EditMatchScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Column(modifier = Modifier.weight(1f)) {
                             FieldLabel("Data início")
                             DateBox(value = startDate)
@@ -104,7 +125,9 @@ fun EditMatchScreen(
                     TeamDropdown(
                         selectedValue = teamA,
                         options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
-                        onValueSelected = { teamA = it }
+                        onValueSelected = {
+                            teamA = it
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
@@ -113,24 +136,32 @@ fun EditMatchScreen(
                     TeamDropdown(
                         selectedValue = teamB,
                         options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
-                        onValueSelected = { teamB = it }
+                        onValueSelected = {
+                            teamB = it
+                        }
                     )
                 }
             }
 
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    navController.popBackStack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AthloColors.Blue),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.Blue
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Save,
                     contentDescription = "Guardar alterações",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -142,28 +173,36 @@ fun EditMatchScreen(
                 )
             }
 
-            Button(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD01E1E)),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Apagar jogo",
-                    tint = Color.White
-                )
+            if (isAdmin) {
+                Button(
+                    onClick = {
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD01E1E)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Apagar jogo",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                Text(
-                    text = "Apagar jogo",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                    Text(
+                        text = "Apagar jogo",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -172,10 +211,12 @@ fun EditMatchScreen(
 }
 
 @Composable
-private fun MatchAdminHeader(
+private fun MatchEditHeader(
     title: String,
     subtitle: String,
     backText: String,
+    isAdmin: Boolean,
+    matchId: String,
     onBackClick: () -> Unit
 ) {
     Card(
@@ -196,7 +237,9 @@ private fun MatchAdminHeader(
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                    modifier = Modifier.clickable {
+                        onBackClick()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -215,15 +258,27 @@ private fun MatchAdminHeader(
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
+
+                Text(
+                    text = "Jogo #$matchId",
+                    color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
 
-            AdminBadge(modifier = Modifier.align(Alignment.TopEnd))
+            if (isAdmin) {
+                AdminBadge(
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun AdminBadge(modifier: Modifier = Modifier) {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
@@ -249,7 +304,9 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FieldLabel(text: String) {
+private fun FieldLabel(
+    text: String
+) {
     Text(
         text = text,
         color = AthloColors.TextPrimary,
@@ -260,7 +317,9 @@ private fun FieldLabel(text: String) {
 }
 
 @Composable
-private fun DateBox(value: String) {
+private fun DateBox(
+    value: String
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -292,7 +351,9 @@ private fun TeamDropdown(
                 .fillMaxWidth()
                 .height(58.dp)
                 .background(Color.White, RoundedCornerShape(16.dp))
-                .clickable { expanded = true }
+                .clickable {
+                    expanded = true
+                }
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -313,7 +374,9 @@ private fun TeamDropdown(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = {
+                expanded = false
+            },
             modifier = Modifier.background(Color.White)
         ) {
             options.forEach { option ->

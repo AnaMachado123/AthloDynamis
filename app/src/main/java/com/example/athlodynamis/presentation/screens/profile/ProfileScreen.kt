@@ -22,11 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,45 +31,39 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 
-enum class ProfileRole {
-    PLAYER,
-    ORGANIZER,
-    ADMIN
-}
-
 @Composable
-fun ProfileScreen(navController: NavController) {
-    /*
-     * Para testar:
-     * ProfileRole.PLAYER = perfil jogador
-     * ProfileRole.ORGANIZER = perfil organizador
-     * ProfileRole.ADMIN = perfil admin
-     *
-     * Mais tarde isto vem do login.
-     */
-    val profileRole = remember { ProfileRole.PLAYER }
-
+fun ProfileScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     Scaffold(
-        containerColor = AthloColors.Background
+        containerColor = AthloColors.Background,
+        bottomBar = {
+            AthloBottomBar(
+                navController = navController,
+                currentRoute = Screen.Profile.route,
+                userRole = userRole
+            )
+        }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -81,13 +72,13 @@ fun ProfileScreen(navController: NavController) {
                 .navigationBarsPadding()
                 .padding(horizontal = 22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
-            contentPadding = PaddingValues(bottom = 40.dp)
+            contentPadding = PaddingValues(bottom = 104.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 ProfileHeader(
-                    role = profileRole,
+                    userRole = userRole,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
@@ -95,34 +86,14 @@ fun ProfileScreen(navController: NavController) {
                 )
             }
 
-            item {
-                ProfileTabsCard(role = profileRole)
-            }
-
-            item {
-                ContactCard()
-            }
-
-            when (profileRole) {
-                ProfileRole.PLAYER -> {
+            when (userRole) {
+                AthloUserRole.PLAYER -> {
                     item {
-                        SectionTitle("Últimos jogos")
-                    }
-
-                    item {
-                        LastGamesCard()
-                    }
-
-                    item {
-                        SectionTitle("Equipas inscritas")
-                    }
-
-                    item {
-                        TeamsCard()
+                        PlayerProfileTabs()
                     }
                 }
 
-                ProfileRole.ORGANIZER -> {
+                AthloUserRole.ORGANIZER -> {
                     item {
                         SectionTitle("Contacto")
                     }
@@ -138,9 +109,13 @@ fun ProfileScreen(navController: NavController) {
                     item {
                         AssociatedEventCard()
                     }
+
+                    item {
+                        LogoutButton()
+                    }
                 }
 
-                ProfileRole.ADMIN -> {
+                AthloUserRole.ADMIN -> {
                     item {
                         SectionTitle("Contacto")
                     }
@@ -160,11 +135,11 @@ fun ProfileScreen(navController: NavController) {
                     item {
                         SuspendOrganizerButton()
                     }
-                }
-            }
 
-            item {
-                LogoutButton()
+                    item {
+                        LogoutButton()
+                    }
+                }
             }
         }
     }
@@ -172,10 +147,12 @@ fun ProfileScreen(navController: NavController) {
 
 @Composable
 private fun ProfileHeader(
-    role: ProfileRole,
+    userRole: AthloUserRole,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
+    val isAdmin = userRole == AthloUserRole.ADMIN
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.ExtraLarge),
@@ -201,7 +178,7 @@ private fun ProfileHeader(
                     modifier = Modifier.clickable { onBackClick() }
                 )
 
-                if (role == ProfileRole.ADMIN) {
+                if (isAdmin) {
                     AdminBadge()
                 } else {
                     Text(
@@ -273,31 +250,31 @@ private fun ProfileHeader(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            RolePill(role = role)
+            RolePill(userRole = userRole)
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            ProfileStatsRow(role = role)
+            ProfileStatsRow(userRole = userRole)
         }
     }
 }
 
 @Composable
-private fun ProfileStatsRow(role: ProfileRole) {
-    val stats = when (role) {
-        ProfileRole.PLAYER -> listOf(
+private fun ProfileStatsRow(userRole: AthloUserRole) {
+    val stats = when (userRole) {
+        AthloUserRole.PLAYER -> listOf(
             "48" to "Jogos",
             "6" to "Troféus",
             "4" to "Equipas"
         )
 
-        ProfileRole.ORGANIZER -> listOf(
+        AthloUserRole.ORGANIZER -> listOf(
             "12" to "Eventos",
             "96" to "Jogos",
             "348" to "Atletas"
         )
 
-        ProfileRole.ADMIN -> listOf(
+        AthloUserRole.ADMIN -> listOf(
             "12" to "Eventos",
             "96" to "Jogos",
             "348" to "Atletas"
@@ -340,11 +317,11 @@ private fun ProfileStatsRow(role: ProfileRole) {
 }
 
 @Composable
-private fun RolePill(role: ProfileRole) {
-    val text = when (role) {
-        ProfileRole.PLAYER -> "Jogador"
-        ProfileRole.ORGANIZER -> "Organizador"
-        ProfileRole.ADMIN -> "Administrador"
+private fun RolePill(userRole: AthloUserRole) {
+    val text = when (userRole) {
+        AthloUserRole.PLAYER -> "Jogador"
+        AthloUserRole.ORGANIZER -> "Organizador"
+        AthloUserRole.ADMIN -> "Administrador"
     }
 
     Box(
@@ -363,37 +340,7 @@ private fun RolePill(role: ProfileRole) {
 }
 
 @Composable
-private fun AdminBadge() {
-    Row(
-        modifier = Modifier
-            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
-            tint = AthloColors.DarkNavy,
-            modifier = Modifier.size(14.dp)
-        )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        Text(
-            text = "ADMIN",
-            color = AthloColors.DarkNavy,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.ExtraBold
-        )
-    }
-}
-
-@Composable
-private fun ProfileTabsCard(role: ProfileRole) {
-    if (role == ProfileRole.ORGANIZER || role == ProfileRole.ADMIN) {
-        return
-    }
-
+private fun PlayerProfileTabs() {
     var selectedTab by remember { mutableStateOf("Estatísticas") }
 
     Column {
@@ -426,6 +373,10 @@ private fun ProfileTabsCard(role: ProfileRole) {
         } else {
             TeamsCard()
         }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        LogoutButton()
     }
 }
 
@@ -796,6 +747,35 @@ private fun LogoutButton() {
             text = "Terminar sessão",
             color = Color.White,
             fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = "Admin",
+            tint = AthloColors.DarkNavy,
+            modifier = Modifier.size(12.dp)
+        )
+
+        Spacer(modifier = Modifier.width(3.dp))
+
+        Text(
+            text = "ADMIN",
+            color = AthloColors.DarkNavy,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1
         )
     }
 }

@@ -53,16 +53,23 @@ import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 
 @Composable
-fun TeamsScreen(navController: NavController) {
+fun TeamsScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     val viewModel: TeamsViewModel = viewModel()
     val allTeams by viewModel.teams.collectAsState()
 
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+
+    val isAdmin = userRole == AthloUserRole.ADMIN
+    val canCreateTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
     val teams = allTeams.filter { team ->
         val matchesSearch =
@@ -83,7 +90,8 @@ fun TeamsScreen(navController: NavController) {
         bottomBar = {
             AthloBottomBar(
                 navController = navController,
-                currentRoute = Screen.Teams.route
+                currentRoute = Screen.Teams.route,
+                userRole = userRole
             )
         }
     ) { innerPadding ->
@@ -100,7 +108,8 @@ fun TeamsScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 TeamsHeader(
-                    totalTeams = allTeams.size
+                    totalTeams = allTeams.size,
+                    isAdmin = isAdmin
                 )
             }
 
@@ -133,34 +142,36 @@ fun TeamsScreen(navController: NavController) {
                 }
             }
 
-            item {
-                Button(
-                    onClick = {
-                        navController.navigate(Screen.CreateTeam.route)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AthloColors.Blue
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Criar equipa",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+            if (canCreateTeam) {
+                item {
+                    Button(
+                        onClick = {
+                            navController.navigate(Screen.CreateTeam.route)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AthloColors.Blue
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Criar equipa",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        text = "Criar equipa",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                        Text(
+                            text = "Criar equipa",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -169,7 +180,8 @@ fun TeamsScreen(navController: NavController) {
 
 @Composable
 private fun TeamsHeader(
-    totalTeams: Int
+    totalTeams: Int,
+    isAdmin: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -206,7 +218,9 @@ private fun TeamsHeader(
                         )
                     }
 
-                    AdminBadge()
+                    if (isAdmin) {
+                        AdminBadge()
+                    }
                 }
             }
 
@@ -289,7 +303,8 @@ private fun AdminBadge(
             text = "ADMIN",
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.ExtraBold
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1
         )
     }
 }
@@ -420,9 +435,7 @@ private fun TeamListCard(
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TeamLogoBox(
-                acronym = team.acronym
-            )
+            TeamLogoBox()
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -482,9 +495,7 @@ private fun TeamListCard(
 }
 
 @Composable
-private fun TeamLogoBox(
-    acronym: String
-) {
+private fun TeamLogoBox() {
     Box(
         modifier = Modifier
             .size(52.dp)
@@ -496,11 +507,6 @@ private fun TeamLogoBox(
             contentDescription = "Equipa",
             tint = AthloColors.Blue,
             modifier = Modifier.size(24.dp)
-        )
-
-        Text(
-            text = acronym.take(1),
-            color = Color.Transparent
         )
     }
 }

@@ -16,18 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -35,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -49,13 +41,8 @@ import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-
-enum class StatsUserRole {
-    PLAYER,
-    ORGANIZER,
-    ADMIN
-}
 
 data class StatSummary(
     val value: String,
@@ -78,23 +65,17 @@ data class RankingItem(
 )
 
 @Composable
-fun StatsScreen(navController: NavController) {
-    /*
-     * Para testar:
-     * StatsUserRole.PLAYER = Estatísticas do jogador
-     * StatsUserRole.ORGANIZER = Estatísticas do organizador
-     * StatsUserRole.ADMIN = Estatísticas do admin
-     *
-     * Mais tarde isto vem do login/utilizador autenticado.
-     */
-    val userRole = remember { StatsUserRole.ADMIN }
-
+fun StatsScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
             AthloBottomBar(
                 navController = navController,
-                currentRoute = Screen.Stats.route
+                currentRoute = Screen.Stats.route,
+                userRole = userRole
             )
         }
     ) { innerPadding ->
@@ -111,9 +92,9 @@ fun StatsScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 when (userRole) {
-                    StatsUserRole.PLAYER -> PlayerStatsContent()
-                    StatsUserRole.ORGANIZER -> OrganizerStatsContent()
-                    StatsUserRole.ADMIN -> AdminStatsContent()
+                    AthloUserRole.PLAYER -> PlayerStatsContent()
+                    AthloUserRole.ORGANIZER -> OrganizerStatsContent()
+                    AthloUserRole.ADMIN -> AdminStatsContent()
                 }
             }
         }
@@ -272,7 +253,7 @@ private fun RecentGamesCard() {
                 result = "V",
                 resultColor = AthloColors.SuccessBg,
                 resultTextColor = Color(0xFF3F7A28),
-                opponent = "SC Virius vs GD São",
+                opponent = "SC Viseu vs GD São",
                 score = "3-1"
             )
 
@@ -280,7 +261,7 @@ private fun RecentGamesCard() {
                 result = "E",
                 resultColor = AthloColors.NeutralBg,
                 resultTextColor = AthloColors.TextSecondary,
-                opponent = "SC Virius vs GD São",
+                opponent = "SC Viseu vs GD São",
                 score = "1-1"
             )
 
@@ -288,7 +269,7 @@ private fun RecentGamesCard() {
                 result = "D",
                 resultColor = AthloColors.DangerBg,
                 resultTextColor = Color(0xFFC83755),
-                opponent = "SC Virius vs GD São",
+                opponent = "SC Viseu vs GD São",
                 score = "0-2"
             )
 
@@ -296,7 +277,7 @@ private fun RecentGamesCard() {
                 result = "E",
                 resultColor = AthloColors.NeutralBg,
                 resultTextColor = AthloColors.TextSecondary,
-                opponent = "SC Virius vs GD São",
+                opponent = "SC Viseu vs GD São",
                 score = "2-2"
             )
         }
@@ -341,7 +322,7 @@ private fun OrganizerStatsContent() {
     RankingCard(
         title = "TOP MARCADORES",
         items = listOf(
-            RankingItem(1, "MR", "Rui Moreira", "SC Virius", "23 golos"),
+            RankingItem(1, "RM", "Rui Moreira", "SC Viseu", "23 golos"),
             RankingItem(2, "AF", "Ana Ferreira", "GD Monção", "19 golos"),
             RankingItem(3, "JS", "João Santos", "Atlético FC", "17 golos")
         )
@@ -480,7 +461,9 @@ private fun StatsHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text(
                             text = title,
                             color = Color.White,
@@ -554,27 +537,30 @@ private fun HeaderStatBox(
 }
 
 @Composable
-private fun AdminBadge() {
+private fun AdminBadge(
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .background(Color(0xFFFFD928), RoundedCornerShape(999.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 9.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.Star,
             contentDescription = "Admin",
             tint = AthloColors.DarkNavy,
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(12.dp)
         )
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(3.dp))
 
         Text(
             text = "ADMIN",
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.ExtraBold
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1
         )
     }
 }
