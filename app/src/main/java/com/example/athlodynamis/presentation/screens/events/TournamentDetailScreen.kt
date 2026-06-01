@@ -23,9 +23,9 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.athlodynamis.data.mock.MockTournaments
@@ -43,6 +44,7 @@ import com.example.athlodynamis.domain.model.Standing
 import com.example.athlodynamis.domain.model.TournamentTeam
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.navigation.Screen
 
 @Composable
 fun TournamentDetailScreen(
@@ -84,7 +86,14 @@ fun TournamentDetailScreen(
             }
 
             items(MockTournaments.matches.size) { index ->
-                MatchCard(match = MockTournaments.matches[index])
+                val match = MockTournaments.matches[index]
+
+                MatchCard(
+                    match = match,
+                    onClick = {
+                        navController.navigate(Screen.MatchDetail.createRoute(match.id))
+                    }
+                )
             }
 
             item {
@@ -125,8 +134,7 @@ private fun TournamentHeader(
             modifier = Modifier.padding(22.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .clickable { onBackClick() },
+                modifier = Modifier.clickable { onBackClick() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -153,7 +161,9 @@ private fun TournamentHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = title,
                         color = Color.White,
@@ -166,9 +176,13 @@ private fun TournamentHeader(
                     Text(
                         text = subtitle,
                         color = Color(0xFF8DC5F0),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                Spacer(modifier = Modifier.width(12.dp))
 
                 StatusPill(
                     text = "2 jogos hoje",
@@ -181,9 +195,14 @@ private fun TournamentHeader(
 }
 
 @Composable
-private fun MatchCard(match: Match) {
+private fun MatchCard(
+    match: Match,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)

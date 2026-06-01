@@ -65,6 +65,7 @@ fun EventsScreen(navController: NavController) {
 
         val matchesFilter = when (selectedFilter) {
             "Todos" -> true
+            "Agendado" -> tournament.status == "Agendado"
             "A decorrer" -> tournament.status == "A decorrer"
             "Em preparação" -> tournament.status == "Em preparação"
             "Futebol" -> tournament.sport == "Futebol"
@@ -218,6 +219,7 @@ private fun FilterRows(
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -228,15 +230,15 @@ private fun FilterRows(
             )
 
             FilterChipPill(
-                text = "A decorrer",
-                selected = selectedFilter == "A decorrer",
-                onClick = { onFilterClick("A decorrer") }
+                text = "Agendado",
+                selected = selectedFilter == "Agendado",
+                onClick = { onFilterClick("Agendado") }
             )
 
             FilterChipPill(
-                text = "Em preparação",
-                selected = selectedFilter == "Em preparação",
-                onClick = { onFilterClick("Em preparação") }
+                text = "A decorrer",
+                selected = selectedFilter == "A decorrer",
+                onClick = { onFilterClick("A decorrer") }
             )
         }
 
@@ -244,11 +246,21 @@ private fun FilterRows(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChipPill(
+                text = "Em preparação",
+                selected = selectedFilter == "Em preparação",
+                onClick = { onFilterClick("Em preparação") }
+            )
+
+            FilterChipPill(
                 text = "Futebol",
                 selected = selectedFilter == "Futebol",
                 onClick = { onFilterClick("Futebol") }
             )
+        }
 
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             FilterChipPill(
                 text = "Basquetebol",
                 selected = selectedFilter == "Basquetebol",
