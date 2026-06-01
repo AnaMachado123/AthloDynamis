@@ -105,7 +105,7 @@ fun HomeScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(6.dp))
 
                 when (userRole) {
-                    UserRole.ORGANIZER -> OrganizerHomeContent()
+                    UserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
                     UserRole.PLAYER -> PlayerHomeContent()
                 }
 
@@ -116,7 +116,10 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
-private fun OrganizerHomeContent() {
+private fun OrganizerHomeContent(
+    navController: NavController
+) {
+
     DashboardHeader(
         name = "Gonçalo Magalhães",
         initials = "GM",
@@ -140,7 +143,10 @@ private fun OrganizerHomeContent() {
         scoreA = "2",
         scoreB = "2",
         status = "A decorrer",
-        minute = "33'"
+        minute = "33'",
+        onClick = {
+            navController.navigate(Screen.MatchDetail.createRoute("2"))
+        }
     )
 
     Spacer(modifier = Modifier.height(22.dp))
@@ -152,7 +158,12 @@ private fun OrganizerHomeContent() {
     EventCard(
         date = "10 abr - 25 abr",
         title = "Torneio de Braga",
-        tags = listOf("Futebol", "A decorrer", "Grupos")
+        tags = listOf("Futebol", "A decorrer", "Grupos"),
+        onClick = {
+            navController.navigate(
+                Screen.TournamentDetail.createRoute("2")
+            )
+        }
     )
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -160,7 +171,12 @@ private fun OrganizerHomeContent() {
     EventCard(
         date = "22 jul - 25 jul",
         title = "Torneio Regional Basquetebol",
-        tags = listOf("Basquetebol", "Em preparação", "Eliminatórias")
+        tags = listOf("Basquetebol", "Em preparação", "Eliminatórias"),
+        onClick = {
+            navController.navigate(
+                Screen.TournamentDetail.createRoute("3")
+            )
+        }
     )
 }
 
@@ -189,7 +205,8 @@ private fun PlayerHomeContent() {
         scoreA = "-",
         scoreB = "-",
         status = "Agendado",
-        minute = ""
+        minute = "",
+        onClick = {}
     )
 
     Spacer(modifier = Modifier.height(22.dp))
@@ -342,12 +359,13 @@ private fun LiveMatchCard(
     scoreA: String,
     scoreB: String,
     status: String,
-    minute: String
+    minute: String,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable { onClick()},
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -439,12 +457,13 @@ private fun LiveMatchCard(
 private fun EventCard(
     date: String,
     title: String,
-    tags: List<String>
+    tags: List<String>,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable {onClick()},
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
