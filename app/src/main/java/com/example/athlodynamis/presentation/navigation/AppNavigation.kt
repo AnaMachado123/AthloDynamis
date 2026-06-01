@@ -21,7 +21,7 @@ import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
-
+import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -109,6 +109,21 @@ fun AppNavigation() {
             )
         }
 
+        composable(
+            route = Screen.MatchDetail.route,
+            arguments = listOf(
+                navArgument("matchId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val matchId = backStackEntry.arguments?.getString("matchId") ?: "1"
+
+            MatchDetailScreen(
+                matchId = matchId,
+                navController = navController
+            )
+        }
         composable(Screen.Teams.route) {
             TeamsScreen(navController = navController)
         }
