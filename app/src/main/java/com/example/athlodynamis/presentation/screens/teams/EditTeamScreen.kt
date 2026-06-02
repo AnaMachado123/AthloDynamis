@@ -56,6 +56,12 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import androidx.compose.runtime.LaunchedEffect
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+
+
 @Composable
 fun EditTeamScreen(
     navController: NavController,
@@ -70,6 +76,17 @@ fun EditTeamScreen(
         }
     }
     val team = teams.firstOrNull { it.id == teamId }
+    val context = LocalContext.current
+
+    var selectedLogoUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    val logoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        selectedLogoUri = uri
+    }
 
     if (team == null) {
         EditTeamNotFoundScreen(
@@ -106,7 +123,11 @@ fun EditTeamScreen(
                 selectedSport = selectedSport,
                 onSportChange = { selectedSport = it },
                 selectedLevel = selectedLevel,
-                onLevelChange = { selectedLevel = it }
+                onLevelChange = { selectedLevel = it },
+                selectedLogoUri = selectedLogoUri,
+                onLogoClick = {
+                    logoPickerLauncher.launch("image/*")
+                }
             )
 
             SaveButton(
@@ -117,7 +138,10 @@ fun EditTeamScreen(
                             teamId = teamId,
                             name = teamName.trim(),
                             sport = selectedSport,
-                            level = selectedLevel
+                            level = selectedLevel,
+                            context = context,
+                            logoUri = selectedLogoUri,
+                            currentLogoUrl = team.logoUrl,
                         )
                     }
                 }
@@ -207,7 +231,9 @@ private fun EditTeamFormCard(
     selectedSport: String,
     onSportChange: (String) -> Unit,
     selectedLevel: String,
-    onLevelChange: (String) -> Unit
+    onLevelChange: (String) -> Unit,
+    selectedLogoUri: Uri?,
+    onLogoClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -264,7 +290,7 @@ private fun EditTeamFormCard(
 
             AthloDropdown(
                 selectedValue = selectedLevel,
-                options = listOf("Avançado", "Médio", "Iniciante", "Pivô", "Líbero", "Passador", "Base"),
+                options = listOf("Avançado", "Médio", "Iniciante"),
                 onValueSelected = onLevelChange,
                 icon = Icons.Default.Star
             )
@@ -273,13 +299,19 @@ private fun EditTeamFormCard(
 
             FieldLabel("Escudo")
 
-            UploadShieldButton()
+            UploadShieldButton(
+                selectedLogoUri = selectedLogoUri,
+                onClick = onLogoClick
+            )
         }
     }
 }
 
 @Composable
-private fun UploadShieldButton() {
+private fun UploadShieldButton(
+    selectedLogoUri: Uri?,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -289,7 +321,9 @@ private fun UploadShieldButton() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { }
+                .clickable {
+                    onClick()
+                }
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -313,13 +347,19 @@ private fun UploadShieldButton() {
                     .padding(start = 14.dp)
             ) {
                 Text(
-                    text = "Carregar escudo",
+                    text = if (selectedLogoUri != null)
+                        "Escudo selecionado"
+                    else
+                        "Carregar escudo",
                     color = AthloColors.TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "Preparado para futura implementação",
+                    text = if (selectedLogoUri != null)
+                        "Imagem pronta para upload"
+                    else
+                        "Selecionar imagem da galeria",
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.labelSmall
                 )

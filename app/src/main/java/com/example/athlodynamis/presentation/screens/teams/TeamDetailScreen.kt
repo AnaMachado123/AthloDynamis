@@ -63,6 +63,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 @Composable
 fun TeamDetailScreen(
     navController: NavController,
@@ -70,14 +74,18 @@ fun TeamDetailScreen(
     userRole: AthloUserRole
 ) {
     val viewModel: TeamsViewModel = viewModel()
+    val playersViewModel: PlayersViewModel = viewModel()
     LaunchedEffect(viewModel.teamDeleted) {
         if (viewModel.teamDeleted) {
             viewModel.resetTeamDeleted()
             navController.popBackStack()
         }
     }
+    LaunchedEffect(teamId) {
+        playersViewModel.loadPlayersByTeam(teamId)
+    }
     val teams by viewModel.teams.collectAsState()
-
+    val players by playersViewModel.players.collectAsState()
     val team = teams.firstOrNull { it.id == teamId }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
@@ -138,7 +146,7 @@ fun TeamDetailScreen(
         )
     }
 
-    val players = emptyList<Player>()
+
 
 
     Scaffold(
@@ -368,18 +376,37 @@ private fun TeamIdentityCard(team: Team) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
+
                 Box(
                     modifier = Modifier
                         .size(58.dp)
-                        .background(AthloColors.SoftBlue, RoundedCornerShape(18.dp)),
+                        .background(
+                            AthloColors.SoftBlue,
+                            RoundedCornerShape(18.dp)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Groups,
-                        contentDescription = "Equipa",
-                        tint = AthloColors.Blue,
-                        modifier = Modifier.size(30.dp)
-                    )
+
+                    if (!team.logoUrl.isNullOrBlank()) {
+
+                        AsyncImage(
+                            model = team.logoUrl,
+                            contentDescription = "Escudo da equipa",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(18.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                    } else {
+
+                        Icon(
+                            imageVector = Icons.Default.Groups,
+                            contentDescription = "Equipa",
+                            tint = AthloColors.Blue,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))

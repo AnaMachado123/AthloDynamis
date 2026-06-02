@@ -1,5 +1,6 @@
 package com.example.athlodynamis.data.repository
 
+import android.R.attr.level
 import android.util.Log
 import com.example.athlodynamis.data.remote.SupabaseClientProvider
 import com.example.athlodynamis.data.remote.dto.CreateTeamDto
@@ -11,11 +12,48 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.athlodynamis.data.remote.dto.UpdateTeamDto
+import android.content.Context
+import android.net.Uri
+import io.github.jan.supabase.storage.storage
+import java.util.UUID
 object TeamRepository {
 
     private val _teams = MutableStateFlow<List<Team>>(emptyList())
     val teams: StateFlow<List<Team>> = _teams.asStateFlow()
 
+    suspend fun uploadTeamLogo(
+        context: Context,
+        logoUri: Uri
+    ): String? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(logoUri)
+                ?: return null
+
+            val bytes = inputStream.readBytes()
+            inputStream.close()
+
+            val fileName = "team_${UUID.randomUUID()}.jpg"
+
+            SupabaseClientProvider.client
+                .storage
+                .from("team-logos")
+                .upload(
+                    path = fileName,
+                    data = bytes
+                ) {
+                    upsert = true
+                }
+
+            SupabaseClientProvider.client
+                .storage
+                .from("team-logos")
+                .publicUrl(fileName)
+
+        } catch (e: Exception) {
+            Log.e("TEAM_REPOSITORY", "Erro ao fazer upload do escudo", e)
+            null
+        }
+    }
     suspend fun fetchTeamsFromSupabase() {
         try {
             val remoteTeams = SupabaseClientProvider.client
@@ -35,7 +73,8 @@ object TeamRepository {
     suspend fun createTeamInSupabase(
         name: String,
         sport: String,
-        level: String
+        level: String,
+        logoUrl: String? = null
     ) {
         try {
             val acronym = name
@@ -53,7 +92,7 @@ object TeamRepository {
                 wins = 0,
                 games = 0,
                 goals = 0,
-                logo_url = null
+                logo_url = logoUrl
             )
 
             SupabaseClientProvider.client
@@ -85,7 +124,8 @@ object TeamRepository {
         teamId: Int,
         name: String,
         sport: String,
-        level: String
+        level: String,
+        logoUrl: String? = null
     ) {
         try {
             val acronym = name
@@ -98,7 +138,8 @@ object TeamRepository {
                 name = name,
                 acronym = acronym,
                 sport = sport,
-                status = level
+                status = level,
+                logo_url = logoUrl
             )
 
             SupabaseClientProvider.client

@@ -1,8 +1,8 @@
 package com.example.athlodynamis.data.remote
 
-import android.net.http.HttpResponseCache.install
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 
 object SupabaseClientProvider {
 
@@ -11,5 +11,6 @@ object SupabaseClientProvider {
         supabaseKey = SupabaseConfig.SUPABASE_ANON_KEY
     ) {
         install(Postgrest)
+        install(Storage)
     }
 }

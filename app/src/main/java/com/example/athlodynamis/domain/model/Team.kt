@@ -9,5 +9,6 @@ data class Team(
     val status: String,
     val wins: Int,
     val games: Int,
-    val goals: Int
+    val goals: Int,
+    val logoUrl: String? = null
 )

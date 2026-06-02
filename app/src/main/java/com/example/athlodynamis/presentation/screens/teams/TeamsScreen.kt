@@ -56,6 +56,8 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun TeamsScreen(
@@ -422,7 +424,7 @@ private fun TeamListCard(
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TeamLogoBox()
+            TeamLogoBox(team.logoUrl)
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -482,19 +484,39 @@ private fun TeamListCard(
 }
 
 @Composable
-private fun TeamLogoBox() {
+private fun TeamLogoBox(
+    logoUrl: String?
+) {
     Box(
         modifier = Modifier
             .size(52.dp)
-            .background(AthloColors.SoftBlue, RoundedCornerShape(16.dp)),
+            .background(
+                AthloColors.SoftBlue,
+                RoundedCornerShape(16.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Groups,
-            contentDescription = "Equipa",
-            tint = AthloColors.Blue,
-            modifier = Modifier.size(24.dp)
-        )
+
+        if (!logoUrl.isNullOrBlank()) {
+
+            AsyncImage(
+                model = logoUrl,
+                contentDescription = "Escudo da equipa",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+        } else {
+
+            Icon(
+                imageVector = Icons.Default.Groups,
+                contentDescription = "Equipa",
+                tint = AthloColors.Blue,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 

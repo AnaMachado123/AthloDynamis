@@ -35,7 +35,8 @@ data class UpdateTeamDto(
     val name: String,
     val acronym: String,
     val sport: String,
-    val status: String
+    val status: String,
+    val logo_url: String? = null
 )
 fun TeamDto.toDomain(): Team {
     return Team(
@@ -47,6 +48,7 @@ fun TeamDto.toDomain(): Team {
         status = status,
         wins = wins,
         games = games,
-        goals = goals
+        goals = goals,
+        logoUrl = logo_url
     )
 }

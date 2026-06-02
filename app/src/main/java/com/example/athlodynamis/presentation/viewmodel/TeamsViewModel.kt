@@ -9,6 +9,8 @@ import com.example.athlodynamis.data.repository.TeamRepository
 import com.example.athlodynamis.domain.model.Team
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import android.net.Uri
 
 class TeamsViewModel : ViewModel() {
     val teams: StateFlow<List<Team>> = TeamRepository.teams
@@ -30,13 +32,25 @@ class TeamsViewModel : ViewModel() {
     fun createTeam(
         name: String,
         sport: String,
-        level: String
+        level: String,
+        context: Context? = null,
+        logoUri: Uri? = null
     ) {
         viewModelScope.launch {
+            val logoUrl = if (context != null && logoUri != null) {
+                TeamRepository.uploadTeamLogo(
+                    context = context,
+                    logoUri = logoUri
+                )
+            } else {
+                null
+            }
+
             TeamRepository.createTeamInSupabase(
                 name = name,
                 sport = sport,
-                level = level
+                level = level,
+                logoUrl = logoUrl
             )
 
             teamCreated = true
@@ -51,14 +65,27 @@ class TeamsViewModel : ViewModel() {
         teamId: Int,
         name: String,
         sport: String,
-        level: String
+        level: String,
+        context: Context? = null,
+        logoUri: Uri? = null,
+        currentLogoUrl: String? = null
     ) {
         viewModelScope.launch {
+            val logoUrl = if (context != null && logoUri != null) {
+                TeamRepository.uploadTeamLogo(
+                    context = context,
+                    logoUri = logoUri
+                )
+            } else {
+                currentLogoUrl
+            }
+
             TeamRepository.updateTeamInSupabase(
                 teamId = teamId,
                 name = name,
                 sport = sport,
-                level = level
+                level = level,
+                logoUrl = logoUrl
             )
 
             teamUpdated = true

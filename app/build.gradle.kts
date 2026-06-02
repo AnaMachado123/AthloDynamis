@@ -63,4 +63,6 @@ dependencies {
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.2.2")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }
