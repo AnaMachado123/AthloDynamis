@@ -49,8 +49,7 @@ fun AppNavigation() {
      *
      * Depois isto vem do login/ViewModel.
      */
-    val currentUserRole = AthloUserRole.PLAYER
-
+    val currentUserRole = AthloUserRole.ADMIN
     /*
      * TEMPORÁRIO:
      * Se quiseres testar a Home offline do jogador:
@@ -286,7 +285,10 @@ fun AppNavigation() {
         }
 
         composable(Screen.CreateTeam.route) {
-            CreateTeamScreen(navController = navController)
+            CreateTeamScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(
