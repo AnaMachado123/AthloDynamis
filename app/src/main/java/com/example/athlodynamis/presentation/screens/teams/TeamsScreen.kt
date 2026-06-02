@@ -71,6 +71,11 @@ fun TeamsScreen(
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canCreateTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
+    val sports = allTeams
+        .map { it.sport }
+        .distinct()
+        .sorted()
+
     val teams = allTeams.filter { team ->
         val matchesSearch =
             team.name.contains(searchText, ignoreCase = true) ||
@@ -109,6 +114,7 @@ fun TeamsScreen(
 
                 TeamsHeader(
                     totalTeams = allTeams.size,
+                    totalSports = sports.size,
                     isAdmin = isAdmin
                 )
             }
@@ -122,6 +128,7 @@ fun TeamsScreen(
 
             item {
                 TeamFilterRows(
+                    sports = sports,
                     selectedFilter = selectedFilter,
                     onFilterClick = { selectedFilter = it }
                 )
@@ -181,6 +188,7 @@ fun TeamsScreen(
 @Composable
 private fun TeamsHeader(
     totalTeams: Int,
+    totalSports: Int,
     isAdmin: Boolean
 ) {
     Card(
@@ -237,7 +245,7 @@ private fun TeamsHeader(
                 )
 
                 HeaderStatBox(
-                    value = "4",
+                    value = totalSports.toString(),
                     label = "Modalidades",
                     modifier = Modifier.weight(1f)
                 )
@@ -344,48 +352,27 @@ private fun SearchBox(
 
 @Composable
 private fun TeamFilterRows(
+    sports: List<String>,
     selectedFilter: String,
     onFilterClick: (String) -> Unit
 ) {
+    val filters = listOf("Todos") + sports
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterPill(
-                text = "Todos",
-                selected = selectedFilter == "Todos",
-                onClick = { onFilterClick("Todos") }
-            )
-
-            FilterPill(
-                text = "Futebol",
-                selected = selectedFilter == "Futebol",
-                onClick = { onFilterClick("Futebol") }
-            )
-
-            FilterPill(
-                text = "Basquetebol",
-                selected = selectedFilter == "Basquetebol",
-                onClick = { onFilterClick("Basquetebol") }
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterPill(
-                text = "Voleibol",
-                selected = selectedFilter == "Voleibol",
-                onClick = { onFilterClick("Voleibol") }
-            )
-
-            FilterPill(
-                text = "Ténis",
-                selected = selectedFilter == "Ténis",
-                onClick = { onFilterClick("Ténis") }
-            )
+        filters.chunked(3).forEach { rowFilters ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowFilters.forEach { filter ->
+                    FilterPill(
+                        text = filter,
+                        selected = selectedFilter == filter,
+                        onClick = { onFilterClick(filter) }
+                    )
+                }
+            }
         }
     }
 }

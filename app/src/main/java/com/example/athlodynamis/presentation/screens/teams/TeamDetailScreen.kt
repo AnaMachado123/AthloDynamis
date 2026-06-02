@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.data.mock.MockPlayers
+import androidx.compose.runtime.LaunchedEffect
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.presentation.components.AthloBottomBar
@@ -59,7 +59,10 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
-
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 @Composable
 fun TeamDetailScreen(
     navController: NavController,
@@ -67,11 +70,19 @@ fun TeamDetailScreen(
     userRole: AthloUserRole
 ) {
     val viewModel: TeamsViewModel = viewModel()
+    LaunchedEffect(viewModel.teamDeleted) {
+        if (viewModel.teamDeleted) {
+            viewModel.resetTeamDeleted()
+            navController.popBackStack()
+        }
+    }
     val teams by viewModel.teams.collectAsState()
 
     val team = teams.firstOrNull { it.id == teamId }
+
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canManageTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (team == null) {
         TeamNotFoundScreen(
@@ -79,10 +90,56 @@ fun TeamDetailScreen(
         )
         return
     }
-
-    val players = remember(teamId) {
-        MockPlayers.getPlayersByTeam(teamId)
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = AthloColors.CardWhite,
+            titleContentColor = AthloColors.TextPrimary,
+            textContentColor = AthloColors.TextSecondary,
+            title = {
+                Text(
+                    text = "Apagar equipa",
+                    fontWeight = FontWeight.ExtraBold
+                )
+            },
+            text = {
+                Text("Tem a certeza que pretende apagar esta equipa?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteTeam(team.id)
+                    }
+                ) {
+                    Text(
+                        text = "Apagar",
+                        color = Color(0xFFCC1F2F),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = AthloColors.Blue,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        )
     }
+
+    val players = emptyList<Player>()
+
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -192,7 +249,11 @@ fun TeamDetailScreen(
 
             if (isAdmin) {
                 item {
-                    DeleteTeamButton()
+                    DeleteTeamButton(
+                        onDeleteClick = {
+                            showDeleteDialog = true
+                        }
+                    )
                 }
             }
 
@@ -714,9 +775,11 @@ private fun SmallBadge(
 }
 
 @Composable
-private fun DeleteTeamButton() {
+private fun DeleteTeamButton(
+    onDeleteClick: () -> Unit
+) {
     OutlinedButton(
-        onClick = { },
+        onClick = onDeleteClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
@@ -727,7 +790,7 @@ private fun DeleteTeamButton() {
     ) {
         Icon(
             imageVector = Icons.Default.Delete,
-            contentDescription = "Apagar clube",
+            contentDescription = "Apagar Equipa",
             tint = Color(0xFFCC1F2F),
             modifier = Modifier.size(18.dp)
         )
@@ -735,7 +798,7 @@ private fun DeleteTeamButton() {
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = "Apagar clube",
+            text = "Apagar Equipa",
             fontWeight = FontWeight.Bold
         )
     }
@@ -745,6 +808,7 @@ private fun DeleteTeamButton() {
 private fun TeamNotFoundScreen(
     onBackClick: () -> Unit
 ) {
+
     Scaffold(
         containerColor = AthloColors.Background
     ) { innerPadding ->

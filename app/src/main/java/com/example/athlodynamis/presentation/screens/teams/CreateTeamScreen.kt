@@ -54,10 +54,21 @@ import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
-
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import androidx.compose.runtime.LaunchedEffect
 @Composable
-fun CreateTeamScreen(navController: NavController) {
+fun CreateTeamScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     val viewModel: TeamsViewModel = viewModel()
+
+    LaunchedEffect(viewModel.teamCreated) {
+        if (viewModel.teamCreated) {
+            viewModel.resetTeamCreated()
+            navController.popBackStack()
+        }
+    }
 
     var teamName by remember { mutableStateOf("") }
     var selectedSport by remember { mutableStateOf("Futebol") }
@@ -78,6 +89,7 @@ fun CreateTeamScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
 
             CreateTeamHeader(
+                showAdminBadge = userRole == AthloUserRole.ADMIN,
                 onBackClick = { navController.popBackStack() }
             )
 
@@ -100,7 +112,6 @@ fun CreateTeamScreen(navController: NavController) {
                             level = selectedLevel
                         )
 
-                        navController.popBackStack()
                     }
                 }
             )
@@ -126,6 +137,7 @@ fun CreateTeamScreen(navController: NavController) {
 
 @Composable
 private fun CreateTeamHeader(
+    showAdminBadge: Boolean,
     onBackClick: () -> Unit
 ) {
     Card(
@@ -174,7 +186,9 @@ private fun CreateTeamHeader(
                             )
                         }
 
-                        AdminBadge()
+                        if (showAdminBadge) {
+                            AdminBadge()
+                        }
                     }
                 }
             }

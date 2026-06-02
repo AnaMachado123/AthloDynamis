@@ -55,7 +55,7 @@ import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
-
+import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun EditTeamScreen(
     navController: NavController,
@@ -63,7 +63,12 @@ fun EditTeamScreen(
 ) {
     val viewModel: TeamsViewModel = viewModel()
     val teams by viewModel.teams.collectAsState()
-
+    LaunchedEffect(viewModel.teamUpdated) {
+        if (viewModel.teamUpdated) {
+            viewModel.resetTeamUpdated()
+            navController.popBackStack()
+        }
+    }
     val team = teams.firstOrNull { it.id == teamId }
 
     if (team == null) {
@@ -114,8 +119,6 @@ fun EditTeamScreen(
                             sport = selectedSport,
                             level = selectedLevel
                         )
-
-                        navController.popBackStack()
                     }
                 }
             )
