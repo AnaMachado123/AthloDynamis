@@ -35,19 +35,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.data.mock.MockTournaments
 import com.example.athlodynamis.domain.model.Match
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 
 @Composable
 fun MatchDetailScreen(
@@ -55,12 +59,19 @@ fun MatchDetailScreen(
     navController: NavController,
     userRole: AthloUserRole
 ) {
-    val match = MockTournaments.getMatchById(matchId)
-    val tournament = MockTournaments.getTournamentById(match.tournamentId)
+    val matchesViewModel: MatchesViewModel = viewModel()
+
+    val match by matchesViewModel.selectedMatch.collectAsState()
+    val error by matchesViewModel.error.collectAsState()
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canManageMatch = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
-    val isLiveMatch = match.status == "A decorrer"
+
+    LaunchedEffect(matchId) {
+        matchesViewModel.loadMatchById(matchId.toLong())
+    }
+
+    val currentMatch = match
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -85,10 +96,10 @@ fun MatchDetailScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 MatchHeader(
-                    tournamentName = tournament.name,
-                    sport = tournament.sport,
+                    tournamentName = "Torneio #${currentMatch?.tournamentId ?: ""}",
+                    sport = currentMatch?.status ?: "A carregar",
                     isAdmin = isAdmin,
-                    canManageMatch = canManageMatch,
+                    canManageMatch = canManageMatch && currentMatch != null,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditMatch.createRoute(matchId))
@@ -96,38 +107,48 @@ fun MatchDetailScreen(
                 )
             }
 
-            item {
-                MatchScoreSection(match = match)
-            }
-
-            item {
-                Divider(color = Color(0xFFD7D7D7))
-            }
-
-            item {
-                MatchEventsCard(match = match)
-            }
-
-            if (canManageMatch && isLiveMatch) {
+            if (error != null) {
                 item {
-                    Button(
-                        onClick = {
-                            navController.navigate(Screen.ManageLiveMatch.createRoute(matchId))
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AthloColors.Blue
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                    ) {
-                        Text(
-                            text = "Gerir jogo ao vivo",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                    InfoCard(text = error ?: "Erro ao carregar jogo")
+                }
+            } else if (currentMatch == null) {
+                item {
+                    InfoCard(text = "A carregar jogo...")
+                }
+            } else {
+                item {
+                    MatchScoreSection(match = currentMatch)
+                }
+
+                item {
+                    Divider(color = Color(0xFFD7D7D7))
+                }
+
+                item {
+                    MatchEventsCard(match = currentMatch)
+                }
+
+                if (canManageMatch && currentMatch.status == "A decorrer") {
+                    item {
+                        Button(
+                            onClick = {
+                                navController.navigate(Screen.ManageLiveMatch.createRoute(matchId))
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AthloColors.Blue
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        ) {
+                            Text(
+                                text = "Gerir jogo ao vivo",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -136,6 +157,24 @@ fun MatchDetailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun InfoCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
     }
 }
 
@@ -160,7 +199,9 @@ private fun MatchHeader(
                 .padding(22.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 90.dp)
             ) {
                 Row(
                     modifier = Modifier.clickable { onBackClick() },
@@ -227,13 +268,26 @@ private fun MatchScoreSection(match: Match) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "16 abr - ${match.time}",
+            text = if (match.time.isNotBlank()) "Hora: ${match.time}" else "Hora por definir",
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 32.dp)
         )
+
+        if (!match.location.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = match.location,
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(28.dp))
 
@@ -243,10 +297,10 @@ private fun MatchScoreSection(match: Match) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             TeamBlock(
-                acronym = "EQP",
+                acronym = getAcronym(match.teamA),
                 teamName = match.teamA,
-                background = if (match.teamA.contains("1")) Color(0xFFD7EBFF) else Color(0xFFF8FFB0),
-                textColor = if (match.teamA.contains("1")) AthloColors.Blue else Color(0xFFD4DD00)
+                background = Color(0xFFD7EBFF),
+                textColor = AthloColors.Blue
             )
 
             Row(
@@ -266,10 +320,10 @@ private fun MatchScoreSection(match: Match) {
             }
 
             TeamBlock(
-                acronym = "EQP",
+                acronym = getAcronym(match.teamB),
                 teamName = match.teamB,
-                background = if (match.teamB.contains("2")) Color(0xFFE8F3DD) else Color(0xFFFFEFD7),
-                textColor = if (match.teamB.contains("2")) Color(0xFF5F9E6E) else Color(0xFF9A6B22)
+                background = Color(0xFFE8F3DD),
+                textColor = Color(0xFF5F9E6E)
             )
         }
 
@@ -287,6 +341,19 @@ private fun MatchScoreSection(match: Match) {
         }
 
         StatusPillLarge(match.status)
+    }
+}
+
+private fun getAcronym(teamName: String): String {
+    val parts = teamName
+        .trim()
+        .split(" ")
+        .filter { it.isNotBlank() }
+
+    return when {
+        parts.isEmpty() -> "EQP"
+        parts.size == 1 -> parts.first().take(3).uppercase()
+        else -> parts.take(3).joinToString("") { it.first().uppercase() }
     }
 }
 

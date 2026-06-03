@@ -30,9 +30,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,12 +46,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.data.remote.dto.CreateMatchDto
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 
 @Composable
 fun AddMatchScreen(
@@ -55,13 +62,30 @@ fun AddMatchScreen(
     eventId: String,
     userRole: AthloUserRole
 ) {
+    val matchesViewModel: MatchesViewModel = viewModel()
+
+    val error by matchesViewModel.error.collectAsState()
+
     val currentEventId = eventId
     val isAdmin = userRole == AthloUserRole.ADMIN
 
-    var startDate by remember { mutableStateOf("26/04/2025") }
-    var endDate by remember { mutableStateOf("30/04/2025") }
-    var teamA by remember { mutableStateOf("Equipa 1") }
-    var teamB by remember { mutableStateOf("Equipa 2") }
+    var matchCreated by remember { mutableStateOf(false) }
+
+    var matchTime by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var teamA by remember { mutableStateOf("") }
+    var teamB by remember { mutableStateOf("") }
+
+    val canSave = matchTime.isNotBlank() &&
+            teamA.isNotBlank() &&
+            teamB.isNotBlank() &&
+            teamA != teamB
+
+    LaunchedEffect(matchCreated) {
+        if (matchCreated) {
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -86,7 +110,7 @@ fun AddMatchScreen(
 
             AddMatchHeader(
                 title = "Adicionar Jogo",
-                subtitle = "Torneio de Braga",
+                subtitle = "Novo jogo do torneio",
                 backText = "‹ cancelar",
                 isAdmin = isAdmin,
                 eventId = currentEventId,
@@ -104,25 +128,28 @@ fun AddMatchScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data início")
-                            DateBox(value = startDate)
-                        }
+                    FieldLabel("Hora do jogo")
+                    AthloTextField(
+                        value = matchTime,
+                        onValueChange = { matchTime = it },
+                        placeholder = "Ex: 18:30"
+                    )
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data fim")
-                            DateBox(value = endDate)
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    FieldLabel("Local")
+                    AthloTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        placeholder = "Ex: Pavilhão Municipal"
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FieldLabel("Associar Equipa 1")
                     TeamDropdown(
                         selectedValue = teamA,
+                        placeholder = "Selecionar equipa 1",
                         options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
                         onValueSelected = {
                             teamA = it
@@ -134,6 +161,7 @@ fun AddMatchScreen(
                     FieldLabel("Associar Equipa 2")
                     TeamDropdown(
                         selectedValue = teamB,
+                        placeholder = "Selecionar equipa 2",
                         options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
                         onValueSelected = {
                             teamB = it
@@ -142,16 +170,50 @@ fun AddMatchScreen(
                 }
             }
 
+            if (teamA.isNotBlank() && teamA == teamB) {
+                Text(
+                    text = "As equipas não podem ser iguais.",
+                    color = Color(0xFFCC1F2F),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (error != null) {
+                Text(
+                    text = error ?: "",
+                    color = Color(0xFFCC1F2F),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
             Button(
                 onClick = {
-                    navController.popBackStack()
+                    matchesViewModel.createMatch(
+                        CreateMatchDto(
+                            tournamentId = eventId.toLong(),
+                            teamAName = teamA,
+                            teamBName = teamB,
+                            scoreA = 0,
+                            scoreB = 0,
+                            status = "Agendado",
+                            matchTime = matchTime.trim(),
+                            minute = "",
+                            location = location.trim().ifBlank { null }
+                        )
+                    )
+
+                    matchCreated = true
                 },
+                enabled = canSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AthloColors.Blue
+                    containerColor = AthloColors.Blue,
+                    disabledContainerColor = AthloColors.TextMuted
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
@@ -227,7 +289,7 @@ private fun AddMatchHeader(
                 )
 
                 Text(
-                    text = "Evento #$eventId",
+                    text = "Torneio #$eventId",
                     color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -284,29 +346,36 @@ private fun FieldLabel(
 }
 
 @Composable
-private fun DateBox(
-    value: String
+private fun AthloTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Text(
-            text = value,
-            color = AthloColors.TextPrimary,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = {
+            Text(text = placeholder)
+        },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AthloColors.Blue,
+            unfocusedBorderColor = Color(0xFFE5E7EB),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            cursorColor = AthloColors.Blue,
+            focusedTextColor = AthloColors.TextPrimary,
+            unfocusedTextColor = AthloColors.TextPrimary
         )
-    }
+    )
 }
 
 @Composable
 private fun TeamDropdown(
     selectedValue: String,
+    placeholder: String,
     options: List<String>,
     onValueSelected: (String) -> Unit
 ) {
@@ -328,8 +397,12 @@ private fun TeamDropdown(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = selectedValue,
-                color = AthloColors.TextPrimary,
+                text = selectedValue.ifBlank { placeholder },
+                color = if (selectedValue.isBlank()) {
+                    AthloColors.TextMuted
+                } else {
+                    AthloColors.TextPrimary
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )

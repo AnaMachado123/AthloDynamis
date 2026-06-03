@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +42,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import androidx.compose.foundation.lazy.items
+import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 
 @Composable
 fun TournamentDetailScreen(
@@ -54,10 +60,21 @@ fun TournamentDetailScreen(
     navController: NavController,
     userRole: AthloUserRole
 ) {
+    val tournamentsViewModel: TournamentsViewModel = viewModel()
+    val matchesViewModel: MatchesViewModel = viewModel()
+    val tournament by tournamentsViewModel.selectedTournament.collectAsState()
+    val isLoading by tournamentsViewModel.isLoading.collectAsState()
+    val error by tournamentsViewModel.error.collectAsState()
+    val matches by matchesViewModel.matches.collectAsState()
+    val matchesError by matchesViewModel.error.collectAsState()
     var selectedTab by remember { mutableStateOf("Equipas") }
 
-    val isAdmin = userRole == AthloUserRole.ADMIN
     val canManageEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+
+    LaunchedEffect(tournamentId) {
+        tournamentsViewModel.loadTournamentById(tournamentId)
+        matchesViewModel.loadMatches(tournamentId.toLong())
+    }
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -82,6 +99,7 @@ fun TournamentDetailScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 TournamentHeader(
+                    tournament = tournament,
                     userRole = userRole,
                     canManageEvent = canManageEvent,
                     onBackClick = {
@@ -95,100 +113,128 @@ fun TournamentDetailScreen(
                 )
             }
 
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Sábado, 16 abr",
-                        color = AthloColors.TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+            if (isLoading) {
+                item {
+                    InfoCard(text = "A carregar torneio...")
+                }
+            } else if (error != null) {
+                item {
+                    InfoCard(text = error ?: "Erro ao carregar torneio")
+                }
+            } else if (tournament == null) {
+                item {
+                    InfoCard(text = "Torneio não encontrado.")
+                }
+            } else {
+                item {
+                    TournamentInfoCard(tournament = tournament!!)
+                }
 
-                    if (canManageEvent) {
-                        Button(
-                            onClick = {
-                                navController.navigate(
-                                    Screen.AddMatch.createRoute(tournamentId)
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Jogos do torneio",
+                            color = AthloColors.TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (canManageEvent) {
+                            Button(
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.AddMatch.createRoute(tournamentId)
+                                    )
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AthloColors.Blue
+                                ),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Adicionar Jogo",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
                                 )
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AthloColors.Blue
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = "Adicionar Jogo",
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
 
-                            Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
 
-                            Icon(
-                                imageVector = Icons.Default.AddCircle,
-                                contentDescription = "Adicionar jogo",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
+                                Icon(
+                                    imageVector = Icons.Default.AddCircle,
+                                    contentDescription = "Adicionar jogo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            item {
-                MatchCard(
-                    matchId = "1",
-                    time = "10:00",
-                    teamA = "Equipa 1",
-                    teamB = "Equipa 2",
-                    scoreA = "3",
-                    scoreB = "1",
-                    status = "Terminado",
-                    minute = "",
-                    onClick = {
-                        navController.navigate(Screen.MatchDetail.createRoute("1"))
+                item {
+                    MatchCard(
+                        matchId = "1",
+                        time = "10:00",
+                        teamA = "Equipa 1",
+                        teamB = "Equipa 2",
+                        scoreA = "3",
+                        scoreB = "1",
+                        status = "Terminado",
+                        minute = "",
+                        onClick = {
+                            navController.navigate(Screen.MatchDetail.createRoute("1"))
+                        }
+                    )
+                }
+
+                if (matchesError != null) {
+                    item {
+                        InfoCard(text = matchesError ?: "Erro ao carregar jogos")
                     }
-                )
-            }
-
-            item {
-                MatchCard(
-                    matchId = "2",
-                    time = "12:00",
-                    teamA = "Equipa 3",
-                    teamB = "Equipa 4",
-                    scoreA = "2",
-                    scoreB = "2",
-                    status = "A decorrer",
-                    minute = "33'",
-                    onClick = {
-                        navController.navigate(Screen.MatchDetail.createRoute("2"))
+                } else if (matches.isEmpty()) {
+                    item {
+                        InfoCard(text = "Ainda não existem jogos neste torneio.")
                     }
-                )
-            }
-
-            item {
-                TournamentTabs(
-                    selectedTab = selectedTab,
-                    onTabSelected = {
-                        selectedTab = it
-                    }
-                )
-            }
-
-            item {
-                if (selectedTab == "Equipas") {
-                    TeamsTable()
                 } else {
-                    StandingsTable()
+                    items(matches) { match ->
+                        MatchCard(
+                            matchId = match.id,
+                            time = match.time.ifBlank { "Hora por definir" },
+                            teamA = match.teamA,
+                            teamB = match.teamB,
+                            scoreA = match.scoreA?.toString() ?: "-",
+                            scoreB = match.scoreB?.toString() ?: "-",
+                            status = match.status,
+                            minute = match.minute ?: "",
+                            onClick = {
+                                navController.navigate(Screen.MatchDetail.createRoute(match.id))
+                            }
+                        )
+                    }
+                }
+
+                item {
+                    TournamentTabs(
+                        selectedTab = selectedTab,
+                        onTabSelected = {
+                            selectedTab = it
+                        }
+                    )
+                }
+
+                item {
+                    if (selectedTab == "Equipas") {
+                        TeamsTable()
+                    } else {
+                        StandingsTable()
+                    }
                 }
             }
         }
@@ -197,12 +243,14 @@ fun TournamentDetailScreen(
 
 @Composable
 private fun TournamentHeader(
+    tournament: Tournament?,
     userRole: AthloUserRole,
     canManageEvent: Boolean,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
     val isAdmin = userRole == AthloUserRole.ADMIN
+    val subtitle = tournament?.let { "${it.name} · ${it.sport}" } ?: "A carregar torneio"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -216,7 +264,7 @@ private fun TournamentHeader(
                 .background(AthloColors.Navy)
                 .padding(horizontal = 22.dp, vertical = 22.dp)
         ) {
-            Column {
+            Column(modifier = Modifier.padding(end = 90.dp)) {
                 Text(
                     text = "‹ voltar",
                     color = Color(0xFF8EC5F4),
@@ -237,7 +285,7 @@ private fun TournamentHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Torneio de Braga · Futebol",
+                    text = subtitle,
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -252,13 +300,13 @@ private fun TournamentHeader(
                     AdminBadge()
                 } else {
                     StatusPill(
-                        text = "2 jogos hoje",
+                        text = tournament?.status ?: "A carregar",
                         background = AthloColors.SuccessBg,
                         textColor = Color(0xFF4D8B4A)
                     )
                 }
 
-                if (canManageEvent) {
+                if (canManageEvent && tournament != null) {
                     StatusPill(
                         text = "Editar",
                         background = Color(0xFF76B982),
@@ -271,6 +319,71 @@ private fun TournamentHeader(
     }
 }
 
+@Composable
+private fun TournamentInfoCard(tournament: Tournament) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = tournament.name,
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Text(
+                text = tournament.dateRange,
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusPill(
+                    text = tournament.sport,
+                    background = AthloColors.InfoBg,
+                    textColor = AthloColors.Blue
+                )
+
+                StatusPill(
+                    text = tournament.status,
+                    background = AthloColors.WarningBg,
+                    textColor = Color(0xFF9A6B22)
+                )
+
+                StatusPill(
+                    text = tournament.format,
+                    background = AthloColors.NeutralBg,
+                    textColor = AthloColors.TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
+    }
+}
 @Composable
 private fun MatchCard(
     matchId: String,

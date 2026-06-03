@@ -34,6 +34,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,27 +46,52 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.data.mock.MockTournaments
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 
 @Composable
 fun EventsScreen(
     navController: NavController,
     userRole: AthloUserRole
 ) {
+    val tournamentsViewModel: TournamentsViewModel = viewModel()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val allTournaments by tournamentsViewModel.tournaments.collectAsState()
+    val isLoading by tournamentsViewModel.isLoading.collectAsState()
+    val error by tournamentsViewModel.error.collectAsState()
+
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canCreateEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
-    val tournaments = MockTournaments.tournaments.filter { tournament ->
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                tournamentsViewModel.loadTournaments()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val tournaments = allTournaments.filter { tournament ->
         val matchesSearch =
             tournament.name.contains(searchText, ignoreCase = true) ||
                     tournament.sport.contains(searchText, ignoreCase = true)
@@ -76,6 +103,8 @@ fun EventsScreen(
             "Em preparação" -> tournament.status == "Em preparação"
             "Futebol" -> tournament.sport == "Futebol"
             "Basquetebol" -> tournament.sport == "Basquetebol"
+            "Ténis" -> tournament.sport == "Ténis"
+            "Voleibol" -> tournament.sport == "Voleibol"
             else -> true
         }
 
@@ -109,7 +138,7 @@ fun EventsScreen(
                     onSearchChange = { searchText = it },
                     selectedFilter = selectedFilter,
                     onFilterClick = { selectedFilter = it },
-                    total = if (isAdmin) 24 else MockTournaments.tournaments.size,
+                    total = allTournaments.size,
                     userRole = userRole
                 )
             }
@@ -124,21 +153,53 @@ fun EventsScreen(
                 )
             }
 
-            items(tournaments) { tournament ->
-                TournamentCard(
-                    tournament = tournament,
-                    onClick = {
-                        navController.navigate(
-                            Screen.TournamentDetail.createRoute(tournament.id)
-                        )
-                    }
-                )
+            if (isLoading) {
+                item {
+                    InfoCard(text = "A carregar torneios...")
+                }
+            } else if (error != null) {
+                item {
+                    InfoCard(text = error ?: "Erro ao carregar torneios")
+                }
+            } else if (tournaments.isEmpty()) {
+                item {
+                    InfoCard(text = "Ainda não existem torneios para mostrar.")
+                }
+            } else {
+                items(tournaments) { tournament ->
+                    TournamentCard(
+                        tournament = tournament,
+                        onClick = {
+                            navController.navigate(
+                                Screen.TournamentDetail.createRoute(tournament.id)
+                            )
+                        }
+                    )
+                }
             }
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun InfoCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
     }
 }
 
@@ -340,6 +401,14 @@ private fun FilterRows(
             FilterChipPill("Basquetebol", selectedFilter == "Basquetebol") {
                 onFilterClick("Basquetebol")
             }
+
+            FilterChipPill("Ténis", selectedFilter == "Ténis") {
+                onFilterClick("Ténis")
+            }
+
+            FilterChipPill("Voleibol", selectedFilter == "Voleibol") {
+                onFilterClick("Voleibol")
+            }
         }
     }
 }
@@ -511,6 +580,8 @@ private fun sportColor(sport: String): Color {
         "Futsal" -> Color(0xFFD7EBFF)
         "Futebol" -> AthloColors.SuccessBg
         "Basquetebol" -> AthloColors.WarningBg
+        "Ténis" -> AthloColors.InfoBg
+        "Voleibol" -> AthloColors.SuccessBg
         else -> AthloColors.InfoBg
     }
 }
@@ -520,6 +591,8 @@ private fun sportTextColor(sport: String): Color {
         "Futsal" -> AthloColors.Blue
         "Futebol" -> Color(0xFF4D8B4A)
         "Basquetebol" -> Color(0xFF9A6B22)
+        "Ténis" -> AthloColors.Blue
+        "Voleibol" -> Color(0xFF4D8B4A)
         else -> AthloColors.Blue
     }
 }

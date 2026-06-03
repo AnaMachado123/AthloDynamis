@@ -9,5 +9,6 @@ data class Match(
     val scoreA: Int?,
     val scoreB: Int?,
     val status: String,
-    val minute: String? = null
+    val minute: String? = null,
+    val location: String? = null
 )

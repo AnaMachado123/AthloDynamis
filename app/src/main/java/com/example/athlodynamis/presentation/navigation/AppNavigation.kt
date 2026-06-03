@@ -28,35 +28,19 @@ import com.example.athlodynamis.presentation.screens.onboarding.OnboardingScreen
 import com.example.athlodynamis.presentation.screens.profile.EditProfileScreen
 import com.example.athlodynamis.presentation.screens.profile.ProfileScreen
 import com.example.athlodynamis.presentation.screens.stats.StatsScreen
+import com.example.athlodynamis.presentation.screens.teams.AddPlayersScreen
 import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
-import com.example.athlodynamis.presentation.screens.teams.AddPlayersScreen
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    /*
-     * TEMPORÁRIO PARA TESTAR:
-     *
-     * ADMIN -> vê Home/Admin, Eventos/Admin e tab Gestão
-     * ORGANIZER -> vê Home/Organizador e Eventos/Organizador
-     * PLAYER -> vê Home/Jogador e Eventos/Jogador
-     *
-     * Depois isto vem do login/ViewModel.
-     */
     val currentUserRole = AthloUserRole.ADMIN
-    /*
-     * TEMPORÁRIO:
-     * Se quiseres testar a Home offline do jogador:
-     *
-     * val currentUserRole = AthloUserRole.PLAYER
-     * val isOffline = true
-     */
     val isOffline = false
 
     val sharedPreferences = remember {
@@ -155,7 +139,10 @@ fun AppNavigation() {
         }
 
         composable(Screen.CreateEvent.route) {
-            CreateEventScreen(navController = navController)
+            CreateEventScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(

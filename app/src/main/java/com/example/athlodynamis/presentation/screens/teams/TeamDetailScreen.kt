@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,19 +39,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.compose.runtime.LaunchedEffect
+import coil.compose.AsyncImage
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.presentation.components.AthloBottomBar
@@ -58,15 +65,9 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.draw.clip
+import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
+
 @Composable
 fun TeamDetailScreen(
     navController: NavController,
@@ -75,22 +76,26 @@ fun TeamDetailScreen(
 ) {
     val viewModel: TeamsViewModel = viewModel()
     val playersViewModel: PlayersViewModel = viewModel()
-    LaunchedEffect(viewModel.teamDeleted) {
-        if (viewModel.teamDeleted) {
-            viewModel.resetTeamDeleted()
-            navController.popBackStack()
-        }
-    }
-    LaunchedEffect(teamId) {
-        playersViewModel.loadPlayersByTeam(teamId)
-    }
+
     val teams by viewModel.teams.collectAsState()
     val players by playersViewModel.players.collectAsState()
     val team = teams.firstOrNull { it.id == teamId }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canManageTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel.teamDeleted) {
+        if (viewModel.teamDeleted) {
+            viewModel.resetTeamDeleted()
+            navController.popBackStack()
+        }
+    }
+
+    LaunchedEffect(teamId) {
+        playersViewModel.loadPlayersByTeam(teamId)
+    }
 
     if (team == null) {
         TeamNotFoundScreen(
@@ -98,11 +103,10 @@ fun TeamDetailScreen(
         )
         return
     }
+
     if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showDeleteDialog = false
-            },
+            onDismissRequest = { showDeleteDialog = false },
             shape = RoundedCornerShape(28.dp),
             containerColor = AthloColors.CardWhite,
             titleContentColor = AthloColors.TextPrimary,
@@ -132,9 +136,7 @@ fun TeamDetailScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                    }
+                    onClick = { showDeleteDialog = false }
                 ) {
                     Text(
                         text = "Cancelar",
@@ -145,9 +147,6 @@ fun TeamDetailScreen(
             }
         )
     }
-
-
-
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -175,9 +174,7 @@ fun TeamDetailScreen(
                     title = "Equipas",
                     subtitle = "Detalhes da equipa",
                     isAdmin = isAdmin,
-                    onBackClick = {
-                        navController.popBackStack()
-                    }
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
@@ -197,7 +194,13 @@ fun TeamDetailScreen(
                 items(players) { player ->
                     PlayerRow(
                         player = player,
-                        canRemovePlayer = canManageTeam
+                        canRemovePlayer = canManageTeam,
+                        onRemovePlayerClick = {
+                            playersViewModel.deletePlayer(
+                                playerId = player.id,
+                                teamId = team.id
+                            )
+                        }
                     )
                 }
             }
@@ -258,9 +261,7 @@ fun TeamDetailScreen(
             if (isAdmin) {
                 item {
                     DeleteTeamButton(
-                        onDeleteClick = {
-                            showDeleteDialog = true
-                        }
+                        onDeleteClick = { showDeleteDialog = true }
                     )
                 }
             }
@@ -299,9 +300,7 @@ private fun DetailHeader(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .padding(bottom = 12.dp)
-                        .clickable {
-                            onBackClick()
-                        }
+                        .clickable { onBackClick() }
                 )
 
                 Text(
@@ -376,7 +375,6 @@ private fun TeamIdentityCard(team: Team) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-
                 Box(
                     modifier = Modifier
                         .size(58.dp)
@@ -386,9 +384,7 @@ private fun TeamIdentityCard(team: Team) {
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-
                     if (!team.logoUrl.isNullOrBlank()) {
-
                         AsyncImage(
                             model = team.logoUrl,
                             contentDescription = "Escudo da equipa",
@@ -397,9 +393,7 @@ private fun TeamIdentityCard(team: Team) {
                                 .clip(RoundedCornerShape(18.dp)),
                             contentScale = ContentScale.Crop
                         )
-
                     } else {
-
                         Icon(
                             imageVector = Icons.Default.Groups,
                             contentDescription = "Equipa",
@@ -460,7 +454,8 @@ private fun SectionTitle(title: String) {
 @Composable
 private fun PlayerRow(
     player: Player,
-    canRemovePlayer: Boolean
+    canRemovePlayer: Boolean,
+    onRemovePlayerClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -503,7 +498,7 @@ private fun PlayerRow(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "Jogador da equipa",
+                    text = "${player.position} · Nº ${player.number}",
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -513,7 +508,8 @@ private fun PlayerRow(
                 Box(
                     modifier = Modifier
                         .size(34.dp)
-                        .background(AthloColors.DangerBg, CircleShape),
+                        .background(AthloColors.DangerBg, CircleShape)
+                        .clickable { onRemovePlayerClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -835,7 +831,6 @@ private fun DeleteTeamButton(
 private fun TeamNotFoundScreen(
     onBackClick: () -> Unit
 ) {
-
     Scaffold(
         containerColor = AthloColors.Background
     ) { innerPadding ->
