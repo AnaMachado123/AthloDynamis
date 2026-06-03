@@ -36,35 +36,46 @@ object MockTournaments {
 
     val matches = listOf(
         Match(
-            id = "1",
-            tournamentId = "2",
-            time = "10:00",
-            teamA = "Equipa 1",
-            teamB = "Equipa 2",
+            id = 1L,
+            tournamentId = 2L,
+            teamAId = 2L,
+            teamBId = 3L,
+            teamAName = "Os mais lindos",
+            teamBName = "Põe te Fino",
             scoreA = 3,
             scoreB = 1,
-            status = "Terminado"
+            status = "Terminado",
+            matchTime = "10:00",
+            minute = 80,
+            location = "Pavilhão Municipal Braga"
         ),
         Match(
-            id = "2",
-            tournamentId = "2",
-            time = "12:00",
-            teamA = "Equipa 3",
-            teamB = "Equipa 4",
-            scoreA = 2,
-            scoreB = 2,
+            id = 2L,
+            tournamentId = 2L,
+            teamAId = 2L,
+            teamBId = 4L,
+            teamAName = "Os mais lindos",
+            teamBName = "Girl Power",
+            scoreA = 1,
+            scoreB = 0,
             status = "A decorrer",
-            minute = "33'"
+            matchTime = "12:00",
+            minute = 38,
+            location = "Pavilhão Municipal Braga"
         ),
         Match(
-            id = "3",
-            tournamentId = "1",
-            time = "15:00",
-            teamA = "Equipa 5",
-            teamB = "Equipa 6",
-            scoreA = null,
-            scoreB = null,
-            status = "Agendado"
+            id = 3L,
+            tournamentId = 1L,
+            teamAId = 5L,
+            teamBId = 6L,
+            teamAName = "Flor de sal",
+            teamBName = "As mosqueteiras",
+            scoreA = 0,
+            scoreB = 0,
+            status = "Agendado",
+            matchTime = "15:00",
+            minute = null,
+            location = "Pavilhão Municipal José Natário"
         )
     )
 
@@ -141,7 +152,9 @@ object MockTournaments {
     fun getTournamentById(id: String): Tournament {
         return tournaments.find { it.id == id } ?: tournaments.first()
     }
+
     fun getMatchById(id: String): Match {
-        return matches.find { it.id == id } ?: matches.first()
+        val matchId = id.toLongOrNull()
+        return matches.find { it.id == matchId } ?: matches.first()
     }
 }

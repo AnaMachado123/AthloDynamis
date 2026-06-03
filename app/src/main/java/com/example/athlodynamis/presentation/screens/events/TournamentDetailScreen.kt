@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,15 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.domain.model.Match
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
-import androidx.compose.foundation.lazy.items
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 
 @Composable
 fun TournamentDetailScreen(
@@ -62,18 +63,27 @@ fun TournamentDetailScreen(
 ) {
     val tournamentsViewModel: TournamentsViewModel = viewModel()
     val matchesViewModel: MatchesViewModel = viewModel()
+
     val tournament by tournamentsViewModel.selectedTournament.collectAsState()
     val isLoading by tournamentsViewModel.isLoading.collectAsState()
     val error by tournamentsViewModel.error.collectAsState()
+
     val matches by matchesViewModel.matches.collectAsState()
     val matchesError by matchesViewModel.error.collectAsState()
+
     var selectedTab by remember { mutableStateOf("Equipas") }
 
-    val canManageEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+    val canManageEvent = userRole == AthloUserRole.ADMIN ||
+            userRole == AthloUserRole.ORGANIZER
+
+    val tournamentIdLong = tournamentId.toLongOrNull()
 
     LaunchedEffect(tournamentId) {
         tournamentsViewModel.loadTournamentById(tournamentId)
-        matchesViewModel.loadMatches(tournamentId.toLong())
+
+        tournamentIdLong?.let {
+            matchesViewModel.loadMatches(it)
+        }
     }
 
     Scaffold(
@@ -113,127 +123,126 @@ fun TournamentDetailScreen(
                 )
             }
 
-            if (isLoading) {
-                item {
-                    InfoCard(text = "A carregar torneio...")
-                }
-            } else if (error != null) {
-                item {
-                    InfoCard(text = error ?: "Erro ao carregar torneio")
-                }
-            } else if (tournament == null) {
-                item {
-                    InfoCard(text = "Torneio não encontrado.")
-                }
-            } else {
-                item {
-                    TournamentInfoCard(tournament = tournament!!)
+            when {
+                tournamentIdLong == null -> {
+                    item {
+                        InfoCard(text = "ID do torneio inválido.")
+                    }
                 }
 
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Jogos do torneio",
-                            color = AthloColors.TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                isLoading -> {
+                    item {
+                        InfoCard(text = "A carregar torneio...")
+                    }
+                }
 
-                        if (canManageEvent) {
-                            Button(
+                error != null -> {
+                    item {
+                        InfoCard(text = error ?: "Erro ao carregar torneio")
+                    }
+                }
+
+                tournament == null -> {
+                    item {
+                        InfoCard(text = "Torneio não encontrado.")
+                    }
+                }
+
+                else -> {
+                    item {
+                        TournamentInfoCard(tournament = tournament!!)
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Jogos do torneio",
+                                color = AthloColors.TextSecondary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            if (canManageEvent) {
+                                Button(
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.AddMatch.createRoute(tournamentId)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AthloColors.Blue
+                                    ),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 14.dp,
+                                        vertical = 8.dp
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Adicionar Jogo",
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    Spacer(modifier = Modifier.width(6.dp))
+
+                                    Icon(
+                                        imageVector = Icons.Default.AddCircle,
+                                        contentDescription = "Adicionar jogo",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (matchesError != null) {
+                        item {
+                            InfoCard(text = matchesError ?: "Erro ao carregar jogos")
+                        }
+                    } else if (matches.isEmpty()) {
+                        item {
+                            InfoCard(text = "Ainda não existem jogos neste torneio.")
+                        }
+                    } else {
+                        items(
+                            items = matches,
+                            key = { match -> match.id }
+                        ) { match ->
+                            MatchCard(
+                                match = match,
                                 onClick = {
                                     navController.navigate(
-                                        Screen.AddMatch.createRoute(tournamentId)
+                                        Screen.MatchDetail.createRoute(match.id.toString())
                                     )
-                                },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = AthloColors.Blue
-                                ),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = "Adicionar Jogo",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Spacer(modifier = Modifier.width(6.dp))
-
-                                Icon(
-                                    imageVector = Icons.Default.AddCircle,
-                                    contentDescription = "Adicionar jogo",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                                }
+                            )
                         }
                     }
-                }
 
-                item {
-                    MatchCard(
-                        matchId = "1",
-                        time = "10:00",
-                        teamA = "Equipa 1",
-                        teamB = "Equipa 2",
-                        scoreA = "3",
-                        scoreB = "1",
-                        status = "Terminado",
-                        minute = "",
-                        onClick = {
-                            navController.navigate(Screen.MatchDetail.createRoute("1"))
-                        }
-                    )
-                }
-
-                if (matchesError != null) {
                     item {
-                        InfoCard(text = matchesError ?: "Erro ao carregar jogos")
-                    }
-                } else if (matches.isEmpty()) {
-                    item {
-                        InfoCard(text = "Ainda não existem jogos neste torneio.")
-                    }
-                } else {
-                    items(matches) { match ->
-                        MatchCard(
-                            matchId = match.id,
-                            time = match.time.ifBlank { "Hora por definir" },
-                            teamA = match.teamA,
-                            teamB = match.teamB,
-                            scoreA = match.scoreA?.toString() ?: "-",
-                            scoreB = match.scoreB?.toString() ?: "-",
-                            status = match.status,
-                            minute = match.minute ?: "",
-                            onClick = {
-                                navController.navigate(Screen.MatchDetail.createRoute(match.id))
+                        TournamentTabs(
+                            selectedTab = selectedTab,
+                            onTabSelected = {
+                                selectedTab = it
                             }
                         )
                     }
-                }
 
-                item {
-                    TournamentTabs(
-                        selectedTab = selectedTab,
-                        onTabSelected = {
-                            selectedTab = it
+                    item {
+                        if (selectedTab == "Equipas") {
+                            TeamsTable()
+                        } else {
+                            StandingsTable()
                         }
-                    )
-                }
-
-                item {
-                    if (selectedTab == "Equipas") {
-                        TeamsTable()
-                    } else {
-                        StandingsTable()
                     }
                 }
             }
@@ -384,18 +393,15 @@ private fun InfoCard(text: String) {
         )
     }
 }
+
 @Composable
 private fun MatchCard(
-    matchId: String,
-    time: String,
-    teamA: String,
-    teamB: String,
-    scoreA: String,
-    scoreB: String,
-    status: String,
-    minute: String,
+    match: Match,
     onClick: () -> Unit
 ) {
+    val minuteText = match.minute?.let { "${it}'" } ?: ""
+    val timeText = match.matchTime?.ifBlank { null } ?: "Hora por definir"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -408,7 +414,7 @@ private fun MatchCard(
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = time,
+                text = timeText,
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -420,13 +426,13 @@ private fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TeamMiniBadge(
-                    label = "EQP",
+                    label = match.teamAName.toAcronym(),
                     color = Color(0xFFD7EBFF),
                     textColor = AthloColors.Blue
                 )
 
                 Text(
-                    text = teamA,
+                    text = match.teamAName,
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -435,7 +441,7 @@ private fun MatchCard(
                         .weight(1f)
                 )
 
-                ScoreBox(score = scoreA)
+                ScoreBox(score = match.scoreA.toString())
 
                 Text(
                     text = "-",
@@ -443,10 +449,10 @@ private fun MatchCard(
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
 
-                ScoreBox(score = scoreB)
+                ScoreBox(score = match.scoreB.toString())
 
                 Text(
-                    text = teamB,
+                    text = match.teamBName,
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -456,7 +462,7 @@ private fun MatchCard(
                 )
 
                 TeamMiniBadge(
-                    label = "EQP",
+                    label = match.teamBName.toAcronym(),
                     color = Color(0xFFDFF3D8),
                     textColor = Color(0xFF4D8B4A)
                 )
@@ -468,22 +474,22 @@ private fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 StatusPill(
-                    text = status,
-                    background = if (status == "A decorrer") {
+                    text = match.status,
+                    background = if (match.status.equals("A decorrer", ignoreCase = true)) {
                         AthloColors.DangerBg
                     } else {
                         AthloColors.NeutralBg
                     },
-                    textColor = if (status == "A decorrer") {
+                    textColor = if (match.status.equals("A decorrer", ignoreCase = true)) {
                         Color(0xFFC83755)
                     } else {
                         AthloColors.TextSecondary
                     }
                 )
 
-                if (minute.isNotBlank()) {
+                if (minuteText.isNotBlank()) {
                     Text(
-                        text = minute,
+                        text = minuteText,
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(start = 10.dp)
@@ -571,13 +577,13 @@ private fun TeamsTable() {
         Column(
             modifier = Modifier.padding(18.dp)
         ) {
-            TeamStandingRow("Equipa 1", "8 jogadores · Liga", "9 pts", Color(0xFFD7EBFF), AthloColors.Blue)
+            TeamStandingRow("Os mais lindos", "Basquetebol", "9 pts", Color(0xFFD7EBFF), AthloColors.Blue)
             Separator()
-            TeamStandingRow("Equipa 2", "7 jogadores · Liga", "6 pts", Color(0xFFDFF3D8), Color(0xFF4D8B4A))
+            TeamStandingRow("Põe te Fino", "Futebol", "6 pts", Color(0xFFDFF3D8), Color(0xFF4D8B4A))
             Separator()
-            TeamStandingRow("Equipa 3", "8 jogadores · Liga", "3 pts", Color(0xFFFFEFD7), Color(0xFF9A6B22))
+            TeamStandingRow("Girl Power", "Voleibol", "3 pts", Color(0xFFFFEFD7), Color(0xFF9A6B22))
             Separator()
-            TeamStandingRow("Equipa 4", "6 jogadores · Liga", "1 pts", Color(0xFFF8FFB0), Color(0xFFD4DD00))
+            TeamStandingRow("Flor de sal", "Futebol", "1 pts", Color(0xFFF8FFB0), Color(0xFFD4DD00))
         }
     }
 }
@@ -597,7 +603,7 @@ private fun TeamStandingRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         TeamMiniBadge(
-            label = "EQP",
+            label = name.toAcronym(),
             color = badgeColor,
             textColor = badgeTextColor
         )
@@ -667,13 +673,13 @@ private fun StandingsTable() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            StandingRow("1", "Equipa 1", "3", "3", "9", listOf(true, true, true), Color(0xFFD7EBFF), AthloColors.Blue)
+            StandingRow("1", "Os mais lindos", "3", "3", "9", listOf(true, true, true), Color(0xFFD7EBFF), AthloColors.Blue)
             Separator()
-            StandingRow("2", "Equipa 2", "3", "2", "6", listOf(false, true, true), Color(0xFFDFF3D8), Color(0xFF4D8B4A))
+            StandingRow("2", "Põe te Fino", "3", "2", "6", listOf(false, true, true), Color(0xFFDFF3D8), Color(0xFF4D8B4A))
             Separator()
-            StandingRow("3", "Equipa 3", "3", "1", "4", listOf(false, false, true), Color(0xFFFFEFD7), Color(0xFF9A6B22))
+            StandingRow("3", "Girl Power", "3", "1", "4", listOf(false, false, true), Color(0xFFFFEFD7), Color(0xFF9A6B22))
             Separator()
-            StandingRow("4", "Equipa 4", "3", "0", "1", listOf(false, false, false), Color(0xFFF8FFB0), Color(0xFFD4DD00))
+            StandingRow("4", "Flor de sal", "3", "0", "1", listOf(false, false, false), Color(0xFFF8FFB0), Color(0xFFD4DD00))
         }
     }
 }
@@ -702,7 +708,7 @@ private fun StandingRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TeamMiniBadge(
-                label = "EQP",
+                label = team.toAcronym(),
                 color = badgeColor,
                 textColor = badgeTextColor
             )
@@ -827,4 +833,13 @@ private fun Separator() {
             .height(1.dp)
             .background(Color(0xFFE0DED6))
     )
+}
+
+private fun String.toAcronym(): String {
+    return split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") {
+            it.first().uppercase()
+        }
 }

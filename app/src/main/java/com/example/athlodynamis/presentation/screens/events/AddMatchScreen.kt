@@ -56,6 +56,21 @@ import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 
+private data class TeamOption(
+    val id: Long,
+    val name: String
+)
+
+private val teamOptions = listOf(
+    TeamOption(id = 2L, name = "Os mais lindos"),
+    TeamOption(id = 3L, name = "Põe te Fino"),
+    TeamOption(id = 4L, name = "Girl Power"),
+    TeamOption(id = 5L, name = "Flor de sal"),
+    TeamOption(id = 6L, name = "As mosqueteiras"),
+    TeamOption(id = 7L, name = "Dados da sorte"),
+    TeamOption(id = 8L, name = "CM")
+)
+
 @Composable
 fun AddMatchScreen(
     navController: NavController,
@@ -73,13 +88,16 @@ fun AddMatchScreen(
 
     var matchTime by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
-    var teamA by remember { mutableStateOf("") }
-    var teamB by remember { mutableStateOf("") }
+    var teamA by remember { mutableStateOf<TeamOption?>(null) }
+    var teamB by remember { mutableStateOf<TeamOption?>(null) }
 
-    val canSave = matchTime.isNotBlank() &&
-            teamA.isNotBlank() &&
-            teamB.isNotBlank() &&
-            teamA != teamB
+    val tournamentId = eventId.toLongOrNull()
+
+    val canSave = tournamentId != null &&
+            matchTime.isNotBlank() &&
+            teamA != null &&
+            teamB != null &&
+            teamA?.id != teamB?.id
 
     LaunchedEffect(matchCreated) {
         if (matchCreated) {
@@ -148,9 +166,9 @@ fun AddMatchScreen(
 
                     FieldLabel("Associar Equipa 1")
                     TeamDropdown(
-                        selectedValue = teamA,
+                        selectedTeam = teamA,
                         placeholder = "Selecionar equipa 1",
-                        options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
+                        options = teamOptions,
                         onValueSelected = {
                             teamA = it
                         }
@@ -160,9 +178,9 @@ fun AddMatchScreen(
 
                     FieldLabel("Associar Equipa 2")
                     TeamDropdown(
-                        selectedValue = teamB,
+                        selectedTeam = teamB,
                         placeholder = "Selecionar equipa 2",
-                        options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
+                        options = teamOptions,
                         onValueSelected = {
                             teamB = it
                         }
@@ -170,9 +188,18 @@ fun AddMatchScreen(
                 }
             }
 
-            if (teamA.isNotBlank() && teamA == teamB) {
+            if (teamA != null && teamA?.id == teamB?.id) {
                 Text(
                     text = "As equipas não podem ser iguais.",
+                    color = Color(0xFFCC1F2F),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (tournamentId == null) {
+                Text(
+                    text = "ID do torneio inválido.",
                     color = Color(0xFFCC1F2F),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold
@@ -190,21 +217,29 @@ fun AddMatchScreen(
 
             Button(
                 onClick = {
-                    matchesViewModel.createMatch(
-                        CreateMatchDto(
-                            tournamentId = eventId.toLong(),
-                            teamAName = teamA,
-                            teamBName = teamB,
-                            scoreA = 0,
-                            scoreB = 0,
-                            status = "Agendado",
-                            matchTime = matchTime.trim(),
-                            minute = "",
-                            location = location.trim().ifBlank { null }
-                        )
-                    )
+                    val selectedTeamA = teamA
+                    val selectedTeamB = teamB
+                    val selectedTournamentId = tournamentId
 
-                    matchCreated = true
+                    if (selectedTeamA != null && selectedTeamB != null && selectedTournamentId != null) {
+                        matchesViewModel.createMatch(
+                            CreateMatchDto(
+                                tournamentId = selectedTournamentId,
+                                teamAId = selectedTeamA.id,
+                                teamBId = selectedTeamB.id,
+                                teamAName = selectedTeamA.name,
+                                teamBName = selectedTeamB.name,
+                                scoreA = 0,
+                                scoreB = 0,
+                                status = "Agendado",
+                                matchTime = matchTime.trim(),
+                                minute = null,
+                                location = location.trim().ifBlank { null }
+                            )
+                        )
+
+                        matchCreated = true
+                    }
                 },
                 enabled = canSave,
                 modifier = Modifier
@@ -374,10 +409,10 @@ private fun AthloTextField(
 
 @Composable
 private fun TeamDropdown(
-    selectedValue: String,
+    selectedTeam: TeamOption?,
     placeholder: String,
-    options: List<String>,
-    onValueSelected: (String) -> Unit
+    options: List<TeamOption>,
+    onValueSelected: (TeamOption) -> Unit
 ) {
     var expanded by remember {
         mutableStateOf(false)
@@ -397,8 +432,8 @@ private fun TeamDropdown(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = selectedValue.ifBlank { placeholder },
-                color = if (selectedValue.isBlank()) {
+                text = selectedTeam?.name ?: placeholder,
+                color = if (selectedTeam == null) {
                     AthloColors.TextMuted
                 } else {
                     AthloColors.TextPrimary
@@ -425,7 +460,7 @@ private fun TeamDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = option,
+                            text = option.name,
                             color = AthloColors.TextPrimary
                         )
                     },
