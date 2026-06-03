@@ -23,10 +23,50 @@ class PlayerRepository {
             .map { it.toPlayer() }
     }
 
+    suspend fun getAvailablePlayers(): List<Player> {
+        return client
+            .from("players")
+            .select()
+            .decodeList<PlayerDto>()
+            .map { it.toPlayer() }
+            .filter { it.teamId == null }
+    }
+
     suspend fun createPlayer(player: CreatePlayerDto) {
         client
             .from("players")
             .insert(player)
+    }
+
+    suspend fun assignPlayerToTeam(
+        playerId: Int,
+        teamId: Int
+    ) {
+        client
+            .from("players")
+            .update(
+                mapOf(
+                    "team_id" to teamId
+                )
+            ) {
+                filter {
+                    eq("id", playerId)
+                }
+            }
+    }
+
+    suspend fun removePlayerFromTeam(playerId: Int) {
+        client
+            .from("players")
+            .update(
+                mapOf(
+                    "team_id" to null
+                )
+            ) {
+                filter {
+                    eq("id", playerId)
+                }
+            }
     }
 
     suspend fun deletePlayer(playerId: Int) {

@@ -71,4 +71,54 @@ class MatchesViewModel : ViewModel() {
             }
         }
     }
+
+    fun updateMatchScore(
+        matchId: Long,
+        scoreA: Int,
+        scoreB: Int,
+        minute: Int,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _error.value = null
+
+            try {
+                repository.updateMatchScore(
+                    matchId = matchId,
+                    scoreA = scoreA,
+                    scoreB = scoreB,
+                    minute = minute
+                )
+
+                loadMatchById(matchId)
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Erro ao atualizar marcador"
+            }
+        }
+    }
+
+    fun updateMatchStatus(
+        matchId: Long,
+        status: String,
+        minute: Int?,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _error.value = null
+
+            try {
+                repository.updateMatchStatus(
+                    matchId = matchId,
+                    status = status,
+                    minute = minute
+                )
+
+                loadMatchById(matchId)
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Erro ao atualizar estado do jogo"
+            }
+        }
+    }
 }

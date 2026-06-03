@@ -6,6 +6,8 @@ import com.example.athlodynamis.data.remote.dto.MatchDto
 import com.example.athlodynamis.data.remote.dto.toMatch
 import com.example.athlodynamis.domain.model.Match
 import io.github.jan.supabase.postgrest.from
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class MatchRepository {
 
@@ -47,4 +49,65 @@ class MatchRepository {
             .from("matches")
             .insert(match)
     }
+
+    suspend fun updateMatchScore(
+        matchId: Long,
+        scoreA: Int,
+        scoreB: Int,
+        minute: Int
+    ) {
+        client
+            .from("matches")
+            .update(
+                UpdateMatchScoreDto(
+                    scoreA = scoreA,
+                    scoreB = scoreB,
+                    minute = minute,
+                    status = "A decorrer"
+                )
+            ) {
+                filter {
+                    eq("id", matchId)
+                }
+            }
+    }
+
+    suspend fun updateMatchStatus(
+        matchId: Long,
+        status: String,
+        minute: Int?
+    ) {
+        client
+            .from("matches")
+            .update(
+                UpdateMatchStatusDto(
+                    status = status,
+                    minute = minute
+                )
+            ) {
+                filter {
+                    eq("id", matchId)
+                }
+            }
+    }
 }
+
+@Serializable
+private data class UpdateMatchScoreDto(
+    @SerialName("score_a")
+    val scoreA: Int,
+
+    @SerialName("score_b")
+    val scoreB: Int,
+
+    val minute: Int,
+
+    val status: String
+)
+
+@Serializable
+private data class UpdateMatchStatusDto(
+    val status: String,
+
+    val minute: Int?
+)

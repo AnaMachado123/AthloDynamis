@@ -7,13 +7,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PlayerDto(
     val id: Int,
+
     @SerialName("team_id")
-    val teamId: Int,
+    val teamId: Int?,
+
     val name: String,
     val position: String,
     val number: Int,
     val goals: Int,
     val assists: Int,
+
     @SerialName("yellow_cards")
     val yellowCards: Int
 )
@@ -22,11 +25,13 @@ data class PlayerDto(
 data class CreatePlayerDto(
     @SerialName("team_id")
     val teamId: Int,
+
     val name: String,
     val position: String,
     val number: Int,
     val goals: Int = 0,
     val assists: Int = 0,
+
     @SerialName("yellow_cards")
     val yellowCards: Int = 0
 )

@@ -2,7 +2,7 @@ package com.example.athlodynamis.domain.model
 
 data class Player(
     val id: Int,
-    val teamId: Int,
+    val teamId: Int?,
     val name: String,
     val position: String,
     val number: Int,
