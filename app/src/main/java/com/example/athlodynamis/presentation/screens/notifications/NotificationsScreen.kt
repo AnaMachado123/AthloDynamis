@@ -45,6 +45,7 @@ import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.components.AthloUserRole
 
 data class AthloNotification(
     val id: Int,
@@ -66,7 +67,10 @@ enum class NotificationType {
 }
 
 @Composable
-fun NotificationsScreen(navController: NavController) {
+fun NotificationsScreen(
+    navController: NavController,
+    userRole: AthloUserRole
+) {
     val notifications = remember {
         listOf(
             AthloNotification(
@@ -133,7 +137,8 @@ fun NotificationsScreen(navController: NavController) {
         bottomBar = {
             AthloBottomBar(
                 navController = navController,
-                currentRoute = Screen.Notifications.route
+                currentRoute = Screen.Notifications.route,
+                userRole = userRole
             )
         }
     ) { innerPadding ->

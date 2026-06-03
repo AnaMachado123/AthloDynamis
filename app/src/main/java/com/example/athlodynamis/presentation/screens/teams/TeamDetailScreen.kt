@@ -55,6 +55,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -83,7 +87,7 @@ fun TeamDetailScreen(
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canManageTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
-
+    val lifecycleOwner = LocalLifecycleOwner.current
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.teamDeleted) {
@@ -95,6 +99,20 @@ fun TeamDetailScreen(
 
     LaunchedEffect(teamId) {
         playersViewModel.loadPlayersByTeam(teamId)
+    }
+
+    DisposableEffect(lifecycleOwner, teamId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                playersViewModel.loadPlayersByTeam(teamId)
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     if (team == null) {
@@ -196,7 +214,7 @@ fun TeamDetailScreen(
                         player = player,
                         canRemovePlayer = canManageTeam,
                         onRemovePlayerClick = {
-                            playersViewModel.deletePlayer(
+                            playersViewModel.removePlayerFromTeam(
                                 playerId = player.id,
                                 teamId = team.id
                             )

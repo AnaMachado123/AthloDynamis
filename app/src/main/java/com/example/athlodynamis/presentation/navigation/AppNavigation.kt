@@ -40,7 +40,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    val currentUserRole = AthloUserRole.ADMIN
+    val currentUserRole = AthloUserRole.ORGANIZER
     val isOffline = false
 
     val sharedPreferences = remember {
@@ -302,7 +302,10 @@ fun AppNavigation() {
         }
 
         composable(Screen.Notifications.route) {
-            NotificationsScreen(navController = navController)
+            NotificationsScreen(
+                navController = navController,
+                userRole = currentUserRole
+            )
         }
 
         composable(Screen.Profile.route) {
