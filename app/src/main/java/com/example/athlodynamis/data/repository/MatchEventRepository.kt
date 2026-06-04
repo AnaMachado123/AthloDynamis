@@ -21,7 +21,10 @@ class MatchEventRepository {
             }
             .decodeList<MatchEventDto>()
             .map { it.toMatchEvent() }
-            .sortedBy { it.minute ?: 0 }
+            .sortedWith(
+                compareByDescending<MatchEvent> { it.minute ?: 0 }
+                    .thenByDescending { it.id }
+            )
     }
 
     suspend fun createMatchEvent(event: CreateMatchEventDto) {

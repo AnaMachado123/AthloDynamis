@@ -61,6 +61,15 @@ import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
 
+private const val EVENT_GOAL = "Golo"
+private const val EVENT_YELLOW_CARD = "Cartão amarelo"
+private const val EVENT_RED_CARD = "Cartão vermelho"
+
+private data class EventOption(
+    val label: String,
+    val emoji: String
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageLiveMatchScreen(
@@ -106,16 +115,26 @@ fun ManageLiveMatchScreen(
         mutableStateOf(matchMinute)
     }
 
-    var selectedGoalTeam by remember { mutableStateOf(teamAName) }
-    var selectedGoalSide by remember { mutableStateOf("A") }
+    var selectedEventType by remember {
+        mutableStateOf(EVENT_GOAL)
+    }
+
+    var selectedEventTeam by remember { mutableStateOf(teamAName) }
+    var selectedEventSide by remember { mutableStateOf("A") }
     var selectedPlayer by remember { mutableStateOf<Player?>(null) }
 
     var showPlayerPicker by remember { mutableStateOf(false) }
-    var showGoalSuccess by remember { mutableStateOf(false) }
+    var showEventSuccess by remember { mutableStateOf(false) }
 
-    var lastGoalEvent by remember {
-        mutableStateOf<LiveGoalConfirmation?>(null)
+    var lastEventConfirmation by remember {
+        mutableStateOf<LiveEventConfirmation?>(null)
     }
+
+    val eventOptions = listOf(
+        EventOption(EVENT_GOAL, "⚽"),
+        EventOption(EVENT_YELLOW_CARD, "🟨"),
+        EventOption(EVENT_RED_CARD, "🟥")
+    )
 
     val playerNamesById = eventPlayers
         .filter { it.name.isNotBlank() }
@@ -128,10 +147,6 @@ fun ManageLiveMatchScreen(
             matchesViewModel.loadMatchById(currentMatchId)
             matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
         }
-    }
-
-    LaunchedEffect(selectedMatch?.id) {
-        selectedGoalTeam = selectedMatch?.teamAName ?: "Equipa A"
     }
 
     LaunchedEffect(selectedMatch?.minute) {
@@ -223,21 +238,27 @@ fun ManageLiveMatchScreen(
 
             if (!matchStatus.equals("A decorrer", ignoreCase = true)) {
                 InfoCard(
-                    text = "Este jogo não está a decorrer. Só é possível registar golos quando o jogo está ativo."
+                    text = "Este jogo não está a decorrer. Só é possível registar eventos quando o jogo está ativo."
                 )
             }
+
+            EventTypeSelector(
+                selectedEventType = selectedEventType,
+                options = eventOptions,
+                onSelected = { selectedEventType = it }
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                GoalButton(
-                    text = "Golo $teamAName",
+                TeamEventButton(
+                    text = "${eventEmoji(selectedEventType)} $teamAName",
                     modifier = Modifier.weight(1f),
                     enabled = teamAId != null && matchStatus.equals("A decorrer", ignoreCase = true),
                     onClick = {
-                        selectedGoalTeam = teamAName
-                        selectedGoalSide = "A"
+                        selectedEventTeam = teamAName
+                        selectedEventSide = "A"
                         selectedPlayer = null
                         selectedEventMinute = liveMinute
 
@@ -248,13 +269,13 @@ fun ManageLiveMatchScreen(
                     }
                 )
 
-                GoalButton(
-                    text = "Golo $teamBName",
+                TeamEventButton(
+                    text = "${eventEmoji(selectedEventType)} $teamBName",
                     modifier = Modifier.weight(1f),
                     enabled = teamBId != null && matchStatus.equals("A decorrer", ignoreCase = true),
                     onClick = {
-                        selectedGoalTeam = teamBName
-                        selectedGoalSide = "B"
+                        selectedEventTeam = teamBName
+                        selectedEventSide = "B"
                         selectedPlayer = null
                         selectedEventMinute = liveMinute
 
@@ -280,8 +301,9 @@ fun ManageLiveMatchScreen(
     }
 
     if (showPlayerPicker) {
-        GoalPlayerPickerSheet(
-            team = selectedGoalTeam,
+        EventPlayerPickerSheet(
+            team = selectedEventTeam,
+            eventType = selectedEventType,
             minute = selectedEventMinute,
             players = teamPlayers,
             isLoading = isLoadingPlayers,
@@ -303,78 +325,116 @@ fun ManageLiveMatchScreen(
                 showPlayerPicker = false
             },
             onConfirm = {
-                val player = selectedPlayer ?: return@GoalPlayerPickerSheet
+                val player = selectedPlayer ?: return@EventPlayerPickerSheet
 
                 showPlayerPicker = false
+
+                val isGoal = selectedEventType == EVENT_GOAL
 
                 val newScoreA: Int
                 val newScoreB: Int
 
-                if (selectedGoalSide == "A") {
+                if (isGoal && selectedEventSide == "A") {
                     newScoreA = scoreA + 1
                     newScoreB = scoreB
-                } else {
+                } else if (isGoal && selectedEventSide == "B") {
                     newScoreA = scoreA
                     newScoreB = scoreB + 1
+                } else {
+                    newScoreA = scoreA
+                    newScoreB = scoreB
                 }
 
-                val confirmation = LiveGoalConfirmation(
+                val confirmation = LiveEventConfirmation(
+                    eventType = selectedEventType,
                     minute = selectedEventMinute,
                     playerId = player.id,
                     playerName = player.name,
-                    team = selectedGoalTeam
+                    team = selectedEventTeam
                 )
 
-                lastGoalEvent = confirmation
+                lastEventConfirmation = confirmation
 
                 matchEventsViewModel.createMatchEvent(
                     matchId = currentMatchId.toInt(),
                     playerId = player.id,
-                    eventType = "Golo",
+                    eventType = selectedEventType,
                     minute = confirmation.minute,
-                    teamSide = selectedGoalSide,
+                    teamSide = selectedEventSide,
                     onSuccess = {
-                        matchesViewModel.updateMatchScore(
-                            matchId = currentMatchId,
-                            scoreA = newScoreA,
-                            scoreB = newScoreB,
-                            minute = confirmation.minute,
-                            onSuccess = {
-                                matchesViewModel.loadMatchById(currentMatchId)
-                                matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
+                        if (isGoal) {
+                            matchesViewModel.updateMatchScore(
+                                matchId = currentMatchId,
+                                scoreA = newScoreA,
+                                scoreB = newScoreB,
+                                minute = confirmation.minute,
+                                onSuccess = {
+                                    reloadLiveMatchData(
+                                        currentMatchId = currentMatchId,
+                                        matchesViewModel = matchesViewModel,
+                                        matchEventsViewModel = matchEventsViewModel,
+                                        eventPlayersViewModel = eventPlayersViewModel,
+                                        teamAId = teamAId,
+                                        teamBId = teamBId
+                                    )
 
-                                eventPlayersViewModel.loadPlayersByTeams(
-                                    teamAId = teamAId?.toInt(),
-                                    teamBId = teamBId?.toInt()
-                                )
+                                    showEventSuccess = true
+                                }
+                            )
+                        } else {
+                            reloadLiveMatchData(
+                                currentMatchId = currentMatchId,
+                                matchesViewModel = matchesViewModel,
+                                matchEventsViewModel = matchEventsViewModel,
+                                eventPlayersViewModel = eventPlayersViewModel,
+                                teamAId = teamAId,
+                                teamBId = teamBId
+                            )
 
-                                showGoalSuccess = true
-                            }
-                        )
+                            showEventSuccess = true
+                        }
                     }
                 )
             }
         )
     }
 
-    if (showGoalSuccess && lastGoalEvent != null) {
-        GoalSuccessSheet(
-            goalEvent = lastGoalEvent!!,
+    if (showEventSuccess && lastEventConfirmation != null) {
+        EventSuccessSheet(
+            eventConfirmation = lastEventConfirmation!!,
             scoreA = scoreA,
             scoreB = scoreB,
             onClose = {
-                lastGoalEvent = null
-                showGoalSuccess = false
+                lastEventConfirmation = null
+                showEventSuccess = false
             },
             onContinue = {
-                lastGoalEvent = null
-                showGoalSuccess = false
+                lastEventConfirmation = null
+                showEventSuccess = false
             }
         )
     }
 }
 
-data class LiveGoalConfirmation(
+private fun reloadLiveMatchData(
+    currentMatchId: Long,
+    matchesViewModel: MatchesViewModel,
+    matchEventsViewModel: MatchEventsViewModel,
+    eventPlayersViewModel: PlayersViewModel,
+    teamAId: Long?,
+    teamBId: Long?
+) {
+    matchesViewModel.loadMatchById(currentMatchId)
+    matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
+
+    eventPlayersViewModel.loadPlayersByTeams(
+        teamAId = teamAId?.toInt(),
+        teamBId = teamBId?.toInt()
+    )
+}
+
+data class LiveEventConfirmation(
+    val eventType: String,
     val minute: Int,
     val playerId: Int,
     val playerName: String,
@@ -596,7 +656,95 @@ private fun TeamSide(
 }
 
 @Composable
-private fun GoalButton(
+private fun EventTypeSelector(
+    selectedEventType: String,
+    options: List<EventOption>,
+    onSelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp)
+        ) {
+            Text(
+                text = "Tipo de evento",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                options.forEach { option ->
+                    EventTypeButton(
+                        option = option,
+                        selected = selectedEventType == option.label,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            onSelected(option.label)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventTypeButton(
+    option: EventOption,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val background = if (selected) {
+        AthloColors.Navy
+    } else {
+        AthloColors.NeutralBg
+    }
+
+    val textColor = if (selected) {
+        Color.White
+    } else {
+        AthloColors.TextPrimary
+    }
+
+    Box(
+        modifier = modifier
+            .height(70.dp)
+            .background(background, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = option.emoji,
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = option.label,
+                color = textColor,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun TeamEventButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean,
@@ -723,6 +871,8 @@ private fun LiveEventRow(
     teamName: String,
     playerName: String
 ) {
+    val colors = eventColors(event.eventType)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -737,14 +887,12 @@ private fun LiveEventRow(
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(AthloColors.SuccessBg, CircleShape),
+                .background(colors.first, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.SportsSoccer,
-                contentDescription = event.eventType,
-                tint = Color(0xFF3F7A28),
-                modifier = Modifier.size(18.dp)
+            Text(
+                text = eventEmoji(event.eventType),
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 
@@ -784,8 +932,9 @@ private fun LiveEventRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GoalPlayerPickerSheet(
+private fun EventPlayerPickerSheet(
     team: String,
+    eventType: String,
     minute: Int,
     players: List<Player>,
     isLoading: Boolean,
@@ -815,7 +964,7 @@ private fun GoalPlayerPickerSheet(
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
             Text(
-                text = "Quem marcou o golo?",
+                text = eventType,
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -832,7 +981,7 @@ private fun GoalPlayerPickerSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             StatusPill(
-                text = team,
+                text = "$team · ${eventEmoji(eventType)}",
                 background = AthloColors.SoftBlue,
                 textColor = AthloColors.Blue
             )
@@ -894,7 +1043,7 @@ private fun GoalPlayerPickerSheet(
             ) {
                 Text(
                     text = selectedPlayer?.let {
-                        "Confirmar golo - ${it.name} aos $minute'"
+                        "Confirmar - ${it.name} aos $minute'"
                     } ?: "Seleciona um jogador",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -1068,8 +1217,8 @@ private fun PlayerPickerRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GoalSuccessSheet(
-    goalEvent: LiveGoalConfirmation,
+private fun EventSuccessSheet(
+    eventConfirmation: LiveEventConfirmation,
     scoreA: Int,
     scoreB: Int,
     onClose: () -> Unit,
@@ -1102,7 +1251,7 @@ private fun GoalSuccessSheet(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Golo registado",
+                    contentDescription = "Evento registado",
                     tint = Color(0xFF4D8B4A),
                     modifier = Modifier.size(52.dp)
                 )
@@ -1111,7 +1260,7 @@ private fun GoalSuccessSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Golo registado!",
+                text = "Evento registado!",
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
@@ -1136,25 +1285,23 @@ private fun GoalSuccessSheet(
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.SportsSoccer,
-                    contentDescription = "Golo",
-                    tint = Color(0xFF4D8B4A),
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = eventEmoji(eventConfirmation.eventType),
+                    style = MaterialTheme.typography.titleMedium
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Column {
                     Text(
-                        text = goalEvent.playerName,
+                        text = eventConfirmation.playerName,
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = "${goalEvent.team} · ${goalEvent.minute}'",
+                        text = "${eventConfirmation.eventType} · ${eventConfirmation.team} · ${eventConfirmation.minute}'",
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -1274,6 +1421,24 @@ private fun AdminBadge(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
         )
+    }
+}
+
+private fun eventEmoji(eventType: String): String {
+    return when (eventType) {
+        EVENT_GOAL -> "⚽"
+        EVENT_YELLOW_CARD -> "🟨"
+        EVENT_RED_CARD -> "🟥"
+        else -> "•"
+    }
+}
+
+private fun eventColors(eventType: String): Pair<Color, Color> {
+    return when (eventType) {
+        EVENT_GOAL -> AthloColors.SuccessBg to Color(0xFF3F7A28)
+        EVENT_YELLOW_CARD -> Color(0xFFFFF7CC) to Color(0xFF9A6B22)
+        EVENT_RED_CARD -> AthloColors.DangerBg to Color(0xFFC83755)
+        else -> AthloColors.NeutralBg to AthloColors.TextSecondary
     }
 }
 

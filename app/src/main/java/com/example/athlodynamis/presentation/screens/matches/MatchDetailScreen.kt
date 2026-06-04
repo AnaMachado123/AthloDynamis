@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -55,6 +54,10 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
+
+private const val EVENT_GOAL = "Golo"
+private const val EVENT_YELLOW_CARD = "Cartão amarelo"
+private const val EVENT_RED_CARD = "Cartão vermelho"
 
 @Composable
 fun MatchDetailScreen(
@@ -641,6 +644,7 @@ private fun MatchEventsCard(
 
                     sortedEvents.forEach { event ->
                         EventRow(
+                            eventType = event.eventType,
                             minute = "${event.minute ?: 0}'",
                             playerName = event.playerId?.let { playerId ->
                                 playerNamesById[playerId] ?: "Jogador não encontrado"
@@ -709,11 +713,14 @@ private fun EmptyEventsState() {
 
 @Composable
 private fun EventRow(
+    eventType: String,
     minute: String,
     playerName: String,
     team: String,
     teamColor: Color
 ) {
+    val colors = eventColors(eventType)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -731,14 +738,12 @@ private fun EventRow(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .background(Color(0xFF7AB88A), RoundedCornerShape(9.dp)),
+                .background(colors.first, RoundedCornerShape(9.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.SportsSoccer,
-                contentDescription = "Golo",
-                tint = AthloColors.Navy,
-                modifier = Modifier.size(22.dp)
+            Text(
+                text = eventEmoji(eventType),
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 
@@ -748,7 +753,7 @@ private fun EventRow(
                 .padding(start = 12.dp)
         ) {
             Text(
-                text = "Golo",
+                text = eventType,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.labelMedium
@@ -829,5 +834,23 @@ private fun EditBadge(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
         )
+    }
+}
+
+private fun eventEmoji(eventType: String): String {
+    return when (eventType) {
+        EVENT_GOAL -> "⚽"
+        EVENT_YELLOW_CARD -> "🟨"
+        EVENT_RED_CARD -> "🟥"
+        else -> "•"
+    }
+}
+
+private fun eventColors(eventType: String): Pair<Color, Color> {
+    return when (eventType) {
+        EVENT_GOAL -> Color(0xFFDFF3D8) to Color(0xFF3F7A28)
+        EVENT_YELLOW_CARD -> Color(0xFFFFF7CC) to Color(0xFF9A6B22)
+        EVENT_RED_CARD -> AthloColors.DangerBg to Color(0xFFC83755)
+        else -> AthloColors.NeutralBg to AthloColors.TextSecondary
     }
 }
