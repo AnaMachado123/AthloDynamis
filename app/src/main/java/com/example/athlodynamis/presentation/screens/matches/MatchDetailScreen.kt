@@ -53,6 +53,7 @@ import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
+import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 
 private const val EVENT_GOAL = "Golo"
@@ -70,6 +71,7 @@ fun MatchDetailScreen(
     val matchesViewModel: MatchesViewModel = viewModel()
     val matchEventsViewModel: MatchEventsViewModel = viewModel()
     val playersViewModel: PlayersViewModel = viewModel()
+    val notificationsViewModel: NotificationsViewModel = viewModel()
 
     val match by matchesViewModel.selectedMatch.collectAsState()
     val error by matchesViewModel.error.collectAsState()
@@ -259,6 +261,11 @@ fun MatchDetailScreen(
                                                 status = "Terminado",
                                                 minute = currentMatch.minute ?: 90,
                                                 onSuccess = {
+                                                    notificationsViewModel.createNotification(
+                                                        title = matchFinishedNotificationTitle(currentMatch),
+                                                        message = matchFinishedNotificationMessage(currentMatch)
+                                                    )
+
                                                     matchesViewModel.loadMatchById(currentMatch.id)
                                                 }
                                             )
@@ -866,5 +873,29 @@ private fun eventColors(eventType: String): Pair<Color, Color> {
         EVENT_RED_CARD -> AthloColors.DangerBg to Color(0xFFC83755)
         EVENT_SUBSTITUTION -> Color(0xFFE3D7FF) to Color(0xFF6A3FCB)
         else -> AthloColors.NeutralBg to AthloColors.TextSecondary
+    }
+}
+
+private fun matchFinishedNotificationTitle(match: Match): String {
+    return when {
+        match.scoreA > match.scoreB -> "Vitória de ${match.teamAName}"
+        match.scoreB > match.scoreA -> "Vitória de ${match.teamBName}"
+        else -> "Empate registado"
+    }
+}
+
+private fun matchFinishedNotificationMessage(match: Match): String {
+    return when {
+        match.scoreA > match.scoreB -> {
+            "${match.teamAName} venceu ${match.teamBName} por ${match.scoreA} - ${match.scoreB}."
+        }
+
+        match.scoreB > match.scoreA -> {
+            "${match.teamBName} venceu ${match.teamAName} por ${match.scoreB} - ${match.scoreA}."
+        }
+
+        else -> {
+            "${match.teamAName} e ${match.teamBName} empataram ${match.scoreA} - ${match.scoreB}."
+        }
     }
 }

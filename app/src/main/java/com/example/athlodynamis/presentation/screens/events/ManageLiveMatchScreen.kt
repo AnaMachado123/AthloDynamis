@@ -57,6 +57,7 @@ import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
+import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
 
@@ -82,6 +83,7 @@ fun ManageLiveMatchScreen(
 
     val matchEventsViewModel: MatchEventsViewModel = viewModel()
     val matchesViewModel: MatchesViewModel = viewModel()
+    val notificationsViewModel: NotificationsViewModel = viewModel()
 
     val goalPlayersViewModel: PlayersViewModel = viewModel(key = "goal_players")
     val eventPlayersViewModel: PlayersViewModel = viewModel(key = "event_players")
@@ -392,6 +394,24 @@ fun ManageLiveMatchScreen(
                                 scoreB = newScoreB,
                                 minute = confirmation.minute,
                                 onSuccess = {
+                                    notificationsViewModel.createNotification(
+                                        title = notificationTitleForEvent(
+                                            eventType = selectedEventType,
+                                            teamName = selectedEventTeam
+                                        ),
+                                        message = notificationMessageForEvent(
+                                            eventType = selectedEventType,
+                                            playerName = player.name,
+                                            secondaryPlayerName = secondaryPlayer?.name,
+                                            teamName = selectedEventTeam,
+                                            minute = confirmation.minute,
+                                            teamAName = teamAName,
+                                            teamBName = teamBName,
+                                            scoreA = newScoreA,
+                                            scoreB = newScoreB
+                                        )
+                                    )
+
                                     reloadLiveMatchData(
                                         currentMatchId = currentMatchId,
                                         matchesViewModel = matchesViewModel,
@@ -405,6 +425,24 @@ fun ManageLiveMatchScreen(
                                 }
                             )
                         } else {
+                            notificationsViewModel.createNotification(
+                                title = notificationTitleForEvent(
+                                    eventType = selectedEventType,
+                                    teamName = selectedEventTeam
+                                ),
+                                message = notificationMessageForEvent(
+                                    eventType = selectedEventType,
+                                    playerName = player.name,
+                                    secondaryPlayerName = secondaryPlayer?.name,
+                                    teamName = selectedEventTeam,
+                                    minute = confirmation.minute,
+                                    teamAName = teamAName,
+                                    teamBName = teamBName,
+                                    scoreA = scoreA,
+                                    scoreB = scoreB
+                                )
+                            )
+
                             reloadLiveMatchData(
                                 currentMatchId = currentMatchId,
                                 matchesViewModel = matchesViewModel,
@@ -1566,4 +1604,56 @@ private fun String.toAcronym(): String {
         .joinToString("") {
             it.first().uppercase()
         }
+}
+
+private fun notificationTitleForEvent(
+    eventType: String,
+    teamName: String
+): String {
+    return when (eventType) {
+        EVENT_GOAL -> "Golo de $teamName"
+        EVENT_ASSIST -> "Assistência registada"
+        EVENT_YELLOW_CARD -> "Cartão amarelo"
+        EVENT_RED_CARD -> "Cartão vermelho"
+        EVENT_SUBSTITUTION -> "Substituição em $teamName"
+        else -> "Novo evento de jogo"
+    }
+}
+
+private fun notificationMessageForEvent(
+    eventType: String,
+    playerName: String,
+    secondaryPlayerName: String?,
+    teamName: String,
+    minute: Int,
+    teamAName: String,
+    teamBName: String,
+    scoreA: Int,
+    scoreB: Int
+): String {
+    return when (eventType) {
+        EVENT_GOAL -> {
+            "$playerName marcou por $teamName aos $minute'. Resultado atual: $teamAName $scoreA - $scoreB $teamBName."
+        }
+
+        EVENT_ASSIST -> {
+            "$playerName fez uma assistência por $teamName aos $minute'."
+        }
+
+        EVENT_YELLOW_CARD -> {
+            "$playerName recebeu cartão amarelo por $teamName aos $minute'."
+        }
+
+        EVENT_RED_CARD -> {
+            "$playerName recebeu cartão vermelho por $teamName aos $minute'."
+        }
+
+        EVENT_SUBSTITUTION -> {
+            "Substituição em $teamName aos $minute': entrou $playerName e saiu ${secondaryPlayerName ?: "jogador não indicado"}."
+        }
+
+        else -> {
+            "$playerName registou um evento por $teamName aos $minute'."
+        }
+    }
 }

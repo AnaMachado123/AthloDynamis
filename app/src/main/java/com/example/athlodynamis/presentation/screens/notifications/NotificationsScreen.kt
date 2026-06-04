@@ -33,29 +33,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.domain.model.Notification
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
-import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.components.AthloUserRole
-
-data class AthloNotification(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val time: String,
-    val dayGroup: String,
-    val type: NotificationType,
-    val isUnread: Boolean
-)
+import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 
 enum class NotificationType {
     GOAL,
@@ -63,7 +58,8 @@ enum class NotificationType {
     GAME,
     RESULT,
     TOURNAMENT,
-    TROPHY
+    TROPHY,
+    INFO
 }
 
 @Composable
@@ -71,66 +67,23 @@ fun NotificationsScreen(
     navController: NavController,
     userRole: AthloUserRole
 ) {
-    val notifications = remember {
-        listOf(
-            AthloNotification(
-                id = 1,
-                title = "Golo da Equipa 1 vs Equipa 2",
-                description = "Rui Moreira marcou aos 33'.",
-                time = "Agora mesmo",
-                dayGroup = "HOJE",
-                type = NotificationType.GOAL,
-                isUnread = true
-            ),
-            AthloNotification(
-                id = 2,
-                title = "Foste adicionado a uma equipa",
-                description = "SC Virius adicionou-te para o Torneio Regional Futsal.",
-                time = "Há 25 min",
-                dayGroup = "HOJE",
-                type = NotificationType.TEAM,
-                isUnread = true
-            ),
-            AthloNotification(
-                id = 3,
-                title = "Jogo daqui a 2 horas",
-                description = "Equipa 1 vs Equipa 2 · Pavilhão Municipal.",
-                time = "10:15",
-                dayGroup = "HOJE",
-                type = NotificationType.GAME,
-                isUnread = true
-            ),
-            AthloNotification(
-                id = 4,
-                title = "Resultado registado",
-                description = "SL Benficas 3 - 1 CD Lanheses.",
-                time = "Ontem · 19:20",
-                dayGroup = "ONTEM",
-                type = NotificationType.RESULT,
-                isUnread = false
-            ),
-            AthloNotification(
-                id = 5,
-                title = "Novo torneio disponível",
-                description = "Torneio de Voleibol Urbano · inscrições abertas até 20 Junho.",
-                time = "Ontem · 17:45",
-                dayGroup = "ONTEM",
-                type = NotificationType.TOURNAMENT,
-                isUnread = false
-            ),
-            AthloNotification(
-                id = 6,
-                title = "Conquistaste um troféu!",
-                description = "1.º Lugar · Liga Regional 2026.",
-                time = "Ontem · 09:02",
-                dayGroup = "ONTEM",
-                type = NotificationType.TROPHY,
-                isUnread = false
-            )
-        )
+    val viewModel: NotificationsViewModel = viewModel()
+
+    val notifications by viewModel.notifications.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadNotifications()
     }
 
-    val unreadCount = notifications.count { it.isUnread }
+    LaunchedEffect(notifications) {
+        if (notifications.any { !it.isRead }) {
+            viewModel.markAllAsRead()
+        }
+    }
+
+    val unreadCount = notifications.count { !it.isRead }
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -159,17 +112,48 @@ fun NotificationsScreen(
                 )
             }
 
-            val groupedNotifications = notifications.groupBy { it.dayGroup }
-
-            groupedNotifications.forEach { (day, items) ->
-                item {
-                    SectionTitle(title = day)
+            when {
+                isLoading -> {
+                    item {
+                        InfoCard(text = "A carregar notificações...")
+                    }
                 }
 
-                items(items.size) { index ->
-                    NotificationCard(
-                        notification = items[index]
-                    )
+                error != null -> {
+                    item {
+                        InfoCard(text = error ?: "Erro ao carregar notificações")
+                    }
+                }
+
+                notifications.isEmpty() -> {
+                    item {
+                        EmptyNotificationsCard()
+                    }
+                }
+
+                else -> {
+                    val groupedNotifications = notifications.groupBy {
+                        dayGroupFromCreatedAt(it.createdAt)
+                    }
+
+                    groupedNotifications.forEach { (day, items) ->
+                        item {
+                            SectionTitle(title = day)
+                        }
+
+                        items(items.size) { index ->
+                            val notification = items[index]
+
+                            NotificationCard(
+                                notification = notification,
+                                onClick = {
+                                    if (!notification.isRead) {
+                                        viewModel.markAsRead(notification.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -208,10 +192,10 @@ private fun NotificationsHeader(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = if (unreadCount == 1) {
-                            "1 notificação por ler"
-                        } else {
-                            "$unreadCount notificações por ler"
+                        text = when (unreadCount) {
+                            0 -> "Não tens notificações por ler"
+                            1 -> "1 notificação por ler"
+                            else -> "$unreadCount notificações por ler"
                         },
                         color = Color(0xFF8EC5F4),
                         style = MaterialTheme.typography.titleMedium
@@ -224,14 +208,80 @@ private fun NotificationsHeader(
                         .background(AthloColors.Blue, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "GM",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notificações",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun EmptyNotificationsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .background(AthloColors.SoftBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Sem notificações",
+                    tint = AthloColors.Blue,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Sem notificações",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando houver novidades, elas aparecem aqui.",
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -249,41 +299,49 @@ private fun SectionTitle(title: String) {
 
 @Composable
 private fun NotificationCard(
-    notification: AthloNotification
+    notification: Notification,
+    onClick: () -> Unit
 ) {
-    val colors = notificationColors(notification.type)
+    val type = notificationTypeFromText(
+        title = notification.title,
+        message = notification.message
+    )
+
+    val colors = notificationColors(type)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable {
+                onClick()
+            },
         shape = RoundedCornerShape(
-            if (notification.isUnread) 26.dp else AthloRadius.Large
+            if (!notification.isRead) 26.dp else AthloRadius.Large
         ),
         colors = CardDefaults.cardColors(
-            containerColor = if (notification.isUnread) {
-                Color(0xFFFFFFFF)
+            containerColor = if (!notification.isRead) {
+                Color.White
             } else {
                 AthloColors.CardWhite
             }
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (notification.isUnread) 8.dp else 3.dp
+            defaultElevation = if (!notification.isRead) 8.dp else 3.dp
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    if (notification.isUnread) Color(0xFFFDFEFF) else Color.White
+                    if (!notification.isRead) Color(0xFFFDFEFF) else Color.White
                 )
                 .padding(
-                    horizontal = if (notification.isUnread) 20.dp else 18.dp,
-                    vertical = if (notification.isUnread) 20.dp else 16.dp
+                    horizontal = if (!notification.isRead) 20.dp else 18.dp,
+                    vertical = if (!notification.isRead) 20.dp else 16.dp
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (notification.isUnread) {
+            if (!notification.isRead) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
@@ -296,15 +354,15 @@ private fun NotificationCard(
 
             Box(
                 modifier = Modifier
-                    .size(if (notification.isUnread) 46.dp else 42.dp)
+                    .size(if (!notification.isRead) 46.dp else 42.dp)
                     .background(colors.background, RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = notificationIcon(notification.type),
+                    imageVector = notificationIcon(type),
                     contentDescription = notification.title,
                     tint = colors.icon,
-                    modifier = Modifier.size(if (notification.isUnread) 24.dp else 21.dp)
+                    modifier = Modifier.size(if (!notification.isRead) 24.dp else 21.dp)
                 )
             }
 
@@ -324,7 +382,7 @@ private fun NotificationCard(
                         modifier = Modifier.weight(1f)
                     )
 
-                    if (notification.isUnread) {
+                    if (!notification.isRead) {
                         Spacer(modifier = Modifier.width(8.dp))
 
                         NewBadge()
@@ -334,7 +392,7 @@ private fun NotificationCard(
                 Spacer(modifier = Modifier.height(5.dp))
 
                 Text(
-                    text = notification.description,
+                    text = notification.message,
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -342,7 +400,7 @@ private fun NotificationCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = notification.time,
+                    text = formatNotificationTime(notification.createdAt),
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Medium
@@ -373,6 +431,27 @@ private data class NotificationVisualColors(
     val background: Color,
     val icon: Color
 )
+
+private fun notificationTypeFromText(
+    title: String,
+    message: String
+): NotificationType {
+    val text = "$title $message".lowercase()
+
+    return when {
+        "golo" in text || "marcou" in text -> NotificationType.GOAL
+        "assistência" in text || "assistencia" in text -> NotificationType.GAME
+        "cartão" in text || "cartao" in text -> NotificationType.GAME
+        "substituição" in text || "substituicao" in text -> NotificationType.GAME
+        "equipa" in text || "adicionado" in text || "jogador" in text -> NotificationType.TEAM
+        "jogo" in text || "partida" in text -> NotificationType.GAME
+        "resultado" in text || "terminado" in text -> NotificationType.RESULT
+        "vitória" in text || "vitoria" in text || "empate" in text -> NotificationType.RESULT
+        "torneio" in text || "evento" in text -> NotificationType.TOURNAMENT
+        "troféu" in text || "trofeu" in text || "trophy" in text || "1.º" in text -> NotificationType.TROPHY
+        else -> NotificationType.INFO
+    }
+}
 
 private fun notificationColors(type: NotificationType): NotificationVisualColors {
     return when (type) {
@@ -405,6 +484,11 @@ private fun notificationColors(type: NotificationType): NotificationVisualColors
             background = AthloColors.WarningBg,
             icon = Color(0xFF9A6B22)
         )
+
+        NotificationType.INFO -> NotificationVisualColors(
+            background = AthloColors.NeutralBg,
+            icon = AthloColors.TextSecondary
+        )
     }
 }
 
@@ -416,5 +500,26 @@ private fun notificationIcon(type: NotificationType): ImageVector {
         NotificationType.RESULT -> Icons.Default.CheckCircle
         NotificationType.TOURNAMENT -> Icons.Default.CalendarMonth
         NotificationType.TROPHY -> Icons.Default.EmojiEvents
+        NotificationType.INFO -> Icons.Default.Notifications
     }
+}
+
+private fun dayGroupFromCreatedAt(createdAt: String?): String {
+    if (createdAt.isNullOrBlank()) {
+        return "RECENTES"
+    }
+
+    return "RECENTES"
+}
+
+private fun formatNotificationTime(createdAt: String?): String {
+    if (createdAt.isNullOrBlank()) {
+        return "Sem data"
+    }
+
+    val cleanDate = createdAt
+        .replace("T", " ")
+        .replace("Z", "")
+
+    return cleanDate.take(16)
 }
