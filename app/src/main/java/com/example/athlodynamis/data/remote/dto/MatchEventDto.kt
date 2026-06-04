@@ -14,6 +14,9 @@ data class MatchEventDto(
     @SerialName("player_id")
     val playerId: Int? = null,
 
+    @SerialName("secondary_player_id")
+    val secondaryPlayerId: Int? = null,
+
     @SerialName("event_type")
     val eventType: String,
 
@@ -34,6 +37,9 @@ data class CreateMatchEventDto(
     @SerialName("player_id")
     val playerId: Int?,
 
+    @SerialName("secondary_player_id")
+    val secondaryPlayerId: Int? = null,
+
     @SerialName("event_type")
     val eventType: String,
 
@@ -48,6 +54,7 @@ fun MatchEventDto.toMatchEvent(): MatchEvent {
         id = id,
         matchId = matchId,
         playerId = playerId,
+        secondaryPlayerId = secondaryPlayerId,
         eventType = eventType,
         minute = minute,
         teamSide = teamSide,

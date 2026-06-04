@@ -56,8 +56,10 @@ import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 
 private const val EVENT_GOAL = "Golo"
+private const val EVENT_ASSIST = "Assistência"
 private const val EVENT_YELLOW_CARD = "Cartão amarelo"
 private const val EVENT_RED_CARD = "Cartão vermelho"
+private const val EVENT_SUBSTITUTION = "Substituição"
 
 @Composable
 fun MatchDetailScreen(
@@ -649,6 +651,9 @@ private fun MatchEventsCard(
                             playerName = event.playerId?.let { playerId ->
                                 playerNamesById[playerId] ?: "Jogador não encontrado"
                             } ?: "Jogador não associado",
+                            secondaryPlayerName = event.secondaryPlayerId?.let { playerId ->
+                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                            },
                             team = when (event.teamSide) {
                                 "A" -> match.teamAName
                                 "B" -> match.teamBName
@@ -716,6 +721,7 @@ private fun EventRow(
     eventType: String,
     minute: String,
     playerName: String,
+    secondaryPlayerName: String?,
     team: String,
     teamColor: Color
 ) {
@@ -760,7 +766,11 @@ private fun EventRow(
             )
 
             Text(
-                text = playerName,
+                text = if (eventType == EVENT_SUBSTITUTION) {
+                    "Entrou: $playerName · Saiu: ${secondaryPlayerName ?: "-"}"
+                } else {
+                    playerName
+                },
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -840,8 +850,10 @@ private fun EditBadge(
 private fun eventEmoji(eventType: String): String {
     return when (eventType) {
         EVENT_GOAL -> "⚽"
+        EVENT_ASSIST -> "🎯"
         EVENT_YELLOW_CARD -> "🟨"
         EVENT_RED_CARD -> "🟥"
+        EVENT_SUBSTITUTION -> "🔁"
         else -> "•"
     }
 }
@@ -849,8 +861,10 @@ private fun eventEmoji(eventType: String): String {
 private fun eventColors(eventType: String): Pair<Color, Color> {
     return when (eventType) {
         EVENT_GOAL -> Color(0xFFDFF3D8) to Color(0xFF3F7A28)
+        EVENT_ASSIST -> AthloColors.SoftBlue to AthloColors.Blue
         EVENT_YELLOW_CARD -> Color(0xFFFFF7CC) to Color(0xFF9A6B22)
         EVENT_RED_CARD -> AthloColors.DangerBg to Color(0xFFC83755)
+        EVENT_SUBSTITUTION -> Color(0xFFE3D7FF) to Color(0xFF6A3FCB)
         else -> AthloColors.NeutralBg to AthloColors.TextSecondary
     }
 }

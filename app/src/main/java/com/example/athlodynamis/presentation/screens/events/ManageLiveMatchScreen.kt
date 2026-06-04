@@ -22,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,8 +61,10 @@ import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
 
 private const val EVENT_GOAL = "Golo"
+private const val EVENT_ASSIST = "Assistência"
 private const val EVENT_YELLOW_CARD = "Cartão amarelo"
 private const val EVENT_RED_CARD = "Cartão vermelho"
+private const val EVENT_SUBSTITUTION = "Substituição"
 
 private data class EventOption(
     val label: String,
@@ -122,6 +123,7 @@ fun ManageLiveMatchScreen(
     var selectedEventTeam by remember { mutableStateOf(teamAName) }
     var selectedEventSide by remember { mutableStateOf("A") }
     var selectedPlayer by remember { mutableStateOf<Player?>(null) }
+    var selectedSecondaryPlayer by remember { mutableStateOf<Player?>(null) }
 
     var showPlayerPicker by remember { mutableStateOf(false) }
     var showEventSuccess by remember { mutableStateOf(false) }
@@ -132,8 +134,10 @@ fun ManageLiveMatchScreen(
 
     val eventOptions = listOf(
         EventOption(EVENT_GOAL, "⚽"),
+        EventOption(EVENT_ASSIST, "🎯"),
         EventOption(EVENT_YELLOW_CARD, "🟨"),
-        EventOption(EVENT_RED_CARD, "🟥")
+        EventOption(EVENT_RED_CARD, "🟥"),
+        EventOption(EVENT_SUBSTITUTION, "🔁")
     )
 
     val playerNamesById = eventPlayers
@@ -245,7 +249,11 @@ fun ManageLiveMatchScreen(
             EventTypeSelector(
                 selectedEventType = selectedEventType,
                 options = eventOptions,
-                onSelected = { selectedEventType = it }
+                onSelected = {
+                    selectedEventType = it
+                    selectedPlayer = null
+                    selectedSecondaryPlayer = null
+                }
             )
 
             Row(
@@ -260,6 +268,7 @@ fun ManageLiveMatchScreen(
                         selectedEventTeam = teamAName
                         selectedEventSide = "A"
                         selectedPlayer = null
+                        selectedSecondaryPlayer = null
                         selectedEventMinute = liveMinute
 
                         teamAId?.let {
@@ -277,6 +286,7 @@ fun ManageLiveMatchScreen(
                         selectedEventTeam = teamBName
                         selectedEventSide = "B"
                         selectedPlayer = null
+                        selectedSecondaryPlayer = null
                         selectedEventMinute = liveMinute
 
                         teamBId?.let {
@@ -308,8 +318,12 @@ fun ManageLiveMatchScreen(
             players = teamPlayers,
             isLoading = isLoadingPlayers,
             selectedPlayer = selectedPlayer,
+            selectedSecondaryPlayer = selectedSecondaryPlayer,
             onPlayerSelected = {
                 selectedPlayer = it
+            },
+            onSecondaryPlayerSelected = {
+                selectedSecondaryPlayer = it
             },
             onMinuteDecrease = {
                 if (selectedEventMinute > 0) {
@@ -326,6 +340,12 @@ fun ManageLiveMatchScreen(
             },
             onConfirm = {
                 val player = selectedPlayer ?: return@EventPlayerPickerSheet
+
+                val secondaryPlayer = if (selectedEventType == EVENT_SUBSTITUTION) {
+                    selectedSecondaryPlayer ?: return@EventPlayerPickerSheet
+                } else {
+                    null
+                }
 
                 showPlayerPicker = false
 
@@ -350,6 +370,8 @@ fun ManageLiveMatchScreen(
                     minute = selectedEventMinute,
                     playerId = player.id,
                     playerName = player.name,
+                    secondaryPlayerId = secondaryPlayer?.id,
+                    secondaryPlayerName = secondaryPlayer?.name,
                     team = selectedEventTeam
                 )
 
@@ -358,6 +380,7 @@ fun ManageLiveMatchScreen(
                 matchEventsViewModel.createMatchEvent(
                     matchId = currentMatchId.toInt(),
                     playerId = player.id,
+                    secondaryPlayerId = secondaryPlayer?.id,
                     eventType = selectedEventType,
                     minute = confirmation.minute,
                     teamSide = selectedEventSide,
@@ -438,6 +461,8 @@ data class LiveEventConfirmation(
     val minute: Int,
     val playerId: Int,
     val playerName: String,
+    val secondaryPlayerId: Int? = null,
+    val secondaryPlayerName: String? = null,
     val team: String
 )
 
@@ -854,7 +879,10 @@ private fun EventsOfGameCard(
                             },
                             playerName = event.playerId?.let { playerId ->
                                 playerNamesById[playerId] ?: "Jogador não encontrado"
-                            } ?: "Jogador não associado"
+                            } ?: "Jogador não associado",
+                            secondaryPlayerName = event.secondaryPlayerId?.let { playerId ->
+                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(14.dp))
@@ -869,7 +897,8 @@ private fun EventsOfGameCard(
 private fun LiveEventRow(
     event: MatchEvent,
     teamName: String,
-    playerName: String
+    playerName: String,
+    secondaryPlayerName: String?
 ) {
     val colors = eventColors(event.eventType)
 
@@ -908,7 +937,11 @@ private fun LiveEventRow(
             )
 
             Text(
-                text = playerName,
+                text = if (event.eventType == EVENT_SUBSTITUTION) {
+                    "Entrou: $playerName · Saiu: ${secondaryPlayerName ?: "-"}"
+                } else {
+                    playerName
+                },
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -939,7 +972,9 @@ private fun EventPlayerPickerSheet(
     players: List<Player>,
     isLoading: Boolean,
     selectedPlayer: Player?,
+    selectedSecondaryPlayer: Player?,
     onPlayerSelected: (Player) -> Unit,
+    onSecondaryPlayerSelected: (Player) -> Unit,
     onMinuteDecrease: () -> Unit,
     onMinuteIncrease: () -> Unit,
     onDismiss: () -> Unit,
@@ -973,7 +1008,11 @@ private fun EventPlayerPickerSheet(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Seleciona o jogador e confirma o minuto do evento",
+                text = if (eventType == EVENT_SUBSTITUTION) {
+                    "Seleciona quem entra, quem sai e confirma o minuto"
+                } else {
+                    "Seleciona o jogador e confirma o minuto do evento"
+                },
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -1013,6 +1052,50 @@ private fun EventPlayerPickerSheet(
                     )
                 }
 
+                eventType == EVENT_SUBSTITUTION -> {
+                    Text(
+                        text = "Jogador que entra",
+                        color = AthloColors.TextPrimary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    players.forEachIndexed { index, player ->
+                        PlayerPickerRow(
+                            position = index + 1,
+                            player = player,
+                            selected = selectedPlayer?.id == player.id,
+                            onClick = {
+                                onPlayerSelected(player)
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Jogador que sai",
+                        color = AthloColors.TextPrimary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    players.forEachIndexed { index, player ->
+                        PlayerPickerRow(
+                            position = index + 1,
+                            player = player,
+                            selected = selectedSecondaryPlayer?.id == player.id,
+                            onClick = {
+                                onSecondaryPlayerSelected(player)
+                            }
+                        )
+                    }
+                }
+
                 else -> {
                     players.forEachIndexed { index, player ->
                         PlayerPickerRow(
@@ -1029,9 +1112,17 @@ private fun EventPlayerPickerSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            val canConfirm = if (eventType == EVENT_SUBSTITUTION) {
+                selectedPlayer != null &&
+                        selectedSecondaryPlayer != null &&
+                        selectedPlayer.id != selectedSecondaryPlayer.id
+            } else {
+                selectedPlayer != null
+            }
+
             Button(
                 onClick = onConfirm,
-                enabled = selectedPlayer != null,
+                enabled = canConfirm,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
@@ -1042,9 +1133,18 @@ private fun EventPlayerPickerSheet(
                 )
             ) {
                 Text(
-                    text = selectedPlayer?.let {
-                        "Confirmar - ${it.name} aos $minute'"
-                    } ?: "Seleciona um jogador",
+                    text = when {
+                        eventType == EVENT_SUBSTITUTION &&
+                                selectedPlayer != null &&
+                                selectedSecondaryPlayer != null ->
+                            "Confirmar substituição aos $minute'"
+
+                        selectedPlayer != null ->
+                            "Confirmar - ${selectedPlayer.name} aos $minute'"
+
+                        else ->
+                            "Seleciona um jogador"
+                    },
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -1301,7 +1401,11 @@ private fun EventSuccessSheet(
                     )
 
                     Text(
-                        text = "${eventConfirmation.eventType} · ${eventConfirmation.team} · ${eventConfirmation.minute}'",
+                        text = if (eventConfirmation.eventType == EVENT_SUBSTITUTION) {
+                            "Entrou: ${eventConfirmation.playerName} · Saiu: ${eventConfirmation.secondaryPlayerName ?: "-"} · ${eventConfirmation.minute}'"
+                        } else {
+                            "${eventConfirmation.eventType} · ${eventConfirmation.team} · ${eventConfirmation.minute}'"
+                        },
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -1427,8 +1531,10 @@ private fun AdminBadge(
 private fun eventEmoji(eventType: String): String {
     return when (eventType) {
         EVENT_GOAL -> "⚽"
+        EVENT_ASSIST -> "🎯"
         EVENT_YELLOW_CARD -> "🟨"
         EVENT_RED_CARD -> "🟥"
+        EVENT_SUBSTITUTION -> "🔁"
         else -> "•"
     }
 }
@@ -1436,8 +1542,10 @@ private fun eventEmoji(eventType: String): String {
 private fun eventColors(eventType: String): Pair<Color, Color> {
     return when (eventType) {
         EVENT_GOAL -> AthloColors.SuccessBg to Color(0xFF3F7A28)
+        EVENT_ASSIST -> AthloColors.SoftBlue to AthloColors.Blue
         EVENT_YELLOW_CARD -> Color(0xFFFFF7CC) to Color(0xFF9A6B22)
         EVENT_RED_CARD -> AthloColors.DangerBg to Color(0xFFC83755)
+        EVENT_SUBSTITUTION -> Color(0xFFE3D7FF) to Color(0xFF6A3FCB)
         else -> AthloColors.NeutralBg to AthloColors.TextSecondary
     }
 }

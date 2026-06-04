@@ -40,6 +40,7 @@ class MatchEventsViewModel : ViewModel() {
     fun createMatchEvent(
         matchId: Int,
         playerId: Int?,
+        secondaryPlayerId: Int? = null,
         eventType: String,
         minute: Int?,
         teamSide: String?,
@@ -54,6 +55,7 @@ class MatchEventsViewModel : ViewModel() {
                     CreateMatchEventDto(
                         matchId = matchId,
                         playerId = playerId,
+                        secondaryPlayerId = secondaryPlayerId,
                         eventType = eventType,
                         minute = minute,
                         teamSide = teamSide
