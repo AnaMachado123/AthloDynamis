@@ -55,6 +55,23 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 
+private data class TournamentTeamStats(
+    val teamId: Long?,
+    val teamName: String,
+    val sport: String,
+    val played: Int,
+    val wins: Int,
+    val draws: Int,
+    val losses: Int,
+    val goalsFor: Int,
+    val goalsAgainst: Int,
+    val points: Int,
+    val form: List<Boolean>
+) {
+    val goalDifference: Int
+        get() = goalsFor - goalsAgainst
+}
+
 @Composable
 fun TournamentDetailScreen(
     tournamentId: String,
@@ -86,6 +103,15 @@ fun TournamentDetailScreen(
         }
     }
 
+    val currentTournament = tournament
+
+    val teamStats = remember(matches, currentTournament) {
+        calculateTeamStats(
+            matches = matches,
+            sport = currentTournament?.sport ?: "Modalidade"
+        )
+    }
+
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
@@ -109,7 +135,7 @@ fun TournamentDetailScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 TournamentHeader(
-                    tournament = tournament,
+                    tournament = currentTournament,
                     userRole = userRole,
                     canManageEvent = canManageEvent,
                     onBackClick = {
@@ -142,7 +168,7 @@ fun TournamentDetailScreen(
                     }
                 }
 
-                tournament == null -> {
+                currentTournament == null -> {
                     item {
                         InfoCard(text = "Torneio não encontrado.")
                     }
@@ -150,7 +176,7 @@ fun TournamentDetailScreen(
 
                 else -> {
                     item {
-                        TournamentInfoCard(tournament = tournament!!)
+                        TournamentInfoCard(tournament = currentTournament)
                     }
 
                     item {
@@ -238,10 +264,20 @@ fun TournamentDetailScreen(
                     }
 
                     item {
-                        if (selectedTab == "Equipas") {
-                            TeamsTable()
+                        if (teamStats.isEmpty()) {
+                            EmptyTournamentTable(
+                                text = "Ainda não existem equipas associadas a este torneio."
+                            )
                         } else {
-                            StandingsTable()
+                            if (selectedTab == "Equipas") {
+                                TeamsTable(
+                                    teams = teamStats
+                                )
+                            } else {
+                                StandingsTable(
+                                    teams = teamStats
+                                )
+                            }
                         }
                     }
                 }
@@ -564,7 +600,9 @@ private fun TabButton(
 }
 
 @Composable
-private fun TeamsTable() {
+private fun TeamsTable(
+    teams: List<TournamentTeamStats>
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(
@@ -577,13 +615,21 @@ private fun TeamsTable() {
         Column(
             modifier = Modifier.padding(18.dp)
         ) {
-            TeamStandingRow("Os mais lindos", "Basquetebol", "9 pts", Color(0xFFD7EBFF), AthloColors.Blue)
-            Separator()
-            TeamStandingRow("Põe te Fino", "Futebol", "6 pts", Color(0xFFDFF3D8), Color(0xFF4D8B4A))
-            Separator()
-            TeamStandingRow("Girl Power", "Voleibol", "3 pts", Color(0xFFFFEFD7), Color(0xFF9A6B22))
-            Separator()
-            TeamStandingRow("Flor de sal", "Futebol", "1 pts", Color(0xFFF8FFB0), Color(0xFFD4DD00))
+            teams.forEachIndexed { index, team ->
+                val colors = standingColors(index)
+
+                TeamStandingRow(
+                    name = team.teamName,
+                    subtitle = team.sport,
+                    points = "${team.points} pts",
+                    badgeColor = colors.first,
+                    badgeTextColor = colors.second
+                )
+
+                if (index < teams.lastIndex) {
+                    Separator()
+                }
+            }
         }
     }
 }
@@ -646,7 +692,16 @@ private fun TeamStandingRow(
 }
 
 @Composable
-private fun StandingsTable() {
+private fun StandingsTable(
+    teams: List<TournamentTeamStats>
+) {
+    val sortedTeams = teams.sortedWith(
+        compareByDescending<TournamentTeamStats> { it.points }
+            .thenByDescending { it.goalDifference }
+            .thenByDescending { it.goalsFor }
+            .thenBy { it.teamName }
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(
@@ -673,13 +728,24 @@ private fun StandingsTable() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            StandingRow("1", "Os mais lindos", "3", "3", "9", listOf(true, true, true), Color(0xFFD7EBFF), AthloColors.Blue)
-            Separator()
-            StandingRow("2", "Põe te Fino", "3", "2", "6", listOf(false, true, true), Color(0xFFDFF3D8), Color(0xFF4D8B4A))
-            Separator()
-            StandingRow("3", "Girl Power", "3", "1", "4", listOf(false, false, true), Color(0xFFFFEFD7), Color(0xFF9A6B22))
-            Separator()
-            StandingRow("4", "Flor de sal", "3", "0", "1", listOf(false, false, false), Color(0xFFF8FFB0), Color(0xFFD4DD00))
+            sortedTeams.forEachIndexed { index, team ->
+                val colors = standingColors(index)
+
+                StandingRow(
+                    position = (index + 1).toString(),
+                    team = team.teamName,
+                    games = team.played.toString(),
+                    wins = team.wins.toString(),
+                    points = team.points.toString(),
+                    form = team.form,
+                    badgeColor = colors.first,
+                    badgeTextColor = colors.second
+                )
+
+                if (index < sortedTeams.lastIndex) {
+                    Separator()
+                }
+            }
         }
     }
 }
@@ -726,17 +792,48 @@ private fun StandingRow(
         Text(points, modifier = Modifier.width(42.dp), color = AthloColors.TextPrimary)
 
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            form.forEach { win ->
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(
-                            if (win) Color(0xFF67A978) else Color(0xFFD32626),
-                            CircleShape
-                        )
+            if (form.isEmpty()) {
+                Text(
+                    text = "-",
+                    color = AthloColors.TextMuted,
+                    style = MaterialTheme.typography.labelSmall
                 )
+            } else {
+                form.takeLast(3).forEach { win ->
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(
+                                if (win) Color(0xFF67A978) else Color(0xFFD32626),
+                                CircleShape
+                            )
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyTournamentTable(
+    text: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(
+            bottomStart = AthloRadius.Large,
+            bottomEnd = AthloRadius.Large
+        ),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F5EE)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
     }
 }
 
@@ -835,11 +932,122 @@ private fun Separator() {
     )
 }
 
+private fun calculateTeamStats(
+    matches: List<Match>,
+    sport: String
+): List<TournamentTeamStats> {
+    val teams = mutableMapOf<String, TournamentTeamStats>()
+
+    fun teamKey(teamId: Long?, teamName: String): String {
+        return teamId?.toString() ?: teamName.trim().lowercase()
+    }
+
+    fun ensureTeam(teamId: Long?, teamName: String) {
+        val key = teamKey(teamId, teamName)
+
+        if (!teams.containsKey(key)) {
+            teams[key] = TournamentTeamStats(
+                teamId = teamId,
+                teamName = teamName,
+                sport = sport,
+                played = 0,
+                wins = 0,
+                draws = 0,
+                losses = 0,
+                goalsFor = 0,
+                goalsAgainst = 0,
+                points = 0,
+                form = emptyList()
+            )
+        }
+    }
+
+    matches.forEach { match ->
+        ensureTeam(
+            teamId = match.teamAId,
+            teamName = match.teamAName
+        )
+
+        ensureTeam(
+            teamId = match.teamBId,
+            teamName = match.teamBName
+        )
+
+        if (!match.status.equals("Terminado", ignoreCase = true)) {
+            return@forEach
+        }
+
+        val teamAKey = teamKey(match.teamAId, match.teamAName)
+        val teamBKey = teamKey(match.teamBId, match.teamBName)
+
+        val teamA = teams[teamAKey] ?: return@forEach
+        val teamB = teams[teamBKey] ?: return@forEach
+
+        val scoreA = match.scoreA
+        val scoreB = match.scoreB
+
+        val teamAWon = scoreA > scoreB
+        val teamBWon = scoreB > scoreA
+        val draw = scoreA == scoreB
+
+        teams[teamAKey] = teamA.copy(
+            played = teamA.played + 1,
+            wins = teamA.wins + if (teamAWon) 1 else 0,
+            draws = teamA.draws + if (draw) 1 else 0,
+            losses = teamA.losses + if (teamBWon) 1 else 0,
+            goalsFor = teamA.goalsFor + scoreA,
+            goalsAgainst = teamA.goalsAgainst + scoreB,
+            points = teamA.points + when {
+                teamAWon -> 3
+                draw -> 1
+                else -> 0
+            },
+            form = teamA.form + teamAWon
+        )
+
+        teams[teamBKey] = teamB.copy(
+            played = teamB.played + 1,
+            wins = teamB.wins + if (teamBWon) 1 else 0,
+            draws = teamB.draws + if (draw) 1 else 0,
+            losses = teamB.losses + if (teamAWon) 1 else 0,
+            goalsFor = teamB.goalsFor + scoreB,
+            goalsAgainst = teamB.goalsAgainst + scoreA,
+            points = teamB.points + when {
+                teamBWon -> 3
+                draw -> 1
+                else -> 0
+            },
+            form = teamB.form + teamBWon
+        )
+    }
+
+    return teams.values.sortedWith(
+        compareByDescending<TournamentTeamStats> { it.points }
+            .thenByDescending { it.goalDifference }
+            .thenByDescending { it.goalsFor }
+            .thenBy { it.teamName }
+    )
+}
+
+private fun standingColors(index: Int): Pair<Color, Color> {
+    return when (index % 4) {
+        0 -> Color(0xFFD7EBFF) to AthloColors.Blue
+        1 -> Color(0xFFDFF3D8) to Color(0xFF4D8B4A)
+        2 -> Color(0xFFFFEFD7) to Color(0xFF9A6B22)
+        else -> Color(0xFFF8FFB0) to Color(0xFFD4A000)
+    }
+}
+
 private fun String.toAcronym(): String {
-    return split(" ")
+    val parts = trim()
+        .split(" ")
         .filter { it.isNotBlank() }
-        .take(2)
-        .joinToString("") {
+
+    return when {
+        parts.isEmpty() -> "EQP"
+        parts.size == 1 -> parts.first().take(3).uppercase()
+        else -> parts.take(2).joinToString("") {
             it.first().uppercase()
         }
+    }
 }

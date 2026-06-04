@@ -60,6 +60,7 @@ import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManageLiveMatchScreen(
@@ -71,15 +72,20 @@ fun ManageLiveMatchScreen(
 
     val matchEventsViewModel: MatchEventsViewModel = viewModel()
     val matchesViewModel: MatchesViewModel = viewModel()
-    val playersViewModel: PlayersViewModel = viewModel()
+
+    val goalPlayersViewModel: PlayersViewModel = viewModel(key = "goal_players")
+    val eventPlayersViewModel: PlayersViewModel = viewModel(key = "event_players")
 
     val selectedMatch by matchesViewModel.selectedMatch.collectAsState()
+
     val matchEvents by matchEventsViewModel.events.collectAsState()
     val isLoadingEvents by matchEventsViewModel.isLoading.collectAsState()
     val eventsError by matchEventsViewModel.error.collectAsState()
 
-    val teamPlayers by playersViewModel.players.collectAsState()
-    val isLoadingPlayers by playersViewModel.isLoading.collectAsState()
+    val teamPlayers by goalPlayersViewModel.players.collectAsState()
+    val isLoadingPlayers by goalPlayersViewModel.isLoading.collectAsState()
+
+    val eventPlayers by eventPlayersViewModel.players.collectAsState()
 
     val scoreA = selectedMatch?.scoreA ?: 0
     val scoreB = selectedMatch?.scoreB ?: 0
@@ -89,7 +95,14 @@ fun ManageLiveMatchScreen(
     val teamBName = selectedMatch?.teamBName ?: "Equipa B"
     val matchStatus = selectedMatch?.status ?: "Agendado"
     val matchMinute = selectedMatch?.minute ?: 0
+    val matchTime = selectedMatch?.matchTime?.ifBlank { null } ?: "Hora por definir"
+    val matchLocation = selectedMatch?.location?.ifBlank { null }
+
     var liveMinute by remember {
+        mutableStateOf(matchMinute)
+    }
+
+    var selectedEventMinute by remember {
         mutableStateOf(matchMinute)
     }
 
@@ -104,6 +117,12 @@ fun ManageLiveMatchScreen(
         mutableStateOf<LiveGoalConfirmation?>(null)
     }
 
+    val playerNamesById = eventPlayers
+        .filter { it.name.isNotBlank() }
+        .associate { player ->
+            player.id to player.name
+        }
+
     LaunchedEffect(currentMatchId) {
         if (currentMatchId > 0) {
             matchesViewModel.loadMatchById(currentMatchId)
@@ -114,8 +133,24 @@ fun ManageLiveMatchScreen(
     LaunchedEffect(selectedMatch?.id) {
         selectedGoalTeam = selectedMatch?.teamAName ?: "Equipa A"
     }
-    LaunchedEffect(selectedMatch?.id) {
+
+    LaunchedEffect(selectedMatch?.minute) {
         liveMinute = selectedMatch?.minute ?: 0
+    }
+
+    LaunchedEffect(
+        selectedMatch?.teamAId,
+        selectedMatch?.teamBId
+    ) {
+        val currentTeamAId = selectedMatch?.teamAId?.toInt()
+        val currentTeamBId = selectedMatch?.teamBId?.toInt()
+
+        if (currentTeamAId != null || currentTeamBId != null) {
+            eventPlayersViewModel.loadPlayersByTeams(
+                teamAId = currentTeamAId,
+                teamBId = currentTeamBId
+            )
+        }
     }
 
     LaunchedEffect(currentMatchId, matchStatus) {
@@ -126,13 +161,21 @@ fun ManageLiveMatchScreen(
             while (true) {
                 delay(60_000)
 
-                liveMinute += 1
+                if (!matchStatus.equals("A decorrer", ignoreCase = true)) {
+                    break
+                }
 
-                matchesViewModel.updateMatchStatus(
-                    matchId = currentMatchId,
-                    status = "A decorrer",
-                    minute = liveMinute
-                )
+                if (liveMinute < 90) {
+                    liveMinute += 1
+
+                    matchesViewModel.updateMatchStatus(
+                        matchId = currentMatchId,
+                        status = "A decorrer",
+                        minute = liveMinute
+                    )
+                } else {
+                    break
+                }
             }
         }
     }
@@ -161,6 +204,7 @@ fun ManageLiveMatchScreen(
             ManageMatchHeader(
                 matchId = currentMatchId.toString(),
                 userRole = userRole,
+                status = matchStatus,
                 onBackClick = {
                     navController.popBackStack()
                 }
@@ -172,8 +216,16 @@ fun ManageLiveMatchScreen(
                 teamAName = teamAName,
                 teamBName = teamBName,
                 status = matchStatus,
-                minute = liveMinute
+                minute = liveMinute,
+                matchTime = matchTime,
+                matchLocation = matchLocation
             )
+
+            if (!matchStatus.equals("A decorrer", ignoreCase = true)) {
+                InfoCard(
+                    text = "Este jogo não está a decorrer. Só é possível registar golos quando o jogo está ativo."
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -182,14 +234,15 @@ fun ManageLiveMatchScreen(
                 GoalButton(
                     text = "Golo $teamAName",
                     modifier = Modifier.weight(1f),
-                    enabled = teamAId != null,
+                    enabled = teamAId != null && matchStatus.equals("A decorrer", ignoreCase = true),
                     onClick = {
                         selectedGoalTeam = teamAName
                         selectedGoalSide = "A"
                         selectedPlayer = null
+                        selectedEventMinute = liveMinute
 
                         teamAId?.let {
-                            playersViewModel.loadPlayersByTeam(it.toInt())
+                            goalPlayersViewModel.loadPlayersByTeam(it.toInt())
                             showPlayerPicker = true
                         }
                     }
@@ -198,14 +251,15 @@ fun ManageLiveMatchScreen(
                 GoalButton(
                     text = "Golo $teamBName",
                     modifier = Modifier.weight(1f),
-                    enabled = teamBId != null,
+                    enabled = teamBId != null && matchStatus.equals("A decorrer", ignoreCase = true),
                     onClick = {
                         selectedGoalTeam = teamBName
                         selectedGoalSide = "B"
                         selectedPlayer = null
+                        selectedEventMinute = liveMinute
 
                         teamBId?.let {
-                            playersViewModel.loadPlayersByTeam(it.toInt())
+                            goalPlayersViewModel.loadPlayersByTeam(it.toInt())
                             showPlayerPicker = true
                         }
                     }
@@ -217,7 +271,8 @@ fun ManageLiveMatchScreen(
                 isLoading = isLoadingEvents,
                 error = eventsError,
                 teamAName = teamAName,
-                teamBName = teamBName
+                teamBName = teamBName,
+                playerNamesById = playerNamesById
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -227,12 +282,22 @@ fun ManageLiveMatchScreen(
     if (showPlayerPicker) {
         GoalPlayerPickerSheet(
             team = selectedGoalTeam,
-            minute = liveMinute,
+            minute = selectedEventMinute,
             players = teamPlayers,
             isLoading = isLoadingPlayers,
             selectedPlayer = selectedPlayer,
             onPlayerSelected = {
                 selectedPlayer = it
+            },
+            onMinuteDecrease = {
+                if (selectedEventMinute > 0) {
+                    selectedEventMinute -= 1
+                }
+            },
+            onMinuteIncrease = {
+                if (selectedEventMinute < 120) {
+                    selectedEventMinute += 1
+                }
             },
             onDismiss = {
                 showPlayerPicker = false
@@ -254,7 +319,7 @@ fun ManageLiveMatchScreen(
                 }
 
                 val confirmation = LiveGoalConfirmation(
-                    minute = liveMinute,
+                    minute = selectedEventMinute,
                     playerId = player.id,
                     playerName = player.name,
                     team = selectedGoalTeam
@@ -277,6 +342,12 @@ fun ManageLiveMatchScreen(
                             onSuccess = {
                                 matchesViewModel.loadMatchById(currentMatchId)
                                 matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
+
+                                eventPlayersViewModel.loadPlayersByTeams(
+                                    teamAId = teamAId?.toInt(),
+                                    teamBId = teamBId?.toInt()
+                                )
+
                                 showGoalSuccess = true
                             }
                         )
@@ -310,14 +381,29 @@ data class LiveGoalConfirmation(
     val team: String
 )
 
-private fun playerNameById(playerId: Int?): String {
-    return "Jogador #${playerId ?: "-"}"
+@Composable
+private fun InfoCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = text,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(20.dp)
+        )
+    }
 }
 
 @Composable
 private fun ManageMatchHeader(
     matchId: String,
     userRole: AthloUserRole,
+    status: String,
     onBackClick: () -> Unit
 ) {
     val isAdmin = userRole == AthloUserRole.ADMIN
@@ -357,15 +443,9 @@ private fun ManageMatchHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Torneio de Braga · Futebol",
+                    text = "Jogo #$matchId · $status",
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = "Jogo #$matchId",
-                    color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
-                    style = MaterialTheme.typography.labelSmall
                 )
             }
 
@@ -385,7 +465,9 @@ private fun LiveScoreCard(
     teamAName: String,
     teamBName: String,
     status: String,
-    minute: Int
+    minute: Int,
+    matchTime: String,
+    matchLocation: String?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -398,10 +480,20 @@ private fun LiveScoreCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "16 abr · 12:00",
+                text = matchTime,
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )
+
+            if (!matchLocation.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = matchLocation,
+                    color = AthloColors.TextMuted,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
 
             Spacer(modifier = Modifier.height(22.dp))
 
@@ -452,8 +544,16 @@ private fun LiveScoreCard(
 
             StatusPill(
                 text = status,
-                background = AthloColors.DangerBg,
-                textColor = Color(0xFFC83755)
+                background = if (status.equals("A decorrer", ignoreCase = true)) {
+                    AthloColors.DangerBg
+                } else {
+                    AthloColors.NeutralBg
+                },
+                textColor = if (status.equals("A decorrer", ignoreCase = true)) {
+                    Color(0xFFC83755)
+                } else {
+                    AthloColors.TextSecondary
+                }
             )
         }
     }
@@ -542,7 +642,8 @@ private fun EventsOfGameCard(
     isLoading: Boolean,
     error: String?,
     teamAName: String,
-    teamBName: String
+    teamBName: String,
+    playerNamesById: Map<Int, String>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -590,10 +691,22 @@ private fun EventsOfGameCard(
                 }
 
                 else -> {
-                    events.forEach { event ->
+                    val sortedEvents = events.sortedWith(
+                        compareByDescending<MatchEvent> { it.minute ?: 0 }
+                            .thenByDescending { it.id }
+                    )
+
+                    sortedEvents.forEach { event ->
                         LiveEventRow(
                             event = event,
-                            teamName = if (event.teamSide == "A") teamAName else teamBName
+                            teamName = when (event.teamSide) {
+                                "A" -> teamAName
+                                "B" -> teamBName
+                                else -> "Equipa indefinida"
+                            },
+                            playerName = event.playerId?.let { playerId ->
+                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                            } ?: "Jogador não associado"
                         )
 
                         Spacer(modifier = Modifier.height(14.dp))
@@ -607,7 +720,8 @@ private fun EventsOfGameCard(
 @Composable
 private fun LiveEventRow(
     event: MatchEvent,
-    teamName: String
+    teamName: String,
+    playerName: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -646,7 +760,7 @@ private fun LiveEventRow(
             )
 
             Text(
-                text = playerNameById(event.playerId),
+                text = playerName,
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -677,6 +791,8 @@ private fun GoalPlayerPickerSheet(
     isLoading: Boolean,
     selectedPlayer: Player?,
     onPlayerSelected: (Player) -> Unit,
+    onMinuteDecrease: () -> Unit,
+    onMinuteIncrease: () -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -708,17 +824,25 @@ private fun GoalPlayerPickerSheet(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Seleciona o jogador marcador",
+                text = "Seleciona o jogador e confirma o minuto do evento",
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             StatusPill(
-                text = "$team · $minute'",
+                text = team,
                 background = AthloColors.SoftBlue,
                 textColor = AthloColors.Blue
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            MinuteSelector(
+                minute = minute,
+                onDecrease = onMinuteDecrease,
+                onIncrease = onMinuteIncrease
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -770,7 +894,7 @@ private fun GoalPlayerPickerSheet(
             ) {
                 Text(
                     text = selectedPlayer?.let {
-                        "Confirmar golo - ${it.name}"
+                        "Confirmar golo - ${it.name} aos $minute'"
                     } ?: "Seleciona um jogador",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -779,6 +903,97 @@ private fun GoalPlayerPickerSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun MinuteSelector(
+    minute: Int,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AthloColors.NeutralBg, RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Minuto do evento",
+            color = AthloColors.TextMuted,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Button(
+                onClick = onDecrease,
+                enabled = minute > 0,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.CardWhite,
+                    disabledContainerColor = Color(0xFFE5E7EB)
+                ),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "−",
+                    color = AthloColors.Navy,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(18.dp))
+
+            Box(
+                modifier = Modifier
+                    .background(AthloColors.Navy, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 28.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$minute'",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+
+            Spacer(modifier = Modifier.width(18.dp))
+
+            Button(
+                onClick = onIncrease,
+                enabled = minute < 120,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AthloColors.CardWhite,
+                    disabledContainerColor = Color(0xFFE5E7EB)
+                ),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "+",
+                    color = AthloColors.Navy,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "O minuto live é sugerido, mas podes ajustar antes de guardar.",
+            color = AthloColors.TextMuted,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }
 

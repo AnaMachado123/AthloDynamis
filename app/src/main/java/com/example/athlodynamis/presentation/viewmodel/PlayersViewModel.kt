@@ -62,6 +62,9 @@ class PlayersViewModel : ViewModel() {
         number: Int
     ) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
             try {
                 repository.createPlayer(
                     CreatePlayerDto(
@@ -75,6 +78,8 @@ class PlayersViewModel : ViewModel() {
                 loadPlayersByTeam(teamId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao criar jogador"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -130,14 +135,20 @@ class PlayersViewModel : ViewModel() {
         teamId: Int
     ) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
             try {
                 repository.deletePlayer(playerId)
                 loadPlayersByTeam(teamId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao apagar jogador"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
+
     fun loadPlayersByTeams(
         teamAId: Int?,
         teamBId: Int?
@@ -159,7 +170,9 @@ class PlayersViewModel : ViewModel() {
                     emptyList()
                 }
 
-                _players.value = teamAPlayers + teamBPlayers
+                _players.value = (teamAPlayers + teamBPlayers)
+                    .distinctBy { it.id }
+
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao carregar jogadores das equipas"
             } finally {

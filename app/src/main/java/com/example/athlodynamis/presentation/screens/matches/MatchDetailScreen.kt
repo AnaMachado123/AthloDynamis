@@ -68,6 +68,7 @@ fun MatchDetailScreen(
 
     val match by matchesViewModel.selectedMatch.collectAsState()
     val error by matchesViewModel.error.collectAsState()
+
     val players by playersViewModel.players.collectAsState()
 
     val matchEvents by matchEventsViewModel.events.collectAsState()
@@ -105,9 +106,11 @@ fun MatchDetailScreen(
         }
     }
 
-    val playerNamesById = players.associate {
-        it.id to it.name
-    }
+    val playerNamesById = players
+        .filter { it.name.isNotBlank() }
+        .associate { player ->
+            player.id to player.name
+        }
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -631,10 +634,17 @@ private fun MatchEventsCard(
                 }
 
                 else -> {
-                    events.forEach { event ->
+                    val sortedEvents = events.sortedWith(
+                        compareByDescending<MatchEvent> { it.minute ?: 0 }
+                            .thenByDescending { it.id }
+                    )
+
+                    sortedEvents.forEach { event ->
                         EventRow(
                             minute = "${event.minute ?: 0}'",
-                            playerName = playerNamesById[event.playerId] ?: "Jogador #${event.playerId ?: "-"}",
+                            playerName = event.playerId?.let { playerId ->
+                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                            } ?: "Jogador não associado",
                             team = when (event.teamSide) {
                                 "A" -> match.teamAName
                                 "B" -> match.teamBName
