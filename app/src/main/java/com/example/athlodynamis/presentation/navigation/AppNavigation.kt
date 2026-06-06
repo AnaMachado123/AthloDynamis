@@ -2,6 +2,8 @@ package com.example.athlodynamis.presentation.navigation
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -34,15 +36,24 @@ import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.getValue
+import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    val currentUserRole = AthloUserRole.ORGANIZER
-    val isOffline = false
+    val authViewModel: AuthViewModel = viewModel()
+    val authState by authViewModel.uiState.collectAsState()
 
+    val currentUserRole = when (authState.userRole) {
+        "ADMIN" -> AthloUserRole.ADMIN
+        "ORGANIZER" -> AthloUserRole.ORGANIZER
+        else -> AthloUserRole.PLAYER
+    }
+
+    val isOffline = false
     val sharedPreferences = remember {
         context.getSharedPreferences("athlo_preferences", Context.MODE_PRIVATE)
     }
@@ -79,13 +90,24 @@ fun AppNavigation() {
         }
 
         composable(Screen.Login.route) {
-            LoginScreen(
-                onLoginClick = {
+
+            LaunchedEffect(authState.isSuccess) {
+                if (authState.isSuccess) {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) {
                             inclusive = true
                         }
                     }
+                }
+            }
+
+            LoginScreen(
+                errorMessage = authState.error,
+                onLoginClick = { email, password ->
+                    authViewModel.login(
+                        email = email,
+                        password = password
+                    )
                 },
                 onRegisterClick = {
                     navController.navigate(Screen.Register.route)
@@ -94,13 +116,30 @@ fun AppNavigation() {
         }
 
         composable(Screen.Register.route) {
-            RegisterScreen(
-                onRegisterClick = {
-                    navController.navigate(Screen.Home.route) {
+            val authViewModel: AuthViewModel = viewModel()
+            val authState by authViewModel.uiState.collectAsState()
+
+            LaunchedEffect(authState.isSuccess) {
+                if (authState.isSuccess) {
+                    navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) {
                             inclusive = true
                         }
                     }
+                }
+            }
+
+            RegisterScreen(
+                isLoading = authState.isLoading,
+                errorMessage = authState.error,
+                onRegisterClick = { name, email, password, shirtNumber, position ->
+                    authViewModel.registerPlayer(
+                        name = name,
+                        email = email,
+                        password = password,
+                        shirtNumber = shirtNumber,
+                        position = position
+                    )
                 },
                 onBackClick = {
                     navController.popBackStack()
@@ -114,7 +153,9 @@ fun AppNavigation() {
             } else {
                 HomeScreen(
                     navController = navController,
-                    userRole = currentUserRole
+                    userRole = currentUserRole,
+                    userName = authState.userName ?: "Utilizador",
+                    playerTeamId = authState.playerTeamId
                 )
             }
         }
@@ -297,7 +338,8 @@ fun AppNavigation() {
         composable(Screen.Stats.route) {
             StatsScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                userId = authState.userId ?: ""
             )
         }
 
@@ -311,12 +353,47 @@ fun AppNavigation() {
         composable(Screen.Profile.route) {
             ProfileScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                userName = authState.userName ?: "Utilizador",
+                playerTeamId = authState.playerTeamId,
+                onLogoutClick = {
+                    authViewModel.logout()
+
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
 
+
         composable(Screen.EditProfile.route) {
-            EditProfileScreen(navController = navController)
+            EditProfileScreen(
+                navController = navController,
+                userId = authState.userId ?: "",
+                userName = authState.userName ?: "",
+                userEmail = authState.userEmail ?: "",
+                userPassword = authState.userPassword ?: "",
+                onSaveClick = { name, email, password ->
+                    authViewModel.updateProfile(
+                        name = name,
+                        email = email,
+                        password = password
+                    )
+
+                    navController.popBackStack()
+                },
+                onPhotoSelected = { userId, imageBytes ->
+                    authViewModel.uploadProfilePhoto(
+                        userId = userId,
+                        imageBytes = imageBytes,
+                        onSuccess = { },
+                        onError = { }
+                    )
+                }
+            )
         }
 
         composable(

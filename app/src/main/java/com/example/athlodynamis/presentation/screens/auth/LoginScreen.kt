@@ -46,7 +46,11 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit,
+    errorMessage: String? = null,
+    onLoginClick: (
+        email: String,
+        password: String
+    ) -> Unit,
     onRegisterClick: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
@@ -166,9 +170,22 @@ fun LoginScreen(
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
+                    if (errorMessage != null) {
+                        Text(
+                            text = errorMessage,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodySmall
+                        )
 
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                     Button(
-                        onClick = onLoginClick,
+                        onClick = {
+                            onLoginClick(
+                                email.trim(),
+                                password
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
