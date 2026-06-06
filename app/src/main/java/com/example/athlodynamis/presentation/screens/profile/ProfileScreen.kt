@@ -53,7 +53,10 @@ import com.example.athlodynamis.presentation.navigation.Screen
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    userRole: AthloUserRole
+    userRole: AthloUserRole,
+    userName: String,
+    playerTeamId: Int?,
+    onLogoutClick: () -> Unit
 ) {
     Scaffold(
         containerColor = AthloColors.Background,
@@ -79,17 +82,23 @@ fun ProfileScreen(
 
                 ProfileHeader(
                     userRole = userRole,
+                    userName = userName,
+                    playerTeamId = playerTeamId,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
-                    }
+                    },
+                    onLogoutClick = onLogoutClick
                 )
             }
 
             when (userRole) {
                 AthloUserRole.PLAYER -> {
                     item {
-                        PlayerProfileTabs()
+                        PlayerProfileTabs(
+                            playerTeamId = playerTeamId,
+                            onLogoutClick = onLogoutClick
+                        )
                     }
                 }
 
@@ -111,7 +120,9 @@ fun ProfileScreen(
                     }
 
                     item {
-                        LogoutButton()
+                        LogoutButton(
+                            onLogoutClick = onLogoutClick
+                        )
                     }
                 }
 
@@ -137,7 +148,9 @@ fun ProfileScreen(
                     }
 
                     item {
-                        LogoutButton()
+                        LogoutButton(
+                            onLogoutClick = onLogoutClick
+                        )
                     }
                 }
             }
@@ -148,10 +161,18 @@ fun ProfileScreen(
 @Composable
 private fun ProfileHeader(
     userRole: AthloUserRole,
+    userName: String,
+    playerTeamId: Int?,
     onBackClick: () -> Unit,
-    onEditClick: () -> Unit
-) {
+    onEditClick: () -> Unit,
+    onLogoutClick: () -> Unit
+){
     val isAdmin = userRole == AthloUserRole.ADMIN
+    val initials = userName
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.first().uppercase() }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -185,7 +206,10 @@ private fun ProfileHeader(
                         text = "Terminar Sessão",
                         color = Color(0xFF8EC5F4),
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable {
+                            onLogoutClick()
+                        }
                     )
                 }
             }
@@ -216,7 +240,7 @@ private fun ProfileHeader(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "GM",
+                        text = initials,
                         color = Color.White,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold
@@ -242,7 +266,7 @@ private fun ProfileHeader(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Guilherme Magalhães",
+                text = userName,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -254,20 +278,25 @@ private fun ProfileHeader(
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            ProfileStatsRow(userRole = userRole)
+            ProfileStatsRow(
+                userRole = userRole,
+                playerTeamId = playerTeamId
+            )
         }
     }
 }
 
 @Composable
-private fun ProfileStatsRow(userRole: AthloUserRole) {
+private fun ProfileStatsRow(
+    userRole: AthloUserRole,
+    playerTeamId: Int?
+) {
     val stats = when (userRole) {
         AthloUserRole.PLAYER -> listOf(
-            "48" to "Jogos",
-            "6" to "Troféus",
-            "4" to "Equipas"
+            "0" to "Jogos",
+            "0" to "Troféus",
+            (if (playerTeamId != null) "1" else "0") to "Equipas"
         )
-
         AthloUserRole.ORGANIZER -> listOf(
             "12" to "Eventos",
             "96" to "Jogos",
@@ -340,9 +369,13 @@ private fun RolePill(userRole: AthloUserRole) {
 }
 
 @Composable
-private fun PlayerProfileTabs() {
+private fun PlayerProfileTabs(
+    playerTeamId: Int?,
+    onLogoutClick: () -> Unit
+) {
     var selectedTab by remember { mutableStateOf("Estatísticas") }
-
+    val hasTeam = playerTeamId != null
+    val hasMatches = false
     Column {
         Row(
             modifier = Modifier
@@ -369,14 +402,28 @@ private fun PlayerProfileTabs() {
         Spacer(modifier = Modifier.height(18.dp))
 
         if (selectedTab == "Estatísticas") {
-            LastGamesCard()
+
+            if (!hasMatches) {
+                EmptyMatchesCard()
+            } else {
+                LastGamesCard()
+            }
+
         } else {
-            TeamsCard()
+
+            if (!hasTeam) {
+                EmptyTeamsCard()
+            } else {
+                TeamsCard()
+            }
+
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        LogoutButton()
+        LogoutButton(
+            onLogoutClick = onLogoutClick
+        )
     }
 }
 
@@ -724,9 +771,11 @@ private fun SuspendOrganizerButton() {
 }
 
 @Composable
-private fun LogoutButton() {
+private fun LogoutButton(
+    onLogoutClick: () -> Unit
+) {
     Button(
-        onClick = { },
+        onClick = onLogoutClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(54.dp),
@@ -777,5 +826,86 @@ private fun AdminBadge(
             fontWeight = FontWeight.ExtraBold,
             maxLines = 1
         )
+    }
+}
+@Composable
+private fun EmptyMatchesCard() {
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = AthloColors.CardWhite
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            SectionSmallTitle("ÚLTIMOS JOGOS")
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Icon(
+                imageVector = Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color.LightGray,
+                modifier = Modifier.size(90.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "SEM INFORMAÇÃO",
+                color = Color.LightGray,
+                style = MaterialTheme.typography.labelMedium
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+private fun EmptyTeamsCard() {
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = AthloColors.CardWhite
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            SectionSmallTitle("EQUIPAS INSCRITAS")
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Icon(
+                imageVector = Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color.LightGray,
+                modifier = Modifier.size(90.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "SEM INFORMAÇÃO",
+                color = Color.LightGray,
+                style = MaterialTheme.typography.labelMedium
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
     }
 }

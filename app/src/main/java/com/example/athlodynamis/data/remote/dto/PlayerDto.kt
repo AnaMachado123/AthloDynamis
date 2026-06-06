@@ -8,6 +8,9 @@ import kotlinx.serialization.Serializable
 data class PlayerDto(
     val id: Int,
 
+    @SerialName("user_id")
+    val userId: String? = null,
+
     @SerialName("team_id")
     val teamId: Int?,
 
@@ -22,13 +25,19 @@ data class PlayerDto(
 )
 
 @Serializable
+
 data class CreatePlayerDto(
+
+    @SerialName("user_id")
+    val userId: String? = null,
+
     @SerialName("team_id")
-    val teamId: Int,
+    val teamId: Int? = null,
 
     val name: String,
     val position: String,
     val number: Int,
+
     val goals: Int = 0,
     val assists: Int = 0,
 
@@ -39,6 +48,7 @@ data class CreatePlayerDto(
 fun PlayerDto.toPlayer(): Player {
     return Player(
         id = id,
+        userId = userId,
         teamId = teamId,
         name = name,
         position = position,

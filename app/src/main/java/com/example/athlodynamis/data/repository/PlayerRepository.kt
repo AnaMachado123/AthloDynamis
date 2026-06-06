@@ -11,6 +11,31 @@ class PlayerRepository {
 
     private val client = SupabaseClientProvider.client
 
+    suspend fun getPlayerById(playerId: Int): Player? {
+        return client
+            .from("players")
+            .select {
+                filter {
+                    eq("id", playerId)
+                }
+            }
+            .decodeList<PlayerDto>()
+            .firstOrNull()
+            ?.toPlayer()
+    }
+    suspend fun getPlayerByUserId(userId: String): Player? {
+        return client
+            .from("players")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                }
+            }
+            .decodeList<PlayerDto>()
+            .firstOrNull()
+            ?.toPlayer()
+    }
+
     suspend fun getPlayersByTeam(teamId: Int): List<Player> {
         return client
             .from("players")
@@ -78,4 +103,6 @@ class PlayerRepository {
                 }
             }
     }
+
+
 }

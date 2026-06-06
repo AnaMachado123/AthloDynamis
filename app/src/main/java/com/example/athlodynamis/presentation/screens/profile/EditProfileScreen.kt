@@ -1,5 +1,6 @@
 package com.example.athlodynamis.presentation.screens.profile
 
+import android.R.attr.password
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,12 +47,49 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
-
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 @Composable
-fun EditProfileScreen(navController: NavController) {
-    var name by remember { mutableStateOf("Guilherme Magalhães") }
-    var email by remember { mutableStateOf("gui@gmail.com") }
-    var password by remember { mutableStateOf("teste123") }
+fun EditProfileScreen(
+    navController: NavController,
+    userId: String,
+    userName: String,
+    userEmail: String,
+    userPassword: String,
+    onSaveClick: (
+        name: String,
+        email: String,
+        password: String
+    ) -> Unit,
+    onPhotoSelected: (
+        userId: String,
+        imageBytes: ByteArray
+    ) -> Unit
+){
+    var name by remember { mutableStateOf(userName) }
+    var email by remember { mutableStateOf(userEmail) }
+    var password by remember { mutableStateOf(userPassword) }
+    val context = LocalContext.current
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+
+        uri?.let {
+
+            val bytes = context.contentResolver
+                .openInputStream(it)
+                ?.use { inputStream ->
+                    inputStream.readBytes()
+                }
+
+            if (bytes != null) {
+                onPhotoSelected(userId, bytes)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = AthloColors.Background
@@ -68,7 +106,10 @@ fun EditProfileScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(10.dp))
 
             EditProfileHeader(
-                onBackClick = { navController.popBackStack() }
+                userName = userName,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
 
             Card(
@@ -139,12 +180,22 @@ fun EditProfileScreen(navController: NavController) {
 
                     FieldLabel("Foto")
 
-                    UploadPhotoButton()
+                    UploadPhotoButton(
+                        onClick = {
+                            imagePickerLauncher.launch("image/*")
+                        }
+                    )
                 }
             }
 
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    onSaveClick(
+                        name.trim(),
+                        email.trim(),
+                        password
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -171,7 +222,9 @@ fun EditProfileScreen(navController: NavController) {
             }
 
             OutlinedButton(
-                onClick = { navController.popBackStack() },
+                onClick = {
+                    navController.popBackStack()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -188,11 +241,17 @@ fun EditProfileScreen(navController: NavController) {
         }
     }
 }
-
 @Composable
 private fun EditProfileHeader(
+    userName: String,
     onBackClick: () -> Unit
 ) {
+    val initials = userName
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.first().uppercase() }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.ExtraLarge),
@@ -240,7 +299,7 @@ private fun EditProfileHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "GM",
+                    text = initials.ifBlank { "U" },
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -248,25 +307,30 @@ private fun EditProfileHeader(
         }
     }
 }
-
 @Composable
-private fun UploadPhotoButton() {
+private fun UploadPhotoButton(
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = AthloColors.SoftBlue),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        RowContent()
+        RowContent(
+            onClick = onClick
+        )
     }
 }
 
 @Composable
-private fun RowContent() {
+private fun RowContent(
+    onClick: () -> Unit
+) {
     androidx.compose.foundation.layout.Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable { onClick() }
             .padding(18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
