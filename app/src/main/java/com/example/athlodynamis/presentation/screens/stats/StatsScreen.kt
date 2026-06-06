@@ -2,32 +2,15 @@ package com.example.athlodynamis.presentation.screens.stats
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -37,38 +20,34 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.presentation.components.AthloBottomBar
-import com.example.athlodynamis.presentation.components.AthloColors
-import com.example.athlodynamis.presentation.components.AthloRadius
-import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.domain.model.PlayerStatsData
+import com.example.athlodynamis.presentation.components.*
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.StatsViewModel
 
-data class StatSummary(
-    val value: String,
-    val label: String
-)
-
-data class ProgressItem(
-    val label: String,
-    val value: String,
-    val progress: Float,
-    val color: Color
-)
-
-data class RankingItem(
-    val position: Int,
-    val initials: String,
-    val name: String,
-    val subtitle: String,
-    val value: String
-)
+data class StatSummary(val value: String, val label: String)
+data class ProgressItem(val label: String, val value: String, val progress: Float, val color: Color)
+data class RankingItem(val position: Int, val initials: String, val name: String, val subtitle: String, val value: String)
 
 @Composable
 fun StatsScreen(
     navController: NavController,
-    userRole: AthloUserRole
+    userRole: AthloUserRole,
+    userId: String,
+    statsViewModel: StatsViewModel = viewModel()
 ) {
+    val uiState by statsViewModel.uiState.collectAsState()
+
+    LaunchedEffect(userRole) {
+        if (userRole == AthloUserRole.PLAYER) {
+            if (userId.isNotBlank()) {
+                statsViewModel.loadPlayerStatsByUserId(userId)
+            }
+        }
+    }
+
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
@@ -92,7 +71,46 @@ fun StatsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 when (userRole) {
-                    AthloUserRole.PLAYER -> PlayerStatsContent()
+                    AthloUserRole.PLAYER -> {
+                        when {
+                            uiState.isLoading -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(220.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = AthloColors.Blue)
+                                }
+                            }
+
+                            uiState.error != null -> {
+                                Text(
+                                    text = uiState.error ?: "Erro ao carregar estatísticas",
+                                    color = Color(0xFFC83755),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            else -> {
+                                PlayerStatsContent(
+                                    stats = uiState.playerStats ?: PlayerStatsData(
+                                        totalMatches = 0,
+                                        wins = 0,
+                                        draws = 0,
+                                        losses = 0,
+                                        goals = 0,
+                                        assists = 0,
+                                        yellowCards = 0,
+                                        teams = 0,
+                                        trophies = 0
+                                    )
+                                )
+                            }
+                        }
+                    }
+
                     AthloUserRole.ORGANIZER -> OrganizerStatsContent()
                     AthloUserRole.ADMIN -> AdminStatsContent()
                 }
@@ -101,38 +119,31 @@ fun StatsScreen(
     }
 }
 
-/* ---------------------------------------------------------
-   PLAYER
---------------------------------------------------------- */
+/* PLAYER */
 
 @Composable
-private fun PlayerStatsContent() {
+private fun PlayerStatsContent(stats: PlayerStatsData) {
     StatsHeader(
         title = "Estatísticas",
         subtitle = "As minhas stats",
         summaries = listOf(
-            StatSummary("48", "Jogos"),
-            StatSummary("6", "Troféus"),
-            StatSummary("4", "Equipas")
+            StatSummary(stats.totalMatches.toString(), "Jogos"),
+            StatSummary(stats.trophies.toString(), "Troféus"),
+            StatSummary(stats.teams.toString(), "Equipas")
         ),
         showAdminBadge = false
     )
 
     Spacer(modifier = Modifier.height(22.dp))
-
-    PerformanceCard()
-
+    PerformanceCard(stats)
     Spacer(modifier = Modifier.height(18.dp))
-
-    PlayerSeasonNumbersCard()
-
+    PlayerSeasonNumbersCard(stats)
     Spacer(modifier = Modifier.height(18.dp))
-
     RecentGamesCard()
 }
 
 @Composable
-private fun PerformanceCard() {
+private fun PerformanceCard(stats: PlayerStatsData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -140,45 +151,25 @@ private fun PerformanceCard() {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(22.dp),
+            modifier = Modifier.fillMaxWidth().padding(22.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 SectionMiniTitle("DESEMPENHO")
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     DonutChart(
-                        percentage = 67,
+                        percentage = stats.winPercentage,
                         modifier = Modifier.size(94.dp)
                     )
 
                     Spacer(modifier = Modifier.width(22.dp))
 
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        LegendItem(
-                            color = AthloColors.Blue,
-                            text = "32 Vitórias"
-                        )
-
-                        LegendItem(
-                            color = Color(0xFFE84D4D),
-                            text = "10 Empates"
-                        )
-
-                        LegendItem(
-                            color = Color(0xFF9CA3AF),
-                            text = "6 Derrotas"
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        LegendItem(AthloColors.Blue, "${stats.wins} Vitórias")
+                        LegendItem(Color(0xFFE84D4D), "${stats.draws} Empates")
+                        LegendItem(Color(0xFF9CA3AF), "${stats.losses} Derrotas")
                     }
                 }
             }
@@ -187,48 +178,27 @@ private fun PerformanceCard() {
 }
 
 @Composable
-private fun PlayerSeasonNumbersCard() {
+private fun PlayerSeasonNumbersCard(stats: PlayerStatsData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(22.dp)
-        ) {
+        Column(modifier = Modifier.padding(22.dp)) {
             SectionMiniTitle("NÚMEROS DA ÉPOCA")
-
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallStatBox(
-                    value = "19",
-                    label = "Golos marcados",
-                    modifier = Modifier.weight(1f)
-                )
-
-                SmallStatBox(
-                    value = "11",
-                    label = "Assistências",
-                    modifier = Modifier.weight(1f)
-                )
+                SmallStatBox(stats.goals.toString(), "Golos marcados", Modifier.weight(1f))
+                SmallStatBox(stats.assists.toString(), "Assistências", Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallStatBox(
-                    value = "3",
-                    label = "Cartões amarelos",
-                    modifier = Modifier.weight(1f)
-                )
-
-                SmallStatBox(
-                    value = "0",
-                    label = "Cartões vermelhos",
-                    modifier = Modifier.weight(1f)
-                )
+                SmallStatBox(stats.yellowCards.toString(), "Cartões amarelos", Modifier.weight(1f))
+                SmallStatBox("0", "Cartões vermelhos", Modifier.weight(1f))
             }
         }
     }
@@ -242,47 +212,18 @@ private fun RecentGamesCard() {
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(22.dp)
-        ) {
+        Column(modifier = Modifier.padding(22.dp)) {
             SectionMiniTitle("ÚLTIMOS JOGOS")
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            RecentGameRow(
-                result = "V",
-                resultColor = AthloColors.SuccessBg,
-                resultTextColor = Color(0xFF3F7A28),
-                opponent = "SC Viseu vs GD São",
-                score = "3-1"
-            )
-
-            RecentGameRow(
-                result = "E",
-                resultColor = AthloColors.NeutralBg,
-                resultTextColor = AthloColors.TextSecondary,
-                opponent = "SC Viseu vs GD São",
-                score = "1-1"
-            )
-
-            RecentGameRow(
-                result = "D",
-                resultColor = AthloColors.DangerBg,
-                resultTextColor = Color(0xFFC83755),
-                opponent = "SC Viseu vs GD São",
-                score = "0-2"
-            )
-
-            RecentGameRow(
-                result = "E",
-                resultColor = AthloColors.NeutralBg,
-                resultTextColor = AthloColors.TextSecondary,
-                opponent = "SC Viseu vs GD São",
-                score = "2-2"
-            )
+            RecentGameRow("V", AthloColors.SuccessBg, Color(0xFF3F7A28), "SC Viseu vs GD São", "3-1")
+            RecentGameRow("E", AthloColors.NeutralBg, AthloColors.TextSecondary, "SC Viseu vs GD São", "1-1")
+            RecentGameRow("D", AthloColors.DangerBg, Color(0xFFC83755), "SC Viseu vs GD São", "0-2")
+            RecentGameRow("E", AthloColors.NeutralBg, AthloColors.TextSecondary, "SC Viseu vs GD São", "2-2")
         }
     }
 }
+
 
 /* ---------------------------------------------------------
    ORGANIZER

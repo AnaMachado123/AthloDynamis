@@ -42,7 +42,14 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.domain.model.Team
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 data class DashboardStat(
     val value: String,
     val label: String
@@ -59,8 +66,10 @@ data class RecentUser(
 @Composable
 fun HomeScreen(
     navController: NavController,
-    userRole: AthloUserRole
-) {
+    userRole: AthloUserRole,
+    userName: String = "Utilizador",
+    playerTeamId: Int? = null
+){
     Scaffold(
         containerColor = AthloColors.Background,
         floatingActionButton = {
@@ -103,7 +112,11 @@ fun HomeScreen(
                 when (userRole) {
                     AthloUserRole.ADMIN -> AdminHomeContent(navController = navController)
                     AthloUserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
-                    AthloUserRole.PLAYER -> PlayerHomeContent(navController = navController)
+                    AthloUserRole.PLAYER -> PlayerHomeContent(
+                        navController = navController,
+                        userName = userName,
+                        playerTeamId = playerTeamId
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -350,18 +363,37 @@ private fun OrganizerHomeContent(
 /* ---------------------------------------------------------
    PLAYER HOME
 --------------------------------------------------------- */
-
 @Composable
 private fun PlayerHomeContent(
-    navController: NavController
+    navController: NavController,
+    userName: String,
+    playerTeamId: Int?
 ) {
+    val initials = userName
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.first().uppercase() }
+    var playerTeam by remember {
+        mutableStateOf<Team?>(null)
+    }
+
+    LaunchedEffect(playerTeamId) {
+        if (playerTeamId != null) {
+            TeamRepository.fetchTeamsFromSupabase()
+            playerTeam = TeamRepository.getTeamById(playerTeamId)
+        } else {
+            playerTeam = null
+        }
+    }
+
     DashboardHeader(
-        name = "Gonçalo Magalhães",
-        initials = "GM",
+        name = userName,
+        initials = initials.ifBlank { "J" },
         stats = listOf(
-            DashboardStat("2", "Próximos jogos"),
-            DashboardStat("19", "Golos"),
-            DashboardStat("3", "Troféus")
+            DashboardStat("0", "Próximos jogos"),
+            DashboardStat("0", "Golos"),
+            DashboardStat("0", "Troféus")
         ),
         showAdminBadge = false,
         onProfileClick = {
@@ -371,54 +403,151 @@ private fun PlayerHomeContent(
 
     Spacer(modifier = Modifier.height(22.dp))
 
-    SectionTitle(title = "Próximo jogo")
+    if (playerTeamId == null) {
+        EmptyPlayerHomeCard()
+    } else {
+        SectionTitle(title = "Próximo jogo")
 
-    Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-    LiveMatchCard(
-        time = "Hoje - 10:00",
-        teamA = "Equipa 1",
-        teamB = "Equipa 2",
-        scoreA = "-",
-        scoreB = "-",
-        status = "Agendado",
-        minute = "",
-        onClick = {
-            navController.navigate(Screen.MatchDetail.createRoute("1"))
-        }
-    )
+        EmptyNextMatchCard()
 
-    Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
-    SectionTitle(title = "As minhas equipas")
+        SectionTitle(title = "As minhas equipas")
 
-    Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-    TeamCard(
-        acronym = "EQP",
-        name = "Equipa 1",
-        sport = "Futebol",
-        status = "A decorrer",
-        statusColor = AthloColors.DangerBg,
-        acronymColor = AthloColors.InfoBg
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    TeamCard(
-        acronym = "EQP",
-        name = "Equipa 4",
-        sport = "Voleibol",
-        status = "Inscrito",
-        statusColor = AthloColors.SoftBlue,
-        acronymColor = Color(0xFFF8FFB0)
-    )
+        TeamCard(
+            acronym = playerTeam?.acronym ?: "EQP",
+            name = playerTeam?.name ?: "Equipa $playerTeamId",
+            sport = playerTeam?.sport ?: "Equipa associada",
+            status = "Inscrito",
+            statusColor = AthloColors.SoftBlue,
+            acronymColor = AthloColors.InfoBg
+        )
+    }
 }
 
 /* ---------------------------------------------------------
    SHARED COMPONENTS
 --------------------------------------------------------- */
+@Composable
+private fun EmptyPlayerHomeCard() {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        SectionTitle(title = "O meu perfil desportivo")
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(AthloRadius.Large),
+            colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(26.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.WarningAmber,
+                    contentDescription = "Sem equipa",
+                    tint = AthloColors.TextMuted,
+                    modifier = Modifier.size(58.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Sem equipa associada",
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Ainda não foste adicionado a nenhuma equipa. Quando fores associado, os teus jogos, estatísticas e equipas aparecem aqui.",
+                    color = AthloColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+    }
+}
+@Composable
+private fun EmptyNextMatchCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Sem próximo jogo",
+                tint = AthloColors.TextMuted,
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Sem jogos agendados",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando houver um jogo marcado para a tua equipa, ele aparece aqui.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+@Composable
+private fun EmptyStatItem(
+    value: String,
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            color = AthloColors.Blue,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Text(
+            text = label,
+            color = AthloColors.TextSecondary,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 @Composable
 private fun DashboardHeader(
     name: String,

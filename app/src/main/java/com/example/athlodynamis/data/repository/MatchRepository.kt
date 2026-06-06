@@ -13,6 +13,14 @@ class MatchRepository {
 
     private val client = SupabaseClientProvider.client
 
+    suspend fun getAllMatches(): List<Match> {
+        return client
+            .from("matches")
+            .select()
+            .decodeList<MatchDto>()
+            .map { it.toMatch() }
+    }
+
     suspend fun getMatchesByTournament(
         tournamentId: Long
     ): List<Match> {
@@ -90,6 +98,7 @@ class MatchRepository {
                 }
             }
     }
+
 }
 
 @Serializable
