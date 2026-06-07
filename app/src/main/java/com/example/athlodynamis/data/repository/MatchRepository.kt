@@ -98,6 +98,18 @@ class MatchRepository {
                 }
             }
     }
+    suspend fun getMatchesByTeamId(teamId: Int): List<Match> {
+        return client
+            .from("matches")
+            .select()
+            .decodeList<MatchDto>()
+            .map { it.toMatch() }
+            .filter { match ->
+                match.teamAId == teamId.toLong() || match.teamBId == teamId.toLong()
+            }
+    }
+
+
 
 }
 

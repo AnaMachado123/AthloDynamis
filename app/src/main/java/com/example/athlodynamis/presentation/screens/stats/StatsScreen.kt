@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.athlodynamis.domain.model.PlayerStatsData
+import com.example.athlodynamis.domain.model.RecentGameData
 import com.example.athlodynamis.presentation.components.*
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.StatsViewModel
@@ -103,6 +104,7 @@ fun StatsScreen(
                                         goals = 0,
                                         assists = 0,
                                         yellowCards = 0,
+                                        redCards = 0,
                                         teams = 0,
                                         trophies = 0
                                     )
@@ -139,7 +141,9 @@ private fun PlayerStatsContent(stats: PlayerStatsData) {
     Spacer(modifier = Modifier.height(18.dp))
     PlayerSeasonNumbersCard(stats)
     Spacer(modifier = Modifier.height(18.dp))
-    RecentGamesCard()
+    RecentGamesCard(
+        recentGames = stats.recentGames
+    )
 }
 
 @Composable
@@ -198,29 +202,132 @@ private fun PlayerSeasonNumbersCard(stats: PlayerStatsData) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SmallStatBox(stats.yellowCards.toString(), "Cartões amarelos", Modifier.weight(1f))
-                SmallStatBox("0", "Cartões vermelhos", Modifier.weight(1f))
+                SmallStatBox(stats.redCards.toString(), "Cartões vermelhos", Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun RecentGamesCard() {
+private fun RecentGamesCard(
+    recentGames: List<RecentGameData>
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(22.dp)) {
-            SectionMiniTitle("ÚLTIMOS JOGOS")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                SectionMiniTitle("ÚLTIMOS JOGOS")
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            RecentGameRow("V", AthloColors.SuccessBg, Color(0xFF3F7A28), "SC Viseu vs GD São", "3-1")
-            RecentGameRow("E", AthloColors.NeutralBg, AthloColors.TextSecondary, "SC Viseu vs GD São", "1-1")
-            RecentGameRow("D", AthloColors.DangerBg, Color(0xFFC83755), "SC Viseu vs GD São", "0-2")
-            RecentGameRow("E", AthloColors.NeutralBg, AthloColors.TextSecondary, "SC Viseu vs GD São", "2-2")
+            if (recentGames.isEmpty()) {
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = "Sem jogos registados",
+                    tint = AthloColors.TextMuted,
+                    modifier = Modifier.size(48.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Sem jogos registados",
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            } else {
+                recentGames.forEach { game ->
+                    val bgColor = when (game.result) {
+                        "V" -> AthloColors.SuccessBg
+                        "D" -> AthloColors.DangerBg
+                        else -> AthloColors.NeutralBg
+                    }
+
+                    val textColor = when (game.result) {
+                        "V" -> Color(0xFF3F7A28)
+                        "D" -> Color(0xFFC83755)
+                        else -> AthloColors.TextSecondary
+                    }
+
+                    RecentGameRow(
+                        result = game.result,
+                        resultColor = bgColor,
+                        resultTextColor = textColor,
+                        opponent = game.matchTitle,
+                        score = game.score,
+                        subtitle = game.subtitle
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun RecentGameRow(
+    result: String,
+    resultColor: Color,
+    resultTextColor: Color,
+    opponent: String,
+    score: String,
+    subtitle: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(resultColor, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = result,
+                color = resultTextColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp)
+        ) {
+            Text(
+                text = opponent,
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = subtitle,
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        Text(
+            text = score,
+            color = AthloColors.TextPrimary,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -850,62 +957,6 @@ private fun LegendItem(
             color = AthloColors.TextPrimary,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
-private fun RecentGameRow(
-    result: String,
-    resultColor: Color,
-    resultTextColor: Color,
-    opponent: String,
-    score: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .background(resultColor, RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = result,
-                color = resultTextColor,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 12.dp)
-        ) {
-            Text(
-                text = opponent,
-                color = AthloColors.TextPrimary,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = "Torneio de Braga · 16/04/2026",
-                color = AthloColors.TextMuted,
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-
-        Text(
-            text = score,
-            color = AthloColors.TextPrimary,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
         )
     }
 }
