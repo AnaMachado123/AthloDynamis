@@ -58,7 +58,10 @@ import com.example.athlodynamis.domain.model.PlayerStatsData
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.data.repository.TournamentRepository
 import com.example.athlodynamis.domain.model.Tournament
-
+import com.example.athlodynamis.presentation.components.AthloBackButton
+import com.example.athlodynamis.presentation.components.AthloLogoutButton
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.data.repository.PlayerRepository
 @Composable
 fun ProfileScreen(
     navController: NavController,
@@ -84,8 +87,11 @@ fun ProfileScreen(
     var playerTeam by remember {
         mutableStateOf<Team?>(null)
     }
+    var adminTournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
+    var adminMatchesCount by remember { mutableStateOf(0) }
+    var adminPlayersCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(userId, playerTeamId) {
+    LaunchedEffect(userId, playerTeamId, userRole) {
         if (userRole == AthloUserRole.PLAYER && userId.isNotBlank()) {
             playerStats = StatsRepository().getPlayerStatsByUserId(userId)
 
@@ -94,12 +100,25 @@ fun ProfileScreen(
                 playerTeam = TeamRepository.getTeamById(playerTeamId)
             }
         }
+
         if (userRole == AthloUserRole.ORGANIZER) {
-            organizerStats = OrganizerStatsRepository()
-                .getOrganizerStats()
+            organizerStats = OrganizerStatsRepository().getOrganizerStats()
 
             organizerTournaments = TournamentRepository()
                 .getTournaments()
+        }
+
+        if (userRole == AthloUserRole.ADMIN) {
+            adminTournaments = TournamentRepository()
+                .getTournaments()
+
+            adminMatchesCount = MatchRepository()
+                .getAllMatches()
+                .size
+
+            adminPlayersCount = PlayerRepository()
+                .getAllPlayers()
+                .size
         }
     }
 
@@ -131,6 +150,9 @@ fun ProfileScreen(
                     playerTeamId = playerTeamId,
                     playerStats = playerStats,
                     organizerStats = organizerStats,
+                    adminEventsCount = adminTournaments.size,
+                    adminMatchesCount = adminMatchesCount,
+                    adminPlayersCount = adminPlayersCount,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
@@ -208,11 +230,30 @@ fun ProfileScreen(
                     }
 
                     item {
-                        EmptyAssociatedEventsCard()
+                        if (adminTournaments.isEmpty()) {
+                            EmptyAssociatedEventsCard()
+                        } else {
+                            adminTournaments.take(3).forEach { tournament ->
+                                AssociatedEventCard(
+                                    tournament = tournament,
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.TournamentDetail.createRoute(tournament.id)
+                                        )
+                                    }
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
                     }
 
                     item {
-                        SuspendOrganizerButton()
+                        SuspendOrganizerButton(
+                            onClick = {
+                                navController.navigate(Screen.SuspendOrganizer.route)
+                            }
+                        )
                     }
 
                     item {
@@ -233,6 +274,9 @@ private fun ProfileHeader(
     playerTeamId: Int?,
     playerStats: PlayerStatsData?,
     organizerStats: OrganizerStatsData?,
+    adminEventsCount: Int,
+    adminMatchesCount: Int,
+    adminPlayersCount: Int,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -261,23 +305,18 @@ private fun ProfileHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = "‹ voltar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                AthloBackButton(
+                    onClick = {
+                        onBackClick()
+                    }
                 )
 
                 if (isAdmin) {
                     AdminBadge()
                 } else {
-                    Text(
-                        text = "Terminar Sessão",
-                        color = Color(0xFF8EC5F4),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable {
+                    AthloLogoutButton(
+                        color = Color(0xFF9CC8F2),
+                        onClick = {
                             onLogoutClick()
                         }
                     )
@@ -352,7 +391,10 @@ private fun ProfileHeader(
                 userRole = userRole,
                 playerTeamId = playerTeamId,
                 playerStats = playerStats,
-                organizerStats = organizerStats
+                organizerStats = organizerStats,
+                adminEventsCount = adminEventsCount,
+                adminMatchesCount = adminMatchesCount,
+                adminPlayersCount = adminPlayersCount,
             )
         }
     }
@@ -363,7 +405,10 @@ private fun ProfileStatsRow(
     userRole: AthloUserRole,
     playerTeamId: Int?,
     playerStats: PlayerStatsData?,
-    organizerStats: OrganizerStatsData?
+    organizerStats: OrganizerStatsData?,
+    adminEventsCount: Int,
+    adminMatchesCount: Int,
+    adminPlayersCount: Int
 ) {
     val stats = when (userRole) {
         AthloUserRole.PLAYER -> listOf(
@@ -378,9 +423,9 @@ private fun ProfileStatsRow(
         )
 
         AthloUserRole.ADMIN -> listOf(
-            "12" to "Eventos",
-            "96" to "Jogos",
-            "348" to "Atletas"
+            adminEventsCount.toString() to "Eventos",
+            adminMatchesCount.toString() to "Jogos",
+            adminPlayersCount.toString() to "Atletas"
         )
     }
 
@@ -892,9 +937,11 @@ private fun SectionSmallTitle(title: String) {
 }
 
 @Composable
-private fun SuspendOrganizerButton() {
+private fun SuspendOrganizerButton(
+    onClick: () -> Unit
+) {
     Button(
-        onClick = { },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(54.dp),
@@ -941,10 +988,10 @@ private fun LogoutButton(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        Text(
-            text = "Terminar sessão",
-            color = Color.White,
-            fontWeight = FontWeight.Bold
+        AthloLogoutButton(
+            onClick = {
+                onLogoutClick()
+            }
         )
     }
 }

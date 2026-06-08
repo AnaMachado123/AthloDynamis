@@ -51,6 +51,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import com.example.athlodynamis.presentation.components.AthloBackButton
+
 @Composable
 fun EditProfileScreen(
     navController: NavController,
@@ -265,12 +267,10 @@ private fun EditProfileHeader(
                 .padding(horizontal = 22.dp, vertical = 24.dp)
         ) {
             Column {
-                Text(
-                    text = "‹ voltar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                AthloBackButton(
+                    onClick = {
+                        onBackClick()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

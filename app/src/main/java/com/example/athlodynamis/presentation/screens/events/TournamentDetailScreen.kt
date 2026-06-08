@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.athlodynamis.domain.model.Match
 import com.example.athlodynamis.domain.model.Tournament
+import com.example.athlodynamis.presentation.components.AthloBackButton
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
@@ -310,12 +311,10 @@ private fun TournamentHeader(
                 .padding(horizontal = 22.dp, vertical = 22.dp)
         ) {
             Column(modifier = Modifier.padding(end = 90.dp)) {
-                Text(
-                    text = "‹ voltar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { onBackClick() }
+                AthloBackButton(
+                    onClick = {
+                        onBackClick()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

@@ -55,20 +55,12 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
+import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 
 private data class TeamOption(
     val id: Long,
     val name: String
-)
-
-private val teamOptions = listOf(
-    TeamOption(id = 2L, name = "Os mais lindos"),
-    TeamOption(id = 3L, name = "Põe te Fino"),
-    TeamOption(id = 4L, name = "Girl Power"),
-    TeamOption(id = 5L, name = "Flor de sal"),
-    TeamOption(id = 6L, name = "As mosqueteiras"),
-    TeamOption(id = 7L, name = "Dados da sorte"),
-    TeamOption(id = 8L, name = "CM")
 )
 
 @Composable
@@ -79,7 +71,12 @@ fun AddMatchScreen(
 ) {
     val matchesViewModel: MatchesViewModel = viewModel()
 
+    val teamsViewModel: TeamsViewModel = viewModel()
+    val tournamentsViewModel: TournamentsViewModel = viewModel()
+
     val error by matchesViewModel.error.collectAsState()
+    val allTeams by teamsViewModel.teams.collectAsState()
+    val tournaments by tournamentsViewModel.tournaments.collectAsState()
 
     val currentEventId = eventId
     val isAdmin = userRole == AthloUserRole.ADMIN
@@ -92,6 +89,22 @@ fun AddMatchScreen(
     var teamB by remember { mutableStateOf<TeamOption?>(null) }
 
     val tournamentId = eventId.toLongOrNull()
+
+    val currentTournament = tournaments.firstOrNull {
+        it.id == eventId
+    }
+
+    val filteredTeamOptions = allTeams
+        .filter { team ->
+            currentTournament == null ||
+                    team.sport.equals(currentTournament.sport, ignoreCase = true)
+        }
+        .map { team ->
+            TeamOption(
+                id = team.id.toLong(),
+                name = team.name
+            )
+        }
 
     val canSave = tournamentId != null &&
             matchTime.isNotBlank() &&
@@ -168,7 +181,7 @@ fun AddMatchScreen(
                     TeamDropdown(
                         selectedTeam = teamA,
                         placeholder = "Selecionar equipa 1",
-                        options = teamOptions,
+                        options = filteredTeamOptions,
                         onValueSelected = {
                             teamA = it
                         }
@@ -180,7 +193,7 @@ fun AddMatchScreen(
                     TeamDropdown(
                         selectedTeam = teamB,
                         placeholder = "Selecionar equipa 2",
-                        options = teamOptions,
+                        options = filteredTeamOptions,
                         onValueSelected = {
                             teamB = it
                         }

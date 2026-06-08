@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -55,7 +54,7 @@ import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
-
+import com.example.athlodynamis.presentation.components.AthloBackButton
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
 private const val EVENT_YELLOW_CARD = "Cartão amarelo"
@@ -348,26 +347,12 @@ private fun MatchHeader(
                     .fillMaxWidth()
                     .padding(end = 90.dp)
             ) {
-                Row(
-                    modifier = Modifier.clickable { onBackClick() },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Voltar",
-                        tint = Color(0xFF8DC5F0),
-                        modifier = Modifier.size(14.dp)
-                    )
 
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    Text(
-                        text = "voltar",
-                        color = Color(0xFF8DC5F0),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                AthloBackButton(
+                    onClick = {
+                        onBackClick()
+                    }
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 

@@ -247,10 +247,13 @@ fun EventsScreen(
                     if (tournamentsToShow.isEmpty()) {
                         item {
                             InfoCard(
-                                text = if (isAdmin)
+                                text = if (searchText.isNotBlank()) {
+                                    "Nenhum resultado encontrado para \"$searchText\"."
+                                } else if (isAdmin) {
                                     "Ainda não existem torneios para mostrar."
-                                else
+                                } else {
                                     "Não existem outros torneios para mostrar."
+                                }
                             )
                         }
                     } else {
@@ -283,11 +286,13 @@ fun EventsScreen(
                     if (filteredTournaments.isEmpty()) {
                         item {
                             InfoCard(
-                                text =
-                                    if (searchText.isNotBlank())
-                                        "Nenhum resultado encontrado para \"$searchText\"."
-                                    else
-                                        "Ainda não existem torneios para mostrar."
+                                text = if (searchText.isNotBlank()) {
+                                    "Nenhum resultado encontrado para \"$searchText\"."
+                                } else if (isAdmin) {
+                                    "Ainda não existem torneios para mostrar."
+                                } else {
+                                    "Não existem outros torneios para mostrar."
+                                }
                             )
                         }
                     } else {

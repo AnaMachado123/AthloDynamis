@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
@@ -234,9 +235,9 @@ private fun MatchEditHeader(
             Column {
                 Text(
                     text = backText,
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF9CC8F2),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable {
                         onBackClick()
                     }
