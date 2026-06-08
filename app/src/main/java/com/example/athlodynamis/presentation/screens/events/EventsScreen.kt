@@ -58,6 +58,10 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun EventsScreen(
@@ -74,6 +78,16 @@ fun EventsScreen(
 
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+
+    var searchHistory by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun saveSearchHistory() {
+        val query = searchText.trim()
+
+        if (query.isNotBlank() && !searchHistory.contains(query)) {
+            searchHistory = listOf(query) + searchHistory.take(4)
+        }
+    }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val isOrganizer = userRole == AthloUserRole.ORGANIZER
@@ -153,10 +167,16 @@ fun EventsScreen(
                 EventsHeader(
                     searchText = searchText,
                     onSearchChange = { searchText = it },
+                    onSearchSubmit = { saveSearchHistory() },
+                    searchHistory = searchHistory,
+                    onHistoryClick = { searchText = it },
                     selectedFilter = selectedFilter,
                     onFilterClick = { selectedFilter = it },
                     total = headerTotal,
-                    userRole = userRole
+                    userRole = userRole,
+                    onClearHistory = {
+                        searchHistory = emptyList()
+                    },
                 )
             }
 
@@ -169,7 +189,7 @@ fun EventsScreen(
                     InfoCard(text = error ?: "Erro ao carregar torneios")
                 }
             } else {
-                if (isOrganizer) {
+                if (isOrganizer || isAdmin) {
                     item {
                         EventsSectionTitle(
                             title = "Os meus eventos",
@@ -182,7 +202,13 @@ fun EventsScreen(
 
                     if (myTournaments.isEmpty()) {
                         item {
-                            InfoCard(text = "Ainda não criaste nenhum torneio.")
+                            InfoCard(
+                                text = if (searchText.isNotBlank()) {
+                                    "Nenhum resultado encontrado para \"$searchText\" nos teus eventos."
+                                } else {
+                                    "Ainda não criaste nenhum torneio."
+                                }
+                            )
                         }
                     } else {
                         items(myTournaments) { tournament ->
@@ -201,18 +227,34 @@ fun EventsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         EventsSectionTitle(
-                            title = "Outros eventos",
+                            title = if (isAdmin) {
+                                "Todos os eventos"
+                            } else {
+                                "Outros eventos"
+                            },
                             canCreateEvent = false,
                             onCreateEventClick = {}
                         )
                     }
 
-                    if (otherTournaments.isEmpty()) {
+                    val tournamentsToShow =
+                        if (isAdmin) {
+                            filteredTournaments
+                        } else {
+                            otherTournaments
+                        }
+
+                    if (tournamentsToShow.isEmpty()) {
                         item {
-                            InfoCard(text = "Não existem outros torneios para mostrar.")
+                            InfoCard(
+                                text = if (isAdmin)
+                                    "Ainda não existem torneios para mostrar."
+                                else
+                                    "Não existem outros torneios para mostrar."
+                            )
                         }
                     } else {
-                        items(otherTournaments) { tournament ->
+                        items(tournamentsToShow) { tournament ->
                             TournamentCard(
                                 tournament = tournament,
                                 onClick = {
@@ -240,7 +282,13 @@ fun EventsScreen(
 
                     if (filteredTournaments.isEmpty()) {
                         item {
-                            InfoCard(text = "Ainda não existem torneios para mostrar.")
+                            InfoCard(
+                                text =
+                                    if (searchText.isNotBlank())
+                                        "Nenhum resultado encontrado para \"$searchText\"."
+                                    else
+                                        "Ainda não existem torneios para mostrar."
+                            )
                         }
                     } else {
                         items(filteredTournaments) { tournament ->
@@ -286,6 +334,10 @@ private fun InfoCard(text: String) {
 private fun EventsHeader(
     searchText: String,
     onSearchChange: (String) -> Unit,
+    onSearchSubmit: () -> Unit,
+    searchHistory: List<String>,
+    onHistoryClick: (String) -> Unit,
+    onClearHistory: () -> Unit,
     selectedFilter: String,
     onFilterClick: (String) -> Unit,
     total: Int,
@@ -355,7 +407,9 @@ private fun EventsHeader(
                 OutlinedTextField(
                     value = searchText,
                     onValueChange = onSearchChange,
-                    placeholder = { Text("Pesquisar eventos...") },
+                    placeholder = {
+                        Text("Pesquisar eventos...")
+                    },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -365,6 +419,14 @@ private fun EventsHeader(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Search
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            onSearchSubmit()
+                        }
+                    ),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.White,
@@ -380,6 +442,59 @@ private fun EventsHeader(
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
+                if (searchHistory.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Histórico de pesquisas",
+                            color = Color(0xFF8DC5F0),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Text(
+                            text = "Limpar",
+                            color = Color(0xFF8DC5F0),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                onClearHistory()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(searchHistory) { query ->
+                            FilterChipPill(
+                                text = query,
+                                selected = searchText == query,
+                                onClick = {
+                                    onHistoryClick(query)
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                Text(
+                    text = "Filtros",
+                    color = Color(0xFF8DC5F0),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 FilterRows(
                     selectedFilter = selectedFilter,
