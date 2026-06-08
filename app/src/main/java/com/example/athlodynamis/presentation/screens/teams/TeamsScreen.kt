@@ -65,6 +65,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.LaunchedEffect
 import com.example.athlodynamis.data.repository.PlayerRepository
+import com.example.athlodynamis.presentation.viewmodel.FavoriteTeamsViewModel
 
 @Composable
 fun TeamsScreen(
@@ -74,6 +75,9 @@ fun TeamsScreen(
 ){
     val viewModel: TeamsViewModel = viewModel()
     val allTeams by viewModel.teams.collectAsState()
+    val favoriteViewModel: FavoriteTeamsViewModel = viewModel()
+    val favoriteTeamIds by favoriteViewModel.favoriteTeamIds.collectAsState()
+
     var playersCountByTeam by remember {
         mutableStateOf<Map<Int, Int>>(emptyMap())
     }
@@ -85,6 +89,12 @@ fun TeamsScreen(
             .filter { it.teamId != null }
             .groupingBy { it.teamId ?: 0 }
             .eachCount()
+    }
+
+    LaunchedEffect(currentUserId) {
+        if (userRole == AthloUserRole.PLAYER) {
+            favoriteViewModel.loadFavorites(currentUserId)
+        }
     }
 
     var searchText by remember { mutableStateOf("") }
@@ -120,6 +130,10 @@ fun TeamsScreen(
         }
 
         matchesSearch && matchesFilter
+    }
+
+    val favoriteTeams = filteredTeams.filter { team ->
+        favoriteTeamIds.contains(team.id)
     }
 
     val myTeams = filteredTeams.filter {
@@ -183,6 +197,48 @@ fun TeamsScreen(
                 )
             }
 
+            if (userRole == AthloUserRole.PLAYER && favoriteTeams.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Equipas favoritas",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextPrimary
+                    )
+                }
+
+                items(favoriteTeams) { team ->
+                    TeamListCard(
+                        team = team,
+                        playersCount = playersCountByTeam[team.id] ?: 0,
+                        isFavorite = favoriteTeamIds.contains(team.id),
+                        showFavoriteButton = userRole == AthloUserRole.PLAYER,
+                        onFavoriteClick = {
+                            favoriteViewModel.toggleFavorite(
+                                userId = currentUserId,
+                                teamId = team.id
+                            )
+                        },
+                        onClick = {
+                            navController.navigate(
+                                Screen.TeamDetail.createRoute(team.id)
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Todas as equipas",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextPrimary
+                    )
+                }
+            }
+
             if (isAdmin || userRole == AthloUserRole.ORGANIZER) {
 
                 item {
@@ -203,6 +259,14 @@ fun TeamsScreen(
                         TeamListCard(
                             team = team,
                             playersCount = playersCountByTeam[team.id] ?: 0,
+                            isFavorite = favoriteTeamIds.contains(team.id),
+                            showFavoriteButton = userRole == AthloUserRole.PLAYER,
+                            onFavoriteClick = {
+                                favoriteViewModel.toggleFavorite(
+                                    userId = currentUserId,
+                                    teamId = team.id
+                                )
+                            },
                             onClick = {
                                 navController.navigate(
                                     Screen.TeamDetail.createRoute(team.id)
@@ -233,6 +297,14 @@ fun TeamsScreen(
                     TeamListCard(
                         team = team,
                         playersCount = playersCountByTeam[team.id] ?: 0,
+                        isFavorite = favoriteTeamIds.contains(team.id),
+                        showFavoriteButton = userRole == AthloUserRole.PLAYER,
+                        onFavoriteClick = {
+                            favoriteViewModel.toggleFavorite(
+                                userId = currentUserId,
+                                teamId = team.id
+                            )
+                        },
                         onClick = {
                             navController.navigate(
                                 Screen.TeamDetail.createRoute(team.id)
@@ -557,6 +629,9 @@ private fun FilterPill(
 private fun TeamListCard(
     team: Team,
     playersCount: Int,
+    isFavorite: Boolean = false,
+    showFavoriteButton: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
     Card(
@@ -612,6 +687,32 @@ private fun TeamListCard(
                         textColor = sportTextColor(team.sport)
                     )
                 }
+            }
+
+            if (showFavoriteButton) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isFavorite) Color(0xFFFFF3D6) else AthloColors.SoftBlue
+                        )
+                        .clickable(
+                            onClick = {
+                                onFavoriteClick()
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Favoritar equipa",
+                        tint = if (isFavorite) Color(0xFFFFC107) else AthloColors.TextMuted,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             Box(
