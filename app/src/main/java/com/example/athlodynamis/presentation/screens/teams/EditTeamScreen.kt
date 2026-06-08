@@ -60,6 +60,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 
 
 @Composable
@@ -186,9 +187,9 @@ private fun EditTeamHeader(
                 Column {
                     Text(
                         text = "‹ cancelar",
-                        color = Color(0xFF8EC5F4),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF9CC8F2),
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.clickable { onBackClick() }
                     )
 
@@ -558,7 +559,7 @@ private fun EditTeamNotFoundScreen(
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(
-                            text = "Voltar",
+                            text = "voltar",
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )

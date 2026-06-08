@@ -1,5 +1,6 @@
 package com.example.athlodynamis.presentation.screens.teams
 
+import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,17 +59,46 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.runtime.LaunchedEffect
+import com.example.athlodynamis.data.repository.PlayerRepository
 
 @Composable
 fun TeamsScreen(
     navController: NavController,
-    userRole: AthloUserRole
-) {
+    userRole: AthloUserRole,
+    currentUserId: String
+){
     val viewModel: TeamsViewModel = viewModel()
     val allTeams by viewModel.teams.collectAsState()
+    var playersCountByTeam by remember {
+        mutableStateOf<Map<Int, Int>>(emptyMap())
+    }
+
+    LaunchedEffect(Unit) {
+        val players = PlayerRepository().getAllPlayers()
+
+        playersCountByTeam = players
+            .filter { it.teamId != null }
+            .groupingBy { it.teamId ?: 0 }
+            .eachCount()
+    }
 
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
+
+    var searchHistory by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun saveSearchHistory() {
+        val query = searchText.trim()
+
+        if (query.isNotBlank() && !searchHistory.contains(query)) {
+            searchHistory = listOf(query) + searchHistory.take(4)
+        }
+    }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val canCreateTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
@@ -78,7 +108,7 @@ fun TeamsScreen(
         .distinct()
         .sorted()
 
-    val teams = allTeams.filter { team ->
+    val filteredTeams = allTeams.filter { team ->
         val matchesSearch =
             team.name.contains(searchText, ignoreCase = true) ||
                     team.acronym.contains(searchText, ignoreCase = true) ||
@@ -90,6 +120,10 @@ fun TeamsScreen(
         }
 
         matchesSearch && matchesFilter
+    }
+
+    val myTeams = filteredTeams.filter {
+        it.createdBy == currentUserId
     }
 
     Scaffold(
@@ -124,8 +158,21 @@ fun TeamsScreen(
             item {
                 SearchBox(
                     searchText = searchText,
-                    onSearchChange = { searchText = it }
+                    onSearchChange = { searchText = it },
+                    onSearchSubmit = { saveSearchHistory() }
                 )
+            }
+            if (searchHistory.isNotEmpty()) {
+                item {
+                    SearchHistorySection(
+                        searchHistory = searchHistory,
+                        selectedSearch = searchText,
+                        onHistoryClick = { searchText = it },
+                        onClearHistory = {
+                            searchHistory = emptyList()
+                        }
+                    )
+                }
             }
 
             item {
@@ -136,16 +183,60 @@ fun TeamsScreen(
                 )
             }
 
-            if (teams.isEmpty()) {
+            if (isAdmin || userRole == AthloUserRole.ORGANIZER) {
+
+                item {
+                    Text(
+                        text = "As minhas equipas",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextPrimary
+                    )
+                }
+
+                if (myTeams.isEmpty()) {
+                    item {
+                        EmptyTeamsCard()
+                    }
+                } else {
+                    items(myTeams) { team ->
+                        TeamListCard(
+                            team = team,
+                            playersCount = playersCountByTeam[team.id] ?: 0,
+                            onClick = {
+                                navController.navigate(
+                                    Screen.TeamDetail.createRoute(team.id)
+                                )
+                            }
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Todas as equipas",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AthloColors.TextPrimary
+                    )
+                }
+            }
+
+            if (filteredTeams.isEmpty()) {
                 item {
                     EmptyTeamsCard()
                 }
             } else {
-                items(teams) { team ->
+                items(filteredTeams) { team ->
                     TeamListCard(
                         team = team,
+                        playersCount = playersCountByTeam[team.id] ?: 0,
                         onClick = {
-                            navController.navigate(Screen.TeamDetail.createRoute(team.id))
+                            navController.navigate(
+                                Screen.TeamDetail.createRoute(team.id)
+                            )
                         }
                     )
                 }
@@ -322,7 +413,8 @@ private fun AdminBadge(
 @Composable
 private fun SearchBox(
     searchText: String,
-    onSearchChange: (String) -> Unit
+    onSearchChange: (String) -> Unit,
+    onSearchSubmit: () -> Unit
 ) {
     OutlinedTextField(
         value = searchText,
@@ -337,6 +429,14 @@ private fun SearchBox(
         },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Search
+        ),
+        keyboardActions = KeyboardActions(
+            onSearch = {
+                onSearchSubmit()
+            }
+        ),
         shape = RoundedCornerShape(18.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = AthloColors.Blue,
@@ -352,6 +452,54 @@ private fun SearchBox(
     )
 }
 
+@Composable
+private fun SearchHistorySection(
+    searchHistory: List<String>,
+    selectedSearch: String,
+    onHistoryClick: (String) -> Unit,
+    onClearHistory: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Histórico de pesquisas",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Limpar",
+                color = AthloColors.Blue,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable {
+                    onClearHistory()
+                }
+            )
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(searchHistory) { query ->
+                FilterPill(
+                    text = query,
+                    selected = selectedSearch == query,
+                    onClick = {
+                        onHistoryClick(query)
+                    }
+                )
+            }
+        }
+    }
+}
 @Composable
 private fun TeamFilterRows(
     sports: List<String>,
@@ -408,6 +556,7 @@ private fun FilterPill(
 @Composable
 private fun TeamListCard(
     team: Team,
+    playersCount: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -452,7 +601,7 @@ private fun TeamListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     SmallBadge(
-                        text = "${team.playersCount} Jogadores",
+                        text = "$playersCount Jogadores",
                         background = AthloColors.InfoBg,
                         textColor = AthloColors.Blue
                     )

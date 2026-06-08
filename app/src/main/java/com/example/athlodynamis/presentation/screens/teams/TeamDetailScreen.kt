@@ -76,6 +76,7 @@ import com.example.athlodynamis.data.repository.TournamentRepository
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.data.repository.TeamStatsRepository
 import com.example.athlodynamis.domain.model.TeamStatsData
+import com.example.athlodynamis.presentation.components.AthloBackButton
 
 @Composable
 fun TeamDetailScreen(
@@ -344,14 +345,10 @@ private fun DetailHeader(
                 .padding(horizontal = 22.dp, vertical = 22.dp)
         ) {
             Column {
-                Text(
-                    text = "‹ voltar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .padding(bottom = 12.dp)
-                        .clickable { onBackClick() }
+                AthloBackButton(
+                    onClick = {
+                        onBackClick()
+                    }
                 )
 
                 Text(
@@ -960,7 +957,7 @@ private fun TeamNotFoundScreen(
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(
-                            text = "Voltar",
+                            text = "voltar",
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )

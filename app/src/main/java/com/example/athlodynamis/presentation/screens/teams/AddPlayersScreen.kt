@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.athlodynamis.domain.model.Player
@@ -227,12 +228,10 @@ private fun AddPlayersHeader(
             Column {
                 Text(
                     text = "‹ cancelar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable {
-                        onBackClick()
-                    }
+                    color = Color(0xFF9CC8F2),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onBackClick() }
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))

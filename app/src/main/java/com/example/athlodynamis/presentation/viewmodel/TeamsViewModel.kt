@@ -33,6 +33,7 @@ class TeamsViewModel : ViewModel() {
         name: String,
         sport: String,
         level: String,
+        createdBy: String?,
         context: Context? = null,
         logoUri: Uri? = null
     ) {
@@ -50,7 +51,8 @@ class TeamsViewModel : ViewModel() {
                 name = name,
                 sport = sport,
                 level = level,
-                logoUrl = logoUrl
+                logoUrl = logoUrl,
+                createdBy = createdBy
             )
 
             teamCreated = true

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import com.example.athlodynamis.data.remote.dto.UpdateTeamDto
 import android.content.Context
 import android.net.Uri
+import com.example.athlodynamis.data.repository.TeamRepository.fetchTeamsFromSupabase
 import io.github.jan.supabase.storage.storage
 import java.util.UUID
 object TeamRepository {
@@ -70,11 +71,13 @@ object TeamRepository {
         }
     }
 
+
     suspend fun createTeamInSupabase(
         name: String,
         sport: String,
         level: String,
-        logoUrl: String? = null
+        logoUrl: String? = null,
+        createdBy: String? = null
     ) {
         try {
             val acronym = name
@@ -87,14 +90,14 @@ object TeamRepository {
                 name = name,
                 acronym = acronym,
                 sport = sport,
-                players_count = 0,
+                playersCount = 0,
                 status = level,
                 wins = 0,
                 games = 0,
                 goals = 0,
-                logo_url = logoUrl
+                logoUrl = logoUrl,
+                createdBy = createdBy
             )
-
             SupabaseClientProvider.client
                 .from("teams")
                 .insert(newTeam)
@@ -106,6 +109,7 @@ object TeamRepository {
             Log.e("TEAM_REPOSITORY", "Erro ao criar equipa na Supabase", e)
         }
     }
+
 
     fun addTeam(team: Team) {
         _teams.value = _teams.value + team
@@ -139,7 +143,7 @@ object TeamRepository {
                 acronym = acronym,
                 sport = sport,
                 status = level,
-                logo_url = logoUrl
+                logoUrl = logoUrl
             )
 
             SupabaseClientProvider.client
