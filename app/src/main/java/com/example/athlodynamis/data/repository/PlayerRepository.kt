@@ -104,5 +104,13 @@ class PlayerRepository {
             }
     }
 
+    suspend fun getAllPlayers(): List<Player> {
+        return client
+            .from("players")
+            .select()
+            .decodeList<PlayerDto>()
+            .map { it.toPlayer() }
+    }
+
 
 }

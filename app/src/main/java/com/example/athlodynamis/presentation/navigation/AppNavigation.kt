@@ -356,6 +356,7 @@ fun AppNavigation() {
                 navController = navController,
                 userRole = currentUserRole,
                 userName = authState.userName ?: "Utilizador",
+                userEmail = authState.userEmail ?: "",
                 userId = authState.userId ?: "",
                 playerTeamId = authState.playerTeamId,
                 onLogoutClick = {

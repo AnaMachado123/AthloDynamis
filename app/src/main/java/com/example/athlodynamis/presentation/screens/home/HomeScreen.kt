@@ -53,6 +53,9 @@ import androidx.compose.runtime.setValue
 import com.example.athlodynamis.data.repository.MatchRepository
 import com.example.athlodynamis.data.repository.StatsRepository
 import com.example.athlodynamis.domain.model.Match
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.data.repository.PlayerRepository
+import com.example.athlodynamis.domain.model.Tournament
 
 data class DashboardStat(
     val value: String,
@@ -306,13 +309,37 @@ private fun RecentUserRow(user: RecentUser) {
 private fun OrganizerHomeContent(
     navController: NavController
 ) {
+    var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
+    var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
+    var athletesCount by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        tournaments = TournamentRepository().getTournaments()
+        matches = MatchRepository().getAllMatches()
+        athletesCount = PlayerRepository().getAllPlayers().size
+    }
+
+    val activeTournaments = tournaments.count {
+        !it.status.equals("Terminado", ignoreCase = true)
+    }
+
+    val todayMatches = matches.count {
+        it.status.equals("Agendado", ignoreCase = true) ||
+                it.status.equals("A decorrer", ignoreCase = true)
+    }
+
+    val liveMatch = matches.firstOrNull {
+        it.status.equals("A decorrer", ignoreCase = true)
+    }
+
+    val organizerEvents = tournaments.take(3)
     DashboardHeader(
         name = "Gonçalo Magalhães",
         initials = "GM",
         stats = listOf(
-            DashboardStat("6", "Torneios ativos"),
-            DashboardStat("3", "Jogos hoje"),
-            DashboardStat("348", "Atletas")
+            DashboardStat(activeTournaments.toString(), "Torneios ativos"),
+            DashboardStat(todayMatches.toString(), "Jogos ativos"),
+            DashboardStat(athletesCount.toString(), "Atletas")
         ),
         showAdminBadge = false,
         onProfileClick = {
@@ -326,18 +353,24 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    LiveMatchCard(
-        time = "12:00",
-        teamA = "Equipa 3",
-        teamB = "Equipa 4",
-        scoreA = "2",
-        scoreB = "2",
-        status = "A decorrer",
-        minute = "33'",
-        onClick = {
-            navController.navigate(Screen.MatchDetail.createRoute("2"))
-        }
-    )
+    if (liveMatch == null) {
+        EmptyLiveMatchCard()
+    } else {
+        LiveMatchCard(
+            time = liveMatch.matchTime ?: "Hora por definir",
+            teamA = liveMatch.teamAName,
+            teamB = liveMatch.teamBName,
+            scoreA = liveMatch.scoreA.toString(),
+            scoreB = liveMatch.scoreB.toString(),
+            status = liveMatch.status,
+            minute = "${liveMatch.minute ?: 0}'",
+            onClick = {
+                navController.navigate(
+                    Screen.MatchDetail.createRoute(liveMatch.id.toString())
+                )
+            }
+        )
+    }
 
     Spacer(modifier = Modifier.height(22.dp))
 
@@ -345,25 +378,28 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    EventCard(
-        date = "10 abr - 25 abr",
-        title = "Torneio de Braga",
-        tags = listOf("Futebol", "A decorrer", "Grupos"),
-        onClick = {
-            navController.navigate(Screen.TournamentDetail.createRoute("2"))
-        }
-    )
+    if (organizerEvents.isEmpty()) {
+        EmptyOrganizerEventsCard()
+    } else {
+        organizerEvents.forEach { tournament ->
+            EventCard(
+                date = tournament.dateRange,
+                title = tournament.name,
+                tags = listOf(
+                    tournament.sport,
+                    tournament.status,
+                    tournament.format
+                ),
+                onClick = {
+                    navController.navigate(
+                        Screen.TournamentDetail.createRoute(tournament.id)
+                    )
+                }
+            )
 
-    Spacer(modifier = Modifier.height(16.dp))
-
-    EventCard(
-        date = "22 jul - 25 jul",
-        title = "Torneio Regional Basquetebol",
-        tags = listOf("Basquetebol", "Em preparação", "Eliminatórias"),
-        onClick = {
-            navController.navigate(Screen.TournamentDetail.createRoute("3"))
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    )
+    }
 }
 
 /* ---------------------------------------------------------
@@ -1170,6 +1206,91 @@ private fun StatusPill(
     }
 }
 
+@Composable
+private fun EmptyLiveMatchCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Sem jogos ao vivo",
+                tint = AthloColors.TextMuted,
+                modifier = Modifier.size(42.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Sem jogos ao vivo",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando algum jogo estiver a decorrer, aparece aqui.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyOrganizerEventsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Sem eventos",
+                tint = AthloColors.TextMuted,
+                modifier = Modifier.size(42.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Sem eventos criados",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando criares torneios, eles aparecem aqui.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
 private fun String.toAcronym(): String {
     val parts = trim()
         .split(" ")

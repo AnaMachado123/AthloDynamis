@@ -50,20 +50,33 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import androidx.compose.runtime.LaunchedEffect
+import com.example.athlodynamis.data.repository.OrganizerStatsRepository
 import com.example.athlodynamis.data.repository.StatsRepository
 import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.domain.model.OrganizerStatsData
 import com.example.athlodynamis.domain.model.PlayerStatsData
 import com.example.athlodynamis.domain.model.Team
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.domain.model.Tournament
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
     userRole: AthloUserRole,
     userName: String,
+    userEmail: String,
     playerTeamId: Int?,
     userId: String,
     onLogoutClick: () -> Unit
 ) {
+    var organizerTournaments by remember {
+        mutableStateOf<List<Tournament>>(emptyList())
+    }
+
+    var organizerStats by remember {
+        mutableStateOf<OrganizerStatsData?>(null)
+    }
+
     var playerStats by remember {
         mutableStateOf<PlayerStatsData?>(null)
     }
@@ -80,6 +93,13 @@ fun ProfileScreen(
                 TeamRepository.fetchTeamsFromSupabase()
                 playerTeam = TeamRepository.getTeamById(playerTeamId)
             }
+        }
+        if (userRole == AthloUserRole.ORGANIZER) {
+            organizerStats = OrganizerStatsRepository()
+                .getOrganizerStats()
+
+            organizerTournaments = TournamentRepository()
+                .getTournaments()
         }
     }
 
@@ -110,6 +130,7 @@ fun ProfileScreen(
                     userName = userName,
                     playerTeamId = playerTeamId,
                     playerStats = playerStats,
+                    organizerStats = organizerStats,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
@@ -136,7 +157,9 @@ fun ProfileScreen(
                     }
 
                     item {
-                        ContactCard()
+                        ContactCard(
+                            email = userEmail
+                        )
                     }
 
                     item {
@@ -144,7 +167,22 @@ fun ProfileScreen(
                     }
 
                     item {
-                        AssociatedEventCard()
+                        if (organizerTournaments.isEmpty()) {
+                            EmptyAssociatedEventsCard()
+                        } else {
+                            organizerTournaments.take(3).forEach { tournament ->
+                                AssociatedEventCard(
+                                    tournament = tournament,
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.TournamentDetail.createRoute(tournament.id)
+                                        )
+                                    }
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
                     }
 
                     item {
@@ -160,7 +198,9 @@ fun ProfileScreen(
                     }
 
                     item {
-                        ContactCard()
+                        ContactCard(
+                            email = userEmail
+                        )
                     }
 
                     item {
@@ -168,7 +208,7 @@ fun ProfileScreen(
                     }
 
                     item {
-                        AssociatedEventCard()
+                        EmptyAssociatedEventsCard()
                     }
 
                     item {
@@ -192,6 +232,7 @@ private fun ProfileHeader(
     userName: String,
     playerTeamId: Int?,
     playerStats: PlayerStatsData?,
+    organizerStats: OrganizerStatsData?,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -310,7 +351,8 @@ private fun ProfileHeader(
             ProfileStatsRow(
                 userRole = userRole,
                 playerTeamId = playerTeamId,
-                playerStats = playerStats
+                playerStats = playerStats,
+                organizerStats = organizerStats
             )
         }
     }
@@ -320,7 +362,8 @@ private fun ProfileHeader(
 private fun ProfileStatsRow(
     userRole: AthloUserRole,
     playerTeamId: Int?,
-    playerStats: PlayerStatsData?
+    playerStats: PlayerStatsData?,
+    organizerStats: OrganizerStatsData?
 ) {
     val stats = when (userRole) {
         AthloUserRole.PLAYER -> listOf(
@@ -329,9 +372,9 @@ private fun ProfileStatsRow(
             (playerStats?.teams ?: if (playerTeamId != null) 1 else 0).toString() to "Equipas"
         )
         AthloUserRole.ORGANIZER -> listOf(
-            "12" to "Eventos",
-            "96" to "Jogos",
-            "348" to "Atletas"
+            (organizerStats?.tournaments ?: 0).toString() to "Eventos",
+            (organizerStats?.matches ?: 0).toString() to "Jogos",
+            (organizerStats?.athletes ?: 0).toString() to "Atletas"
         )
 
         AthloUserRole.ADMIN -> listOf(
@@ -491,7 +534,9 @@ private fun ProfileTabButton(
 }
 
 @Composable
-private fun ContactCard() {
+private fun ContactCard(
+    email: String
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -526,7 +571,7 @@ private fun ContactCard() {
                 )
 
                 Text(
-                    text = "guilherme@example.com",
+                    text = email,
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
@@ -727,9 +772,14 @@ private fun GameRow(
 }
 
 @Composable
-private fun AssociatedEventCard() {
+private fun AssociatedEventCard(
+    tournament: Tournament,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -742,7 +792,7 @@ private fun AssociatedEventCard() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "10 abr - 25 abr",
+                    text = tournament.dateRange,
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -750,7 +800,7 @@ private fun AssociatedEventCard() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Torneio de Braga",
+                    text = tournament.name,
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold
@@ -759,11 +809,44 @@ private fun AssociatedEventCard() {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallBadge("Futebol", AthloColors.SuccessBg)
-                    SmallBadge("A decorrer", AthloColors.SuccessBg)
-                    SmallBadge("Grupos", AthloColors.NeutralBg)
+                    SmallBadge(tournament.sport, AthloColors.SuccessBg)
+                    SmallBadge(tournament.status, AthloColors.SuccessBg)
+                    SmallBadge(tournament.format, AthloColors.NeutralBg)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyAssociatedEventsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = Color.LightGray,
+                modifier = Modifier.size(72.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Sem eventos associados",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
