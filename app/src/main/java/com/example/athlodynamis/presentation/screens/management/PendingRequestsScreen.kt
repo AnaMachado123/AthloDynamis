@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.UserRepository
+import com.example.athlodynamis.presentation.components.AthloBackButton
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
@@ -263,12 +264,8 @@ private fun PendingRequestsHeader(
                 .padding(horizontal = 22.dp, vertical = 26.dp)
         ) {
             Column {
-                Text(
-                    text = "‹ voltar",
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable {
+                AthloBackButton(
+                    onClick = {
                         onBackClick()
                     }
                 )

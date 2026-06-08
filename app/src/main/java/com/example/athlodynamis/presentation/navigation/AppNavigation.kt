@@ -25,6 +25,7 @@ import com.example.athlodynamis.presentation.screens.events.EventsScreen
 import com.example.athlodynamis.presentation.screens.events.ManageLiveMatchScreen
 import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
 import com.example.athlodynamis.presentation.screens.home.HomeScreen
+import com.example.athlodynamis.presentation.screens.management.AdminUsersScreen
 import com.example.athlodynamis.presentation.screens.management.ManagementScreen
 import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
 import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
@@ -40,7 +41,8 @@ import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
-
+import com.example.athlodynamis.presentation.screens.management.AdminUsersScreen
+import com.example.athlodynamis.presentation.screens.management.SuspendOrganizerScreen
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -213,6 +215,23 @@ fun AppNavigation() {
         composable(Screen.PendingRequests.route) {
             PendingRequestsScreen(navController = navController)
         }
+        composable(
+            route = Screen.AdminUsers.route,
+            arguments = listOf(
+                navArgument("filter") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val filter =
+                backStackEntry.arguments?.getString("filter") ?: "all"
+
+            AdminUsersScreen(
+                navController = navController,
+                filter = filter
+            )
+        }
 
         composable(Screen.Events.route) {
             EventsScreen(
@@ -335,7 +354,8 @@ fun AppNavigation() {
         composable(Screen.Teams.route) {
             TeamsScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                currentUserId = authState.userId ?: ""
             )
         }
 
@@ -359,7 +379,8 @@ fun AppNavigation() {
         composable(Screen.CreateTeam.route) {
             CreateTeamScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                currentUserId = authState.userId ?: ""
             )
         }
 
@@ -440,6 +461,11 @@ fun AppNavigation() {
                 }
             )
         }
+        composable(Screen.SuspendOrganizer.route) {
+            SuspendOrganizerScreen(
+                navController = navController
+            )
+        }
 
         composable(
             route = Screen.AddPlayers.route,
@@ -458,4 +484,5 @@ fun AppNavigation() {
             )
         }
     }
+
 }

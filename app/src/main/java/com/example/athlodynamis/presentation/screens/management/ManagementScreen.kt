@@ -194,7 +194,9 @@ fun ManagementScreen(navController: NavController) {
                         showCounter = false,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            navController.navigate(Screen.Profile.route)
+                            navController.navigate(
+                                Screen.AdminUsers.createRoute("all")
+                            )
                         }
                     )
                 }
@@ -215,7 +217,9 @@ fun ManagementScreen(navController: NavController) {
                         showCounter = false,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            navController.navigate(Screen.Profile.route)
+                            navController.navigate(
+                                Screen.AdminUsers.createRoute("organizers")
+                            )
                         }
                     )
 
@@ -229,7 +233,9 @@ fun ManagementScreen(navController: NavController) {
                         showCounter = false,
                         modifier = Modifier.weight(1f),
                         onClick = {
-                            navController.navigate(Screen.Profile.route)
+                            navController.navigate(
+                                Screen.AdminUsers.createRoute("players")
+                            )
                         }
                     )
                 }
@@ -293,7 +299,7 @@ private fun AdminManagementHeader(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Administrador",
+                        text = "Admin",
                         color = Color.White,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
@@ -314,7 +320,7 @@ private fun AdminManagementHeader(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "AD",
+                            text = "A",
                             color = Color.White,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold

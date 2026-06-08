@@ -15,6 +15,10 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object EditProfile : Screen("edit_profile")
 
+    data object AdminUsers : Screen("admin_users/{filter}") {
+        fun createRoute(filter: String): String = "admin_users/$filter"
+    }
+
     data object TeamDetail : Screen("team_detail/{teamId}") {
         fun createRoute(teamId: Int): String = "team_detail/$teamId"
     }
@@ -58,5 +62,8 @@ sealed class Screen(val route: String) {
     data object AddPlayers : Screen("add_players/{teamId}") {
         fun createRoute(teamId: Int): String = "add_players/$teamId"
     }
+
     data object AccountPending : Screen("account_pending")
+
+    data object SuspendOrganizer : Screen("suspend_organizer")
 }
