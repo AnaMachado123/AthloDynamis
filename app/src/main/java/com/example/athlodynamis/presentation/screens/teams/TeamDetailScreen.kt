@@ -71,6 +71,11 @@ import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.domain.model.Tournament
+import com.example.athlodynamis.data.repository.TeamStatsRepository
+import com.example.athlodynamis.domain.model.TeamStatsData
 
 @Composable
 fun TeamDetailScreen(
@@ -89,6 +94,18 @@ fun TeamDetailScreen(
     val canManageTeam = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
     val lifecycleOwner = LocalLifecycleOwner.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var registeredTournaments by remember {
+        mutableStateOf<List<Tournament>>(emptyList())
+    }
+    var teamStats by remember {
+        mutableStateOf(
+            TeamStatsData(
+                games = 0,
+                wins = 0,
+                goals = 0
+            )
+        )
+    }
 
     LaunchedEffect(viewModel.teamDeleted) {
         if (viewModel.teamDeleted) {
@@ -99,6 +116,20 @@ fun TeamDetailScreen(
 
     LaunchedEffect(teamId) {
         playersViewModel.loadPlayersByTeam(teamId)
+
+        val teamMatches = MatchRepository().getMatchesByTeamId(teamId)
+
+        val tournamentIds = teamMatches
+            .map { it.tournamentId.toString() }
+            .distinct()
+
+        registeredTournaments = TournamentRepository()
+            .getTournaments()
+            .filter { tournament ->
+                tournament.id in tournamentIds
+            }
+
+        teamStats = TeamStatsRepository().getTeamStats(teamId)
     }
 
     DisposableEffect(lifecycleOwner, teamId) {
@@ -245,35 +276,37 @@ fun TeamDetailScreen(
             }
 
             item {
-                TeamStatsCard(team = team)
+                TeamStatsCard(stats = teamStats)
             }
 
             item {
                 SectionTitle(title = "Eventos inscritos")
             }
 
-            item {
-                RegisteredEventCard(
-                    date = "16 abr - 25 abr",
-                    title = "Torneio de Futsal",
-                    tags = listOf("Futsal", "Agendado", "Liga")
-                )
-            }
-
-            item {
-                RegisteredEventCard(
-                    date = "10 abr - 25 abr",
-                    title = "Torneio de Braga",
-                    tags = listOf("Futebol", "A decorrer", "Grupos")
-                )
-            }
-
-            item {
-                RegisteredEventCard(
-                    date = "22 jul - 25 jul",
-                    title = "Torneio Regional Basquetebol",
-                    tags = listOf("Basquetebol", "Em preparação", "Eliminatórias")
-                )
+            if (registeredTournaments.isEmpty()) {
+                item {
+                    EmptyRegisteredEventsCard()
+                }
+            } else {
+                items(
+                    items = registeredTournaments,
+                    key = { tournament -> tournament.id }
+                ) { tournament ->
+                    RegisteredEventCard(
+                        date = tournament.dateRange,
+                        title = tournament.name,
+                        tags = listOf(
+                            tournament.sport,
+                            tournament.status,
+                            tournament.format
+                        ),
+                        onClick = {
+                            navController.navigate(
+                                Screen.TournamentDetail.createRoute(tournament.id)
+                            )
+                        }
+                    )
+                }
             }
 
             if (isAdmin) {
@@ -650,7 +683,7 @@ private fun ActionButtons(
 }
 
 @Composable
-private fun TeamStatsCard(team: Team) {
+private fun TeamStatsCard(stats: TeamStatsData) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -666,19 +699,19 @@ private fun TeamStatsCard(team: Team) {
         ) {
             StatItem(
                 icon = Icons.Default.CalendarMonth,
-                value = team.games.toString(),
+                value = stats.games.toString(),
                 label = "JOGOS"
             )
 
             StatItem(
                 icon = Icons.Default.EmojiEvents,
-                value = team.wins.toString(),
+                value = stats.wins.toString(),
                 label = "VITÓRIAS"
             )
 
             StatItem(
                 icon = Icons.Default.SportsSoccer,
-                value = team.goals.toString(),
+                value = stats.goals.toString(),
                 label = "GOLOS"
             )
         }
@@ -728,10 +761,13 @@ private fun StatItem(
 private fun RegisteredEventCard(
     date: String,
     title: String,
-    tags: List<String>
+    tags: List<String>,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -761,6 +797,46 @@ private fun RegisteredEventCard(
     }
 }
 
+@Composable
+private fun EmptyRegisteredEventsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = "Sem eventos inscritos",
+                tint = AthloColors.TextMuted,
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = "Sem eventos inscritos",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando esta equipa estiver associada a jogos de um torneio, o evento aparece aqui.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
 @Composable
 private fun EventTagRows(tags: List<String>) {
     Column(

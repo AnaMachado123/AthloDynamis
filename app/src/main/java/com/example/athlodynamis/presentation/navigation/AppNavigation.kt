@@ -155,6 +155,7 @@ fun AppNavigation() {
                     navController = navController,
                     userRole = currentUserRole,
                     userName = authState.userName ?: "Utilizador",
+                    userId = authState.userId ?: "",
                     playerTeamId = authState.playerTeamId
                 )
             }

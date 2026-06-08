@@ -50,6 +50,10 @@ import com.example.athlodynamis.data.repository.TeamRepository
 import com.example.athlodynamis.domain.model.Team
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.data.repository.StatsRepository
+import com.example.athlodynamis.domain.model.Match
+
 data class DashboardStat(
     val value: String,
     val label: String
@@ -68,6 +72,7 @@ fun HomeScreen(
     navController: NavController,
     userRole: AthloUserRole,
     userName: String = "Utilizador",
+    userId: String,
     playerTeamId: Int? = null
 ){
     Scaffold(
@@ -115,6 +120,7 @@ fun HomeScreen(
                     AthloUserRole.PLAYER -> PlayerHomeContent(
                         navController = navController,
                         userName = userName,
+                        userId = userId,
                         playerTeamId = playerTeamId
                     )
                 }
@@ -367,6 +373,7 @@ private fun OrganizerHomeContent(
 private fun PlayerHomeContent(
     navController: NavController,
     userName: String,
+    userId: String,
     playerTeamId: Int?
 ) {
     val initials = userName
@@ -377,13 +384,42 @@ private fun PlayerHomeContent(
     var playerTeam by remember {
         mutableStateOf<Team?>(null)
     }
+    var playerMatches by remember {
+        mutableStateOf<List<Match>>(emptyList())
+    }
+
+    var nextMatch by remember {
+        mutableStateOf<Match?>(null)
+    }
+
+    var playerGoals by remember {
+        mutableStateOf(0)
+    }
 
     LaunchedEffect(playerTeamId) {
         if (playerTeamId != null) {
             TeamRepository.fetchTeamsFromSupabase()
             playerTeam = TeamRepository.getTeamById(playerTeamId)
+
+            val matches = MatchRepository().getMatchesByTeamId(playerTeamId)
+
+            playerMatches = matches
+
+            nextMatch = matches
+                .filter { match ->
+                    match.status.equals("Agendado", ignoreCase = true) ||
+                            match.status.equals("A decorrer", ignoreCase = true)
+                }
+                .sortedBy { it.id }
+                .firstOrNull()
         } else {
             playerTeam = null
+            playerMatches = emptyList()
+            nextMatch = null
+        }
+        if (userId.isNotBlank()) {
+            val stats = StatsRepository().getPlayerStatsByUserId(userId)
+            playerGoals = stats.goals
         }
     }
 
@@ -391,8 +427,14 @@ private fun PlayerHomeContent(
         name = userName,
         initials = initials.ifBlank { "J" },
         stats = listOf(
-            DashboardStat("0", "Próximos jogos"),
-            DashboardStat("0", "Golos"),
+            DashboardStat(
+                playerMatches.count {
+                    it.status.equals("Agendado", ignoreCase = true) ||
+                            it.status.equals("A decorrer", ignoreCase = true)
+                }.toString(),
+                "Próximos jogos"
+            ),
+            DashboardStat(playerGoals.toString(), "Golos"),
             DashboardStat("0", "Troféus")
         ),
         showAdminBadge = false,
@@ -410,7 +452,18 @@ private fun PlayerHomeContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        EmptyNextMatchCard()
+        if (nextMatch == null) {
+            EmptyNextMatchCard()
+        } else {
+            PlayerNextMatchCard(
+                match = nextMatch!!,
+                onClick = {
+                    navController.navigate(
+                        Screen.MatchDetail.createRoute(nextMatch!!.id.toString())
+                    )
+                }
+            )
+        }
 
         Spacer(modifier = Modifier.height(22.dp))
 
@@ -424,8 +477,98 @@ private fun PlayerHomeContent(
             sport = playerTeam?.sport ?: "Equipa associada",
             status = "Inscrito",
             statusColor = AthloColors.SoftBlue,
-            acronymColor = AthloColors.InfoBg
+            acronymColor = AthloColors.InfoBg,
+            onClick = {
+                playerTeamId?.let {
+                    navController.navigate(Screen.TeamDetail.createRoute(it))
+                }
+            }
         )
+    }
+}
+
+@Composable
+private fun PlayerNextMatchCard(
+    match: Match,
+    onClick: () -> Unit
+) {
+    val timeText = match.matchTime?.ifBlank { null } ?: "Hora por definir"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = timeText,
+                color = AthloColors.TextMuted,
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TeamMiniBadge(
+                    label = match.teamAName.toAcronym(),
+                    color = Color(0xFFFFEFD7)
+                )
+
+                Text(
+                    text = match.teamAName,
+                    fontWeight = FontWeight.Bold,
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f)
+                )
+
+                ScoreBox(score = match.scoreA.toString())
+
+                Text(
+                    text = "-",
+                    color = AthloColors.TextSecondary,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                ScoreBox(score = match.scoreB.toString())
+
+                Text(
+                    text = match.teamBName,
+                    fontWeight = FontWeight.Bold,
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            StatusPill(
+                text = match.status,
+                background = if (match.status.equals("A decorrer", ignoreCase = true)) {
+                    AthloColors.DangerBg
+                } else {
+                    AthloColors.NeutralBg
+                },
+                textColor = if (match.status.equals("A decorrer", ignoreCase = true)) {
+                    Color(0xFFC83755)
+                } else {
+                    AthloColors.TextSecondary
+                }
+            )
+        }
     }
 }
 
@@ -890,12 +1033,13 @@ private fun TeamCard(
     sport: String,
     status: String,
     statusColor: Color,
-    acronymColor: Color
+    acronymColor: Color,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable { onClick() },
         shape = RoundedCornerShape(AthloRadius.Large),
         colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -1023,5 +1167,19 @@ private fun StatusPill(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold
         )
+    }
+}
+
+private fun String.toAcronym(): String {
+    val parts = trim()
+        .split(" ")
+        .filter { it.isNotBlank() }
+
+    return when {
+        parts.isEmpty() -> "EQP"
+        parts.size == 1 -> parts.first().take(3).uppercase()
+        else -> parts.take(2).joinToString("") {
+            it.first().uppercase()
+        }
     }
 }
