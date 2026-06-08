@@ -31,43 +31,37 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.data.remote.dto.UserDto
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.data.repository.PlayerRepository
+import com.example.athlodynamis.data.repository.StatsRepository
+import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.data.repository.UserRepository
+import com.example.athlodynamis.domain.model.Match
+import com.example.athlodynamis.domain.model.Team
+import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import com.example.athlodynamis.data.repository.TeamRepository
-import com.example.athlodynamis.domain.model.Team
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.athlodynamis.data.repository.MatchRepository
-import com.example.athlodynamis.data.repository.StatsRepository
-import com.example.athlodynamis.domain.model.Match
-import com.example.athlodynamis.data.repository.TournamentRepository
-import com.example.athlodynamis.data.repository.PlayerRepository
-import com.example.athlodynamis.domain.model.Tournament
 
 data class DashboardStat(
     val value: String,
     val label: String
-)
-
-data class RecentUser(
-    val position: Int,
-    val initials: String,
-    val name: String,
-    val time: String,
-    val color: Color
 )
 
 @Composable
@@ -77,7 +71,7 @@ fun HomeScreen(
     userName: String = "Utilizador",
     userId: String,
     playerTeamId: Int? = null
-){
+) {
     Scaffold(
         containerColor = AthloColors.Background,
         floatingActionButton = {
@@ -118,8 +112,17 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 when (userRole) {
-                    AthloUserRole.ADMIN -> AdminHomeContent(navController = navController)
-                    AthloUserRole.ORGANIZER -> OrganizerHomeContent(navController = navController)
+                    AthloUserRole.ADMIN -> AdminHomeContent(
+                        navController = navController,
+                        userName = userName
+                    )
+
+                    AthloUserRole.ORGANIZER -> OrganizerHomeContent(
+                        navController = navController,
+                        userName = userName,
+                        userId = userId
+                    )
+
                     AthloUserRole.PLAYER -> PlayerHomeContent(
                         navController = navController,
                         userName = userName,
@@ -140,15 +143,78 @@ fun HomeScreen(
 
 @Composable
 private fun AdminHomeContent(
-    navController: NavController
+    navController: NavController,
+    userName: String
 ) {
+    var users by remember {
+        mutableStateOf<List<UserDto>>(emptyList())
+    }
+
+    var tournamentsCount by remember {
+        mutableStateOf(0)
+    }
+
+    var isLoading by remember {
+        mutableStateOf(true)
+    }
+
+    var errorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        errorMessage = null
+
+        try {
+            users = UserRepository().getAllUsers()
+            tournamentsCount = TournamentRepository().getTournaments().size
+        } catch (e: Exception) {
+            errorMessage = e.message ?: "Erro ao carregar dados do administrador."
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val organizersCount = users.count {
+        it.role.equals("ORGANIZER", ignoreCase = true)
+    }
+
+    val playersCount = users.count {
+        it.role.equals("PLAYER", ignoreCase = true)
+    }
+
+    val adminsCount = users.count {
+        it.role.equals("ADMIN", ignoreCase = true)
+    }
+
+    val pendingRequestsCount = users.count {
+        it.role.equals("ORGANIZER", ignoreCase = true) &&
+                it.approvalStatus.equals("PENDING", ignoreCase = true)
+    }
+
+    val recentUsers = users
+        .sortedByDescending { it.createdAt ?: "" }
+        .take(4)
+
+    val adminInitials = userName.initials().ifBlank { "AD" }
+
     DashboardHeader(
-        name = "Gonçalo Magalhães",
-        initials = "GM",
+        name = userName.ifBlank { "Administrador" },
+        initials = adminInitials,
         stats = listOf(
-            DashboardStat("24", "Eventos"),
-            DashboardStat("1.2K", "Utilizadores"),
-            DashboardStat("18", "Organizadores")
+            DashboardStat(
+                value = if (isLoading) "..." else tournamentsCount.toString(),
+                label = "Eventos"
+            ),
+            DashboardStat(
+                value = if (isLoading) "..." else users.size.toString(),
+                label = "Utilizadores"
+            ),
+            DashboardStat(
+                value = if (isLoading) "..." else organizersCount.toString(),
+                label = "Organizadores"
+            )
         ),
         showAdminBadge = true,
         onProfileClick = {
@@ -158,7 +224,34 @@ private fun AdminHomeContent(
 
     Spacer(modifier = Modifier.height(28.dp))
 
-    PendingRequestsCard()
+    if (errorMessage != null) {
+        AdminErrorCard(
+            text = errorMessage ?: "Erro ao carregar dados."
+        )
+
+        Spacer(modifier = Modifier.height(22.dp))
+    }
+
+    PendingRequestsCard(
+        pendingCount = pendingRequestsCount,
+        onClick = {
+            navController.navigate(Screen.PendingRequests.route)
+        }
+    )
+
+    Spacer(modifier = Modifier.height(26.dp))
+
+    SectionTitle(title = "Resumo da plataforma")
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    AdminPlatformSummaryCard(
+        playersCount = playersCount,
+        organizersCount = organizersCount,
+        adminsCount = adminsCount,
+        tournamentsCount = tournamentsCount,
+        isLoading = isLoading
+    )
 
     Spacer(modifier = Modifier.height(26.dp))
 
@@ -166,13 +259,21 @@ private fun AdminHomeContent(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    RecentRegistrationsCard()
+    RecentRegistrationsCard(
+        users = recentUsers,
+        isLoading = isLoading
+    )
 }
 
 @Composable
-private fun PendingRequestsCard() {
+private fun PendingRequestsCard(
+    pendingCount: Int,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7CC)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -196,10 +297,16 @@ private fun PendingRequestsCard() {
             }
 
             Column(
-                modifier = Modifier.padding(start = 16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
             ) {
                 Text(
-                    text = "3 pedidos pendentes",
+                    text = if (pendingCount == 1) {
+                        "1 pedido pendente"
+                    } else {
+                        "$pendingCount pedidos pendentes"
+                    },
                     color = Color(0xFF7A5B00),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
@@ -213,19 +320,119 @@ private fun PendingRequestsCard() {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Abrir pedidos pendentes",
+                tint = Color(0xFFB48A00),
+                modifier = Modifier.size(26.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun RecentRegistrationsCard() {
-    val users = listOf(
-        RecentUser(1, "JS", "João Santos", "há 2h", Color(0xFFD7EBFF)),
-        RecentUser(2, "CS", "Carlos Silva", "há 3h", Color(0xFFF8FFB0)),
-        RecentUser(3, "MP", "Miguel Pinto", "há 8h", Color(0xFFDFF3D8)),
-        RecentUser(4, "AF", "Ana Ferreira", "há 1d", Color(0xFFE3D7FF))
-    )
+private fun AdminPlatformSummaryCard(
+    playersCount: Int,
+    organizersCount: Int,
+    adminsCount: Int,
+    tournamentsCount: Int,
+    isLoading: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            AdminSummaryRow(
+                label = "Jogadores",
+                value = if (isLoading) "..." else playersCount.toString(),
+                color = Color(0xFFD7EBFF)
+            )
 
+            AdminSummaryRow(
+                label = "Organizadores",
+                value = if (isLoading) "..." else organizersCount.toString(),
+                color = Color(0xFFDFF3D8)
+            )
+
+            AdminSummaryRow(
+                label = "Administradores",
+                value = if (isLoading) "..." else adminsCount.toString(),
+                color = Color(0xFFFFF7CC)
+            )
+
+            AdminSummaryRow(
+                label = "Torneios/Eventos",
+                value = if (isLoading) "..." else tournamentsCount.toString(),
+                color = Color(0xFFE3D7FF)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminSummaryRow(
+    label: String,
+    value: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(color, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = value,
+                color = AthloColors.Navy,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+
+        Text(
+            text = label,
+            color = AthloColors.TextPrimary,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 14.dp)
+        )
+    }
+}
+
+@Composable
+private fun AdminErrorCard(text: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFE5E5)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Text(
+            text = text,
+            color = Color(0xFFCC1F2F),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(18.dp)
+        )
+    }
+}
+
+@Composable
+private fun RecentRegistrationsCard(
+    users: List<UserDto>,
+    isLoading: Boolean
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -235,20 +442,43 @@ private fun RecentRegistrationsCard() {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            users.forEachIndexed { index, user ->
-                RecentUserRow(user = user)
-
-                if (index < users.lastIndex) {
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFE5E7EB))
+            when {
+                isLoading -> {
+                    Text(
+                        text = "A carregar utilizadores...",
+                        color = AthloColors.TextMuted,
+                        style = MaterialTheme.typography.bodySmall
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                users.isEmpty() -> {
+                    Text(
+                        text = "Ainda não existem utilizadores registados.",
+                        color = AthloColors.TextMuted,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                else -> {
+                    users.forEachIndexed { index, user ->
+                        RecentUserRow(
+                            position = index + 1,
+                            user = user
+                        )
+
+                        if (index < users.lastIndex) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Color(0xFFE5E7EB))
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
                 }
             }
         }
@@ -256,13 +486,16 @@ private fun RecentRegistrationsCard() {
 }
 
 @Composable
-private fun RecentUserRow(user: RecentUser) {
+private fun RecentUserRow(
+    position: Int,
+    user: UserDto
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = user.position.toString(),
+            text = position.toString(),
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.width(28.dp)
@@ -271,11 +504,11 @@ private fun RecentUserRow(user: RecentUser) {
         Box(
             modifier = Modifier
                 .size(38.dp)
-                .background(user.color, CircleShape),
+                .background(user.role.roleColor(), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = user.initials,
+                text = user.name.initials(),
                 color = AthloColors.Blue,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -283,7 +516,9 @@ private fun RecentUserRow(user: RecentUser) {
         }
 
         Column(
-            modifier = Modifier.padding(start = 14.dp)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp)
         ) {
             Text(
                 text = user.name,
@@ -293,9 +528,23 @@ private fun RecentUserRow(user: RecentUser) {
             )
 
             Text(
-                text = user.time,
+                text = user.email,
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .background(AthloColors.NeutralBg, RoundedCornerShape(999.dp))
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = user.role,
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -307,38 +556,55 @@ private fun RecentUserRow(user: RecentUser) {
 
 @Composable
 private fun OrganizerHomeContent(
-    navController: NavController
+    navController: NavController,
+    userName: String,
+    userId: String
 ) {
     var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
     var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
     var athletesCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(userId) {
         tournaments = TournamentRepository().getTournaments()
         matches = MatchRepository().getAllMatches()
         athletesCount = PlayerRepository().getAllPlayers().size
     }
 
-    val activeTournaments = tournaments.count {
+    val myEvents = tournaments.filter { tournament ->
+        tournament.organizerId == userId
+    }
+
+    val otherEvents = tournaments.filter { tournament ->
+        tournament.organizerId != userId
+    }
+
+    val myEventIds = myEvents.map { it.id }.toSet()
+
+    val myMatches = matches.filter { match ->
+        match.tournamentId.toString() in myEventIds
+    }
+
+    val activeTournaments = myEvents.count {
         !it.status.equals("Terminado", ignoreCase = true)
     }
 
-    val todayMatches = matches.count {
+    val activeMatches = myMatches.count {
         it.status.equals("Agendado", ignoreCase = true) ||
                 it.status.equals("A decorrer", ignoreCase = true)
     }
 
-    val liveMatch = matches.firstOrNull {
+    val liveMatch = myMatches.firstOrNull {
         it.status.equals("A decorrer", ignoreCase = true)
     }
 
-    val organizerEvents = tournaments.take(3)
+    val organizerInitials = userName.initials().ifBlank { "ORG" }
+
     DashboardHeader(
-        name = "Gonçalo Magalhães",
-        initials = "GM",
+        name = userName.ifBlank { "Organizador" },
+        initials = organizerInitials,
         stats = listOf(
             DashboardStat(activeTournaments.toString(), "Torneios ativos"),
-            DashboardStat(todayMatches.toString(), "Jogos ativos"),
+            DashboardStat(activeMatches.toString(), "Jogos ativos"),
             DashboardStat(athletesCount.toString(), "Atletas")
         ),
         showAdminBadge = false,
@@ -378,10 +644,39 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    if (organizerEvents.isEmpty()) {
+    if (myEvents.isEmpty()) {
         EmptyOrganizerEventsCard()
     } else {
-        organizerEvents.forEach { tournament ->
+        myEvents.forEach { tournament ->
+            EventCard(
+                date = tournament.dateRange,
+                title = tournament.name,
+                tags = listOf(
+                    tournament.sport,
+                    tournament.status,
+                    tournament.format
+                ),
+                onClick = {
+                    navController.navigate(
+                        Screen.TournamentDetail.createRoute(tournament.id)
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    SectionTitle(title = "Outros eventos")
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    if (otherEvents.isEmpty()) {
+        EmptyOtherEventsCard()
+    } else {
+        otherEvents.take(5).forEach { tournament ->
             EventCard(
                 date = tournament.dateRange,
                 title = tournament.name,
@@ -405,6 +700,7 @@ private fun OrganizerHomeContent(
 /* ---------------------------------------------------------
    PLAYER HOME
 --------------------------------------------------------- */
+
 @Composable
 private fun PlayerHomeContent(
     navController: NavController,
@@ -412,14 +708,12 @@ private fun PlayerHomeContent(
     userId: String,
     playerTeamId: Int?
 ) {
-    val initials = userName
-        .split(" ")
-        .filter { it.isNotBlank() }
-        .take(2)
-        .joinToString("") { it.first().uppercase() }
+    val initials = userName.initials().ifBlank { "J" }
+
     var playerTeam by remember {
         mutableStateOf<Team?>(null)
     }
+
     var playerMatches by remember {
         mutableStateOf<List<Match>>(emptyList())
     }
@@ -453,6 +747,7 @@ private fun PlayerHomeContent(
             playerMatches = emptyList()
             nextMatch = null
         }
+
         if (userId.isNotBlank()) {
             val stats = StatsRepository().getPlayerStatsByUserId(userId)
             playerGoals = stats.goals
@@ -461,7 +756,7 @@ private fun PlayerHomeContent(
 
     DashboardHeader(
         name = userName,
-        initials = initials.ifBlank { "J" },
+        initials = initials,
         stats = listOf(
             DashboardStat(
                 playerMatches.count {
@@ -611,6 +906,7 @@ private fun PlayerNextMatchCard(
 /* ---------------------------------------------------------
    SHARED COMPONENTS
 --------------------------------------------------------- */
+
 @Composable
 private fun EmptyPlayerHomeCard() {
     Column(
@@ -659,9 +955,9 @@ private fun EmptyPlayerHomeCard() {
                 )
             }
         }
-
     }
 }
+
 @Composable
 private fun EmptyNextMatchCard() {
     Card(
@@ -704,29 +1000,7 @@ private fun EmptyNextMatchCard() {
         }
     }
 }
-@Composable
-private fun EmptyStatItem(
-    value: String,
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = value,
-            color = AthloColors.Blue,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold
-        )
 
-        Text(
-            text = label,
-            color = AthloColors.TextSecondary,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
 @Composable
 private fun DashboardHeader(
     name: String,
@@ -1291,6 +1565,48 @@ private fun EmptyOrganizerEventsCard() {
         }
     }
 }
+@Composable
+private fun EmptyOtherEventsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = AthloColors.CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Sem outros eventos",
+                tint = AthloColors.TextMuted,
+                modifier = Modifier.size(42.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Sem outros eventos",
+                color = AthloColors.TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Quando existirem eventos criados por outros organizadores, eles aparecem aqui.",
+                color = AthloColors.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
 private fun String.toAcronym(): String {
     val parts = trim()
         .split(" ")
@@ -1302,5 +1618,24 @@ private fun String.toAcronym(): String {
         else -> parts.take(2).joinToString("") {
             it.first().uppercase()
         }
+    }
+}
+
+private fun String.initials(): String {
+    return split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") {
+            it.first().uppercase()
+        }
+        .ifBlank { "U" }
+}
+
+private fun String.roleColor(): Color {
+    return when {
+        equals("ADMIN", ignoreCase = true) -> Color(0xFFFFD928)
+        equals("ORGANIZER", ignoreCase = true) -> Color(0xFFDFF3D8)
+        equals("PLAYER", ignoreCase = true) -> Color(0xFFD7EBFF)
+        else -> Color(0xFFE3D7FF)
     }
 }

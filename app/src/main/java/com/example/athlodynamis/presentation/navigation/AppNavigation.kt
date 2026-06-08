@@ -5,13 +5,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.screens.auth.AccountPendingScreen
 import com.example.athlodynamis.presentation.screens.auth.LoginScreen
 import com.example.athlodynamis.presentation.screens.auth.RegisterScreen
 import com.example.athlodynamis.presentation.screens.events.AddMatchScreen
@@ -23,6 +26,7 @@ import com.example.athlodynamis.presentation.screens.events.ManageLiveMatchScree
 import com.example.athlodynamis.presentation.screens.events.TournamentDetailScreen
 import com.example.athlodynamis.presentation.screens.home.HomeScreen
 import com.example.athlodynamis.presentation.screens.management.ManagementScreen
+import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
 import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
 import com.example.athlodynamis.presentation.screens.notifications.NotificationsScreen
 import com.example.athlodynamis.presentation.screens.offline.OfflineScreen
@@ -35,10 +39,8 @@ import com.example.athlodynamis.presentation.screens.teams.CreateTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
-import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.getValue
 import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -54,12 +56,19 @@ fun AppNavigation() {
     }
 
     val isOffline = false
+
     val sharedPreferences = remember {
-        context.getSharedPreferences("athlo_preferences", Context.MODE_PRIVATE)
+        context.getSharedPreferences(
+            "athlo_preferences",
+            Context.MODE_PRIVATE
+        )
     }
 
     val hasSeenOnboarding = remember {
-        sharedPreferences.getBoolean("has_seen_onboarding", false)
+        sharedPreferences.getBoolean(
+            "has_seen_onboarding",
+            false
+        )
     }
 
     val startDestination = if (hasSeenOnboarding) {
@@ -90,12 +99,24 @@ fun AppNavigation() {
         }
 
         composable(Screen.Login.route) {
+            LaunchedEffect(
+                authState.isSuccess,
+                authState.accountPending
+            ) {
+                when {
+                    authState.accountPending -> {
+                        navController.navigate(Screen.AccountPending.route) {
+                            popUpTo(Screen.Login.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
 
-            LaunchedEffect(authState.isSuccess) {
-                if (authState.isSuccess) {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Login.route) {
-                            inclusive = true
+                    authState.isSuccess -> {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) {
+                                inclusive = true
+                            }
                         }
                     }
                 }
@@ -110,17 +131,17 @@ fun AppNavigation() {
                     )
                 },
                 onRegisterClick = {
+                    authViewModel.clearAuthState()
                     navController.navigate(Screen.Register.route)
                 }
             )
         }
 
         composable(Screen.Register.route) {
-            val authViewModel: AuthViewModel = viewModel()
-            val authState by authViewModel.uiState.collectAsState()
-
             LaunchedEffect(authState.isSuccess) {
                 if (authState.isSuccess) {
+                    authViewModel.clearAuthState()
+
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) {
                             inclusive = true
@@ -132,17 +153,37 @@ fun AppNavigation() {
             RegisterScreen(
                 isLoading = authState.isLoading,
                 errorMessage = authState.error,
-                onRegisterClick = { name, email, password, shirtNumber, position ->
-                    authViewModel.registerPlayer(
+                onRegisterClick = { name, email, password, accountType, shirtNumber, position, organizerRequestMessage ->
+                    authViewModel.registerUser(
                         name = name,
                         email = email,
                         password = password,
+                        accountType = accountType,
                         shirtNumber = shirtNumber,
-                        position = position
+                        position = position,
+                        organizerRequestMessage = organizerRequestMessage
                     )
                 },
                 onBackClick = {
+                    authViewModel.clearAuthState()
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AccountPending.route) {
+            AccountPendingScreen(
+                userName = authState.userName ?: "Organizador",
+                userEmail = authState.userEmail ?: "",
+                requestMessage = authState.organizerRequestMessage,
+                onBackToLoginClick = {
+                    authViewModel.logout()
+
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
@@ -176,14 +217,16 @@ fun AppNavigation() {
         composable(Screen.Events.route) {
             EventsScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                currentUserId = authState.userId ?: ""
             )
         }
 
         composable(Screen.CreateEvent.route) {
             CreateEventScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                currentUserId = authState.userId ?: ""
             )
         }
 
@@ -370,7 +413,6 @@ fun AppNavigation() {
                 }
             )
         }
-
 
         composable(Screen.EditProfile.route) {
             EditProfileScreen(

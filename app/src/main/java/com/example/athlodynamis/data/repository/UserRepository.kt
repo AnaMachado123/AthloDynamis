@@ -2,6 +2,7 @@ package com.example.athlodynamis.data.repository
 
 import com.example.athlodynamis.data.remote.SupabaseClientProvider
 import com.example.athlodynamis.data.remote.dto.CreateUserDto
+import com.example.athlodynamis.data.remote.dto.UpdateUserApprovalDto
 import com.example.athlodynamis.data.remote.dto.UserDto
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
@@ -15,6 +16,43 @@ class UserRepository {
         client
             .from("users")
             .insert(user)
+    }
+
+    suspend fun getAllUsers(): List<UserDto> {
+        return client
+            .from("users")
+            .select()
+            .decodeList<UserDto>()
+    }
+
+    suspend fun getPendingOrganizerRequests(): List<UserDto> {
+        return client
+            .from("users")
+            .select {
+                filter {
+                    eq("role", "ORGANIZER")
+                    eq("approval_status", "PENDING")
+                }
+            }
+            .decodeList<UserDto>()
+            .sortedBy { it.createdAt ?: "" }
+    }
+
+    suspend fun updateOrganizerApproval(
+        userId: String,
+        approvalStatus: String
+    ) {
+        client
+            .from("users")
+            .update(
+                UpdateUserApprovalDto(
+                    approvalStatus = approvalStatus
+                )
+            ) {
+                filter {
+                    eq("id", userId)
+                }
+            }
     }
 
     suspend fun getUserByEmail(email: String): UserDto? {
@@ -71,7 +109,6 @@ class UserRepository {
         userId: String,
         bytes: ByteArray
     ): String {
-
         val fileName = "${userId}_${UUID.randomUUID()}.jpg"
 
         client.storage

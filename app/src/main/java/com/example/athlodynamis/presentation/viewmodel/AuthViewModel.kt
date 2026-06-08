@@ -15,6 +15,7 @@ import java.util.UUID
 data class AuthUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
+    val accountPending: Boolean = false,
     val error: String? = null,
     val userId: String? = null,
     val userName: String? = null,
@@ -23,6 +24,8 @@ data class AuthUiState(
     val userRole: String? = null,
     val playerTeamId: Int? = null,
     val photoUrl: String? = null,
+    val approvalStatus: String? = null,
+    val organizerRequestMessage: String? = null
 )
 
 class AuthViewModel(
@@ -33,16 +36,20 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    fun registerPlayer(
+    fun registerUser(
         name: String,
         email: String,
         password: String,
-        shirtNumber: Int,
-        position: String
+        accountType: String,
+        shirtNumber: Int?,
+        position: String?,
+        organizerRequestMessage: String?
     ) {
         val cleanName = name.trim()
         val cleanEmail = email.trim()
-        val cleanPosition = position.trim()
+        val cleanPosition = position?.trim().orEmpty()
+        val cleanMessage = organizerRequestMessage?.trim().orEmpty()
+        val cleanAccountType = accountType.uppercase()
 
         if (cleanName.isBlank()) {
             _uiState.value = AuthUiState(error = "Nome obrigatório.")
@@ -69,14 +76,21 @@ class AuthViewModel(
             return
         }
 
-        if (shirtNumber !in 1..99) {
-            _uiState.value = AuthUiState(error = "Número da camisola deve estar entre 1 e 99.")
+        if (cleanAccountType != "PLAYER" && cleanAccountType != "ORGANIZER") {
+            _uiState.value = AuthUiState(error = "Escolhe o tipo de conta.")
             return
         }
 
-        if (cleanPosition.isBlank()) {
-            _uiState.value = AuthUiState(error = "Posição obrigatória.")
-            return
+        if (cleanAccountType == "PLAYER") {
+            if (shirtNumber == null || shirtNumber !in 1..99) {
+                _uiState.value = AuthUiState(error = "Número da camisola deve estar entre 1 e 99.")
+                return
+            }
+
+            if (cleanPosition.isBlank()) {
+                _uiState.value = AuthUiState(error = "Posição obrigatória.")
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -95,33 +109,47 @@ class AuthViewModel(
 
                 val userId = UUID.randomUUID().toString()
 
+                val approvalStatus = if (cleanAccountType == "ORGANIZER") {
+                    "PENDING"
+                } else {
+                    "APPROVED"
+                }
+
                 userRepository.createUser(
                     CreateUserDto(
                         id = userId,
                         name = cleanName,
                         email = cleanEmail,
                         password = password,
-                        role = "PLAYER"
+                        role = cleanAccountType,
+                        approvalStatus = approvalStatus,
+                        organizerRequestMessage = if (cleanAccountType == "ORGANIZER") {
+                            cleanMessage.ifBlank { null }
+                        } else {
+                            null
+                        }
                     )
                 )
-                playerRepository.createPlayer(
-                    CreatePlayerDto(
-                        userId = userId,
-                        teamId = null,
-                        name = cleanName,
-                        position = cleanPosition,
-                        number = shirtNumber,
-                        goals = 0,
-                        assists = 0,
-                        yellowCards = 0
+
+                if (cleanAccountType == "PLAYER") {
+                    playerRepository.createPlayer(
+                        CreatePlayerDto(
+                            userId = userId,
+                            teamId = null,
+                            name = cleanName,
+                            position = cleanPosition,
+                            number = shirtNumber ?: 0,
+                            goals = 0,
+                            assists = 0,
+                            yellowCards = 0
+                        )
                     )
-                )
+                }
 
                 _uiState.value = AuthUiState(
                     isLoading = false,
                     isSuccess = true
                 )
-
             } catch (e: Exception) {
                 _uiState.value = AuthUiState(
                     isLoading = false,
@@ -131,12 +159,32 @@ class AuthViewModel(
         }
     }
 
+    fun registerPlayer(
+        name: String,
+        email: String,
+        password: String,
+        shirtNumber: Int,
+        position: String
+    ) {
+        registerUser(
+            name = name,
+            email = email,
+            password = password,
+            accountType = "PLAYER",
+            shirtNumber = shirtNumber,
+            position = position,
+            organizerRequestMessage = null
+        )
+    }
+
     fun clearAuthState() {
         _uiState.value = AuthUiState()
     }
+
     fun logout() {
         _uiState.value = AuthUiState()
     }
+
     fun login(
         email: String,
         password: String
@@ -180,20 +228,57 @@ class AuthViewModel(
                     return@launch
                 }
 
-                val player = playerRepository.getPlayerByUserId(user.id)
+                if (
+                    user.role.equals("ORGANIZER", ignoreCase = true) &&
+                    user.approvalStatus.equals("REJECTED", ignoreCase = true)
+                ) {
+                    _uiState.value = AuthUiState(
+                        isLoading = false,
+                        error = "O teu pedido de organizador foi rejeitado."
+                    )
+                    return@launch
+                }
+
+                val player = if (user.role.equals("PLAYER", ignoreCase = true)) {
+                    playerRepository.getPlayerByUserId(user.id)
+                } else {
+                    null
+                }
+
+                if (
+                    user.role.equals("ORGANIZER", ignoreCase = true) &&
+                    user.approvalStatus.equals("PENDING", ignoreCase = true)
+                ) {
+                    _uiState.value = AuthUiState(
+                        isLoading = false,
+                        isSuccess = false,
+                        accountPending = true,
+                        userId = user.id,
+                        userName = user.name,
+                        userEmail = user.email,
+                        userPassword = user.password,
+                        userRole = user.role,
+                        approvalStatus = user.approvalStatus,
+                        organizerRequestMessage = user.organizerRequestMessage,
+                        photoUrl = user.photoUrl
+                    )
+                    return@launch
+                }
 
                 _uiState.value = AuthUiState(
                     isLoading = false,
                     isSuccess = true,
+                    accountPending = false,
                     userId = user.id,
                     userName = user.name,
                     userEmail = user.email,
                     userPassword = user.password,
                     userRole = user.role,
                     playerTeamId = player?.teamId,
-                    photoUrl = user.photoUrl
+                    photoUrl = user.photoUrl,
+                    approvalStatus = user.approvalStatus,
+                    organizerRequestMessage = user.organizerRequestMessage
                 )
-
             } catch (e: Exception) {
                 _uiState.value = AuthUiState(
                     isLoading = false,
@@ -202,6 +287,7 @@ class AuthViewModel(
             }
         }
     }
+
     fun updateProfile(
         name: String,
         email: String,
@@ -230,6 +316,7 @@ class AuthViewModel(
             }
         }
     }
+
     fun uploadProfilePhoto(
         userId: String,
         imageBytes: ByteArray,
@@ -238,7 +325,6 @@ class AuthViewModel(
     ) {
         viewModelScope.launch {
             try {
-
                 val photoUrl = userRepository.uploadProfilePhoto(
                     userId = userId,
                     bytes = imageBytes
@@ -254,7 +340,6 @@ class AuthViewModel(
                 )
 
                 onSuccess(photoUrl)
-
             } catch (e: Exception) {
                 onError(
                     e.message ?: "Erro ao carregar foto."

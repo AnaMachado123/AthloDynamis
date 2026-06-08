@@ -11,11 +11,17 @@ data class TournamentDto(
     val sport: String,
     val format: String,
     val status: String,
+
     @SerialName("start_date")
     val startDate: String? = null,
+
     @SerialName("end_date")
     val endDate: String? = null,
-    val rules: String? = null
+
+    val rules: String? = null,
+
+    @SerialName("organizer_id")
+    val organizerId: String? = null
 )
 
 @Serializable
@@ -24,11 +30,17 @@ data class CreateTournamentDto(
     val sport: String,
     val format: String,
     val status: String,
+
     @SerialName("start_date")
     val startDate: String? = null,
+
     @SerialName("end_date")
     val endDate: String? = null,
-    val rules: String? = null
+
+    val rules: String? = null,
+
+    @SerialName("organizer_id")
+    val organizerId: String? = null
 )
 
 fun TournamentDto.toTournament(): Tournament {
@@ -38,7 +50,8 @@ fun TournamentDto.toTournament(): Tournament {
         sport = sport,
         dateRange = buildDateRange(startDate, endDate),
         status = status,
-        format = format
+        format = format,
+        organizerId = organizerId
     )
 }
 

@@ -55,8 +55,9 @@ import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 @Composable
 fun CreateEventScreen(
     navController: NavController,
-    userRole: AthloUserRole
-) {
+    userRole: AthloUserRole,
+    currentUserId: String
+){
     val tournamentsViewModel: TournamentsViewModel = viewModel()
 
     val error by tournamentsViewModel.error.collectAsState()
@@ -64,8 +65,6 @@ fun CreateEventScreen(
     val tournamentCreated by tournamentsViewModel.tournamentCreated.collectAsState()
 
     val isAdmin = userRole == AthloUserRole.ADMIN
-
-    var organizer by remember { mutableStateOf("") }
     var eventName by remember { mutableStateOf("") }
     var selectedSport by remember { mutableStateOf("") }
     var selectedFormat by remember { mutableStateOf("") }
@@ -116,13 +115,7 @@ fun CreateEventScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    FieldLabel("Atribuir organizador")
-                    AthloDropdown(
-                        selectedValue = organizer,
-                        placeholder = "Selecionar organizador",
-                        options = listOf("Carlos Mendes", "Ana Carvalho", "Rui Moreira"),
-                        onValueSelected = { organizer = it }
-                    )
+
 
                     Spacer(modifier = Modifier.height(18.dp))
 
@@ -212,7 +205,8 @@ fun CreateEventScreen(
                         endDate = endDate.trim().ifBlank { null },
                         status = "Em preparação",
                         format = selectedFormat,
-                        rules = null
+                        rules = null,
+                        organizerId = currentUserId.ifBlank { null }
                     )
                 },
                 enabled = canSave && !isLoading,

@@ -50,7 +50,8 @@ class TournamentsViewModel : ViewModel() {
         endDate: String?,
         status: String,
         format: String,
-        rules: String? = null
+        rules: String? = null,
+        organizerId: String? = null
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -66,7 +67,8 @@ class TournamentsViewModel : ViewModel() {
                         status = status,
                         startDate = startDate,
                         endDate = endDate,
-                        rules = rules
+                        rules = rules,
+                        organizerId = organizerId
                     )
                 )
 

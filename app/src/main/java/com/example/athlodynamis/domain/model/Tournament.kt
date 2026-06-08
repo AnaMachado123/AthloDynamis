@@ -6,5 +6,6 @@ data class Tournament(
     val sport: String,
     val dateRange: String,
     val status: String,
-    val format: String
+    val format: String,
+    val organizerId: String? = null
 )

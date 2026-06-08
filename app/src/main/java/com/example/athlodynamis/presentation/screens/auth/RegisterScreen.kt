@@ -1,7 +1,18 @@
 package com.example.athlodynamis.presentation.screens.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +22,26 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +52,10 @@ import androidx.compose.ui.unit.dp
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 
+private const val ACCOUNT_PLAYER = "PLAYER"
+private const val ACCOUNT_ORGANIZER = "ORGANIZER"
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     isLoading: Boolean = false,
@@ -31,22 +64,43 @@ fun RegisterScreen(
         name: String,
         email: String,
         password: String,
-        shirtNumber: Int,
-        position: String
+        accountType: String,
+        shirtNumber: Int?,
+        position: String?,
+        organizerRequestMessage: String?
     ) -> Unit,
     onBackClick: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    var selectedAccountType by remember { mutableStateOf(ACCOUNT_PLAYER) }
+
     var shirtNumber by remember { mutableStateOf("") }
     var position by remember { mutableStateOf("") }
+    var organizerRequestMessage by remember { mutableStateOf("") }
 
     var nameError by remember { mutableStateOf<String?>(null) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var shirtNumberError by remember { mutableStateOf<String?>(null) }
     var positionError by remember { mutableStateOf<String?>(null) }
+
+    val footballPositions = listOf(
+        "Guarda-redes",
+        "Defesa central",
+        "Lateral direito",
+        "Lateral esquerdo",
+        "Médio defensivo",
+        "Médio centro",
+        "Médio ofensivo",
+        "Extremo direito",
+        "Extremo esquerdo",
+        "Avançado",
+        "Ponta de lança",
+        "Segundo avançado"
+    )
 
     fun validateForm(): Boolean {
         nameError = if (name.isBlank()) "Nome obrigatório" else null
@@ -63,13 +117,22 @@ fun RegisterScreen(
             else -> null
         }
 
-        shirtNumberError = when {
-            shirtNumber.isBlank() -> "Número da camisola obrigatório"
-            (shirtNumber.toIntOrNull() ?: 0) !in 1..99 -> "Número entre 1 e 99"
-            else -> null
-        }
+        if (selectedAccountType == ACCOUNT_PLAYER) {
+            shirtNumberError = when {
+                shirtNumber.isBlank() -> "Número da camisola obrigatório"
+                (shirtNumber.toIntOrNull() ?: 0) !in 1..99 -> "Número entre 1 e 99"
+                else -> null
+            }
 
-        positionError = if (position.isBlank()) "Posição obrigatória" else null
+            positionError = if (position.isBlank()) {
+                "Escolhe uma posição"
+            } else {
+                null
+            }
+        } else {
+            shirtNumberError = null
+            positionError = null
+        }
 
         return nameError == null &&
                 emailError == null &&
@@ -77,7 +140,6 @@ fun RegisterScreen(
                 shirtNumberError == null &&
                 positionError == null
     }
-
 
     Box(
         modifier = Modifier
@@ -116,12 +178,49 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Cria a tua conta de jogador",
+                        text = if (selectedAccountType == ACCOUNT_PLAYER) {
+                            "Cria a tua conta de jogador"
+                        } else {
+                            "Envia um pedido para seres organizador"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = AthloColors.TextSecondary
                     )
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    RegisterFieldLabel("TIPO DE CONTA")
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        AccountTypeCard(
+                            title = "Jogador",
+                            subtitle = "Entrar numa equipa",
+                            selected = selectedAccountType == ACCOUNT_PLAYER,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedAccountType = ACCOUNT_PLAYER
+                                shirtNumberError = null
+                                positionError = null
+                            }
+                        )
+
+                        AccountTypeCard(
+                            title = "Organizador",
+                            subtitle = "Criar eventos",
+                            selected = selectedAccountType == ACCOUNT_ORGANIZER,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedAccountType = ACCOUNT_ORGANIZER
+                                shirtNumberError = null
+                                positionError = null
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     RegisterFieldLabel("NOME")
                     OutlinedTextField(
@@ -211,47 +310,66 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    RegisterFieldLabel("NÚMERO DA CAMISOLA")
-                    OutlinedTextField(
-                        value = shirtNumber,
-                        onValueChange = { value ->
-                            shirtNumber = value.filter { it.isDigit() }
-                            shirtNumberError = null
-                        },
-                        placeholder = { Text("Insira o número da camisola") },
-                        isError = shirtNumberError != null,
-                        supportingText = {
-                            shirtNumberError?.let {
-                                Text(text = it, color = Color(0xFFC83755))
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(18.dp),
-                        colors = registerTextFieldColors()
-                    )
+                    if (selectedAccountType == ACCOUNT_PLAYER) {
+                        RegisterFieldLabel("NÚMERO DA CAMISOLA")
+                        OutlinedTextField(
+                            value = shirtNumber,
+                            onValueChange = { value ->
+                                shirtNumber = value.filter { it.isDigit() }
+                                shirtNumberError = null
+                            },
+                            placeholder = { Text("Insira o número da camisola") },
+                            isError = shirtNumberError != null,
+                            supportingText = {
+                                shirtNumberError?.let {
+                                    Text(text = it, color = Color(0xFFC83755))
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(18.dp),
+                            colors = registerTextFieldColors()
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    RegisterFieldLabel("POSIÇÃO")
-                    OutlinedTextField(
-                        value = position,
-                        onValueChange = {
-                            position = it
-                            positionError = null
-                        },
-                        placeholder = { Text("Insira a sua posição") },
-                        isError = positionError != null,
-                        supportingText = {
-                            positionError?.let {
-                                Text(text = it, color = Color(0xFFC83755))
+                        RegisterFieldLabel("POSIÇÃO")
+                        FootballPositionDropdown(
+                            selectedPosition = position,
+                            positions = footballPositions,
+                            isError = positionError != null,
+                            errorText = positionError,
+                            onPositionSelected = {
+                                position = it
+                                positionError = null
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(18.dp),
-                        colors = registerTextFieldColors()
-                    )
+                        )
+                    } else {
+                        RegisterFieldLabel("DESCRIÇÃO DO PEDIDO")
+                        OutlinedTextField(
+                            value = organizerRequestMessage,
+                            onValueChange = {
+                                organizerRequestMessage = it
+                            },
+                            placeholder = {
+                                Text("Escreve uma breve descrição do teu pedido, se quiseres")
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = registerTextFieldColors(),
+                            maxLines = 4
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "O teu pedido será enviado para aprovação do administrador.",
+                            color = AthloColors.TextMuted,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
 
                     if (errorMessage != null) {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -273,8 +391,22 @@ fun RegisterScreen(
                                     name.trim(),
                                     email.trim(),
                                     password,
-                                    shirtNumber.toIntOrNull() ?: 0,
-                                    position.trim()
+                                    selectedAccountType,
+                                    if (selectedAccountType == ACCOUNT_PLAYER) {
+                                        shirtNumber.toIntOrNull()
+                                    } else {
+                                        null
+                                    },
+                                    if (selectedAccountType == ACCOUNT_PLAYER) {
+                                        position.trim()
+                                    } else {
+                                        null
+                                    },
+                                    if (selectedAccountType == ACCOUNT_ORGANIZER) {
+                                        organizerRequestMessage.trim().ifBlank { null }
+                                    } else {
+                                        null
+                                    }
                                 )
                             }
                         },
@@ -297,7 +429,11 @@ fun RegisterScreen(
                             )
                         } else {
                             Text(
-                                text = "Criar Conta",
+                                text = if (selectedAccountType == ACCOUNT_PLAYER) {
+                                    "Criar Conta"
+                                } else {
+                                    "Enviar Pedido"
+                                },
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
@@ -333,6 +469,131 @@ private fun RegisterFieldLabel(text: String) {
     )
 
     Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun AccountTypeCard(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val background = if (selected) {
+        AthloColors.Navy
+    } else {
+        AthloColors.NeutralBg
+    }
+
+    val titleColor = if (selected) {
+        Color.White
+    } else {
+        AthloColors.TextPrimary
+    }
+
+    val subtitleColor = if (selected) {
+        Color(0xFFC8DCEF)
+    } else {
+        AthloColors.TextMuted
+    }
+
+    Card(
+        modifier = modifier
+            .height(96.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = background),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 6.dp else 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                color = titleColor,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = subtitle,
+                color = subtitleColor,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FootballPositionDropdown(
+    selectedPosition: String,
+    positions: List<String>,
+    isError: Boolean,
+    errorText: String?,
+    onPositionSelected: (String) -> Unit
+) {
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = {
+            expanded = !expanded
+        }
+    ) {
+        OutlinedTextField(
+            value = selectedPosition,
+            onValueChange = {},
+            readOnly = true,
+            placeholder = { Text("Escolhe a tua posição") },
+            isError = isError,
+            supportingText = {
+                errorText?.let {
+                    Text(text = it, color = Color(0xFFC83755))
+                }
+            },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = expanded
+                )
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(18.dp),
+            colors = registerTextFieldColors()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = {
+                expanded = false
+            }
+        ) {
+            positions.forEach { position ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = position,
+                            color = AthloColors.TextPrimary
+                        )
+                    },
+                    onClick = {
+                        onPositionSelected(position)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -378,7 +639,7 @@ private fun RegisterHeroCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Cria a tua conta e começa a competir",
+                text = "Cria a tua conta e entra no jogo",
                 color = Color(0xFFC8DCEF),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center

@@ -62,7 +62,8 @@ import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 @Composable
 fun EventsScreen(
     navController: NavController,
-    userRole: AthloUserRole
+    userRole: AthloUserRole,
+    currentUserId: String = ""
 ) {
     val tournamentsViewModel: TournamentsViewModel = viewModel()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -75,6 +76,7 @@ fun EventsScreen(
     var selectedFilter by remember { mutableStateOf("Todos") }
 
     val isAdmin = userRole == AthloUserRole.ADMIN
+    val isOrganizer = userRole == AthloUserRole.ORGANIZER
     val canCreateEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
 
     DisposableEffect(lifecycleOwner) {
@@ -91,7 +93,7 @@ fun EventsScreen(
         }
     }
 
-    val tournaments = allTournaments.filter { tournament ->
+    fun matchesSearchAndFilter(tournament: Tournament): Boolean {
         val matchesSearch =
             tournament.name.contains(searchText, ignoreCase = true) ||
                     tournament.sport.contains(searchText, ignoreCase = true)
@@ -108,7 +110,22 @@ fun EventsScreen(
             else -> true
         }
 
-        matchesSearch && matchesFilter
+        return matchesSearch && matchesFilter
+    }
+
+    val filteredTournaments = allTournaments.filter { matchesSearchAndFilter(it) }
+
+    val myTournaments = filteredTournaments.filter { tournament ->
+        tournament.organizerId == currentUserId
+    }
+
+    val otherTournaments = filteredTournaments.filter { tournament ->
+        tournament.organizerId != currentUserId
+    }
+
+    val headerTotal = when (userRole) {
+        AthloUserRole.ORGANIZER -> myTournaments.size
+        else -> filteredTournaments.size
     }
 
     Scaffold(
@@ -138,18 +155,8 @@ fun EventsScreen(
                     onSearchChange = { searchText = it },
                     selectedFilter = selectedFilter,
                     onFilterClick = { selectedFilter = it },
-                    total = allTournaments.size,
+                    total = headerTotal,
                     userRole = userRole
-                )
-            }
-
-            item {
-                EventsSectionTitle(
-                    userRole = userRole,
-                    canCreateEvent = canCreateEvent,
-                    onCreateEventClick = {
-                        navController.navigate(Screen.CreateEvent.route)
-                    }
                 )
             }
 
@@ -161,20 +168,92 @@ fun EventsScreen(
                 item {
                     InfoCard(text = error ?: "Erro ao carregar torneios")
                 }
-            } else if (tournaments.isEmpty()) {
-                item {
-                    InfoCard(text = "Ainda não existem torneios para mostrar.")
-                }
             } else {
-                items(tournaments) { tournament ->
-                    TournamentCard(
-                        tournament = tournament,
-                        onClick = {
-                            navController.navigate(
-                                Screen.TournamentDetail.createRoute(tournament.id)
+                if (isOrganizer) {
+                    item {
+                        EventsSectionTitle(
+                            title = "Os meus eventos",
+                            canCreateEvent = canCreateEvent,
+                            onCreateEventClick = {
+                                navController.navigate(Screen.CreateEvent.route)
+                            }
+                        )
+                    }
+
+                    if (myTournaments.isEmpty()) {
+                        item {
+                            InfoCard(text = "Ainda não criaste nenhum torneio.")
+                        }
+                    } else {
+                        items(myTournaments) { tournament ->
+                            TournamentCard(
+                                tournament = tournament,
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.TournamentDetail.createRoute(tournament.id)
+                                    )
+                                }
                             )
                         }
-                    )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        EventsSectionTitle(
+                            title = "Outros eventos",
+                            canCreateEvent = false,
+                            onCreateEventClick = {}
+                        )
+                    }
+
+                    if (otherTournaments.isEmpty()) {
+                        item {
+                            InfoCard(text = "Não existem outros torneios para mostrar.")
+                        }
+                    } else {
+                        items(otherTournaments) { tournament ->
+                            TournamentCard(
+                                tournament = tournament,
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.TournamentDetail.createRoute(tournament.id)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    item {
+                        EventsSectionTitle(
+                            title = when (userRole) {
+                                AthloUserRole.ADMIN -> "Todos os eventos"
+                                AthloUserRole.PLAYER -> "Eventos disponíveis"
+                                else -> "Eventos"
+                            },
+                            canCreateEvent = canCreateEvent,
+                            onCreateEventClick = {
+                                navController.navigate(Screen.CreateEvent.route)
+                            }
+                        )
+                    }
+
+                    if (filteredTournaments.isEmpty()) {
+                        item {
+                            InfoCard(text = "Ainda não existem torneios para mostrar.")
+                        }
+                    } else {
+                        items(filteredTournaments) { tournament ->
+                            TournamentCard(
+                                tournament = tournament,
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.TournamentDetail.createRoute(tournament.id)
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -213,6 +292,7 @@ private fun EventsHeader(
     userRole: AthloUserRole
 ) {
     val isAdmin = userRole == AthloUserRole.ADMIN
+    val isOrganizer = userRole == AthloUserRole.ORGANIZER
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -245,10 +325,10 @@ private fun EventsHeader(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = if (isAdmin) {
-                                "Vista Global - $total torneios na plataforma"
-                            } else {
-                                "Eventos Disponíveis"
+                            text = when {
+                                isAdmin -> "Vista Global - $total torneios na plataforma"
+                                isOrganizer -> "$total torneios criados por ti"
+                                else -> "Eventos disponíveis"
                             },
                             color = Color(0xFF8DC5F0),
                             style = MaterialTheme.typography.titleMedium
@@ -259,7 +339,7 @@ private fun EventsHeader(
                         AdminBadge()
                     } else {
                         StatusPill(
-                            text = "$total torneios",
+                            text = if (isOrganizer) "$total meus" else "$total torneios",
                             background = AthloColors.SuccessBg,
                             textColor = Color(0xFF4D8B4A)
                         )
@@ -312,16 +392,10 @@ private fun EventsHeader(
 
 @Composable
 private fun EventsSectionTitle(
-    userRole: AthloUserRole,
+    title: String,
     canCreateEvent: Boolean,
     onCreateEventClick: () -> Unit
 ) {
-    val title = when (userRole) {
-        AthloUserRole.ADMIN -> "Todos os eventos"
-        AthloUserRole.ORGANIZER -> "Os meus eventos"
-        AthloUserRole.PLAYER -> "Eventos disponíveis"
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
