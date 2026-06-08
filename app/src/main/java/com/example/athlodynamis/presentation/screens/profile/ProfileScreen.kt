@@ -49,6 +49,11 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import androidx.compose.runtime.LaunchedEffect
+import com.example.athlodynamis.data.repository.StatsRepository
+import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.domain.model.PlayerStatsData
+import com.example.athlodynamis.domain.model.Team
 
 @Composable
 fun ProfileScreen(
@@ -56,8 +61,28 @@ fun ProfileScreen(
     userRole: AthloUserRole,
     userName: String,
     playerTeamId: Int?,
+    userId: String,
     onLogoutClick: () -> Unit
 ) {
+    var playerStats by remember {
+        mutableStateOf<PlayerStatsData?>(null)
+    }
+
+    var playerTeam by remember {
+        mutableStateOf<Team?>(null)
+    }
+
+    LaunchedEffect(userId, playerTeamId) {
+        if (userRole == AthloUserRole.PLAYER && userId.isNotBlank()) {
+            playerStats = StatsRepository().getPlayerStatsByUserId(userId)
+
+            if (playerTeamId != null) {
+                TeamRepository.fetchTeamsFromSupabase()
+                playerTeam = TeamRepository.getTeamById(playerTeamId)
+            }
+        }
+    }
+
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
@@ -84,6 +109,7 @@ fun ProfileScreen(
                     userRole = userRole,
                     userName = userName,
                     playerTeamId = playerTeamId,
+                    playerStats = playerStats,
                     onBackClick = { navController.popBackStack() },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
@@ -97,6 +123,8 @@ fun ProfileScreen(
                     item {
                         PlayerProfileTabs(
                             playerTeamId = playerTeamId,
+                            playerStats = playerStats,
+                            playerTeam = playerTeam,
                             onLogoutClick = onLogoutClick
                         )
                     }
@@ -163,6 +191,7 @@ private fun ProfileHeader(
     userRole: AthloUserRole,
     userName: String,
     playerTeamId: Int?,
+    playerStats: PlayerStatsData?,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -280,7 +309,8 @@ private fun ProfileHeader(
 
             ProfileStatsRow(
                 userRole = userRole,
-                playerTeamId = playerTeamId
+                playerTeamId = playerTeamId,
+                playerStats = playerStats
             )
         }
     }
@@ -289,13 +319,14 @@ private fun ProfileHeader(
 @Composable
 private fun ProfileStatsRow(
     userRole: AthloUserRole,
-    playerTeamId: Int?
+    playerTeamId: Int?,
+    playerStats: PlayerStatsData?
 ) {
     val stats = when (userRole) {
         AthloUserRole.PLAYER -> listOf(
-            "0" to "Jogos",
-            "0" to "Troféus",
-            (if (playerTeamId != null) "1" else "0") to "Equipas"
+            (playerStats?.totalMatches ?: 0).toString() to "Jogos",
+            (playerStats?.trophies ?: 0).toString() to "Troféus",
+            (playerStats?.teams ?: if (playerTeamId != null) 1 else 0).toString() to "Equipas"
         )
         AthloUserRole.ORGANIZER -> listOf(
             "12" to "Eventos",
@@ -371,11 +402,13 @@ private fun RolePill(userRole: AthloUserRole) {
 @Composable
 private fun PlayerProfileTabs(
     playerTeamId: Int?,
+    playerStats: PlayerStatsData?,
+    playerTeam: Team?,
     onLogoutClick: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf("Estatísticas") }
     val hasTeam = playerTeamId != null
-    val hasMatches = false
+    val hasMatches = !playerStats?.recentGames.isNullOrEmpty()
     Column {
         Row(
             modifier = Modifier
@@ -406,7 +439,9 @@ private fun PlayerProfileTabs(
             if (!hasMatches) {
                 EmptyMatchesCard()
             } else {
-                LastGamesCard()
+                LastGamesCard(
+                    games = playerStats?.recentGames ?: emptyList()
+                )
             }
 
         } else {
@@ -414,7 +449,9 @@ private fun PlayerProfileTabs(
             if (!hasTeam) {
                 EmptyTeamsCard()
             } else {
-                TeamsCard()
+                TeamsCard(
+                    team = playerTeam
+                )
             }
 
         }
@@ -500,7 +537,9 @@ private fun ContactCard() {
 }
 
 @Composable
-private fun LastGamesCard() {
+private fun LastGamesCard(
+    games: List<com.example.athlodynamis.domain.model.RecentGameData>
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -514,16 +553,30 @@ private fun LastGamesCard() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            GameRow("V", "SC Virius vs GD São", "3-1", AthloColors.SuccessBg, Color(0xFF3F7A28))
-            GameRow("E", "SC Virius vs GD São", "1-1", AthloColors.NeutralBg, AthloColors.TextSecondary)
-            GameRow("D", "SC Virius vs GD São", "0-2", AthloColors.DangerBg, Color(0xFFC83755))
-            GameRow("E", "SC Virius vs GD São", "2-2", AthloColors.NeutralBg, AthloColors.TextSecondary)
+            games.forEach { game ->
+                val colors = when (game.result) {
+                    "V" -> AthloColors.SuccessBg to Color(0xFF3F7A28)
+                    "D" -> AthloColors.DangerBg to Color(0xFFC83755)
+                    else -> AthloColors.NeutralBg to AthloColors.TextSecondary
+                }
+
+                GameRow(
+                    result = game.result,
+                    opponent = game.matchTitle,
+                    score = game.score,
+                    subtitle = game.subtitle,
+                    resultColor = colors.first,
+                    textColor = colors.second
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun TeamsCard() {
+private fun TeamsCard(
+    team: Team?
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -537,9 +590,21 @@ private fun TeamsCard() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TeamProfileRow("SCV", "SC Virius", "Futsal", "A decorrer", AthloColors.DangerBg)
-            TeamProfileRow("GDM", "GD Monção", "Voleibol", "Inscrito", AthloColors.SuccessBg)
-            TeamProfileRow("AFC", "AF Cinfães", "Futebol", "Terminado", AthloColors.NeutralBg)
+            if (team == null) {
+                Text(
+                    text = "Equipa não encontrada.",
+                    color = AthloColors.TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                TeamProfileRow(
+                    acronym = team.acronym,
+                    name = team.name,
+                    sport = team.sport,
+                    status = "Inscrito",
+                    statusColor = AthloColors.SuccessBg
+                )
+            }
         }
     }
 }
@@ -611,6 +676,7 @@ private fun GameRow(
     result: String,
     opponent: String,
     score: String,
+    subtitle: String,
     resultColor: Color,
     textColor: Color
 ) {
@@ -646,7 +712,7 @@ private fun GameRow(
             )
 
             Text(
-                text = "Torneio de Braga · 16/04/2026",
+                text = subtitle,
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.labelSmall
             )
