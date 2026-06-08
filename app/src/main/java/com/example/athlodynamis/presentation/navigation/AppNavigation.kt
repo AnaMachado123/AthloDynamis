@@ -43,6 +43,7 @@ import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
 import com.example.athlodynamis.presentation.screens.management.AdminUsersScreen
 import com.example.athlodynamis.presentation.screens.management.SuspendOrganizerScreen
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -396,7 +397,8 @@ fun AppNavigation() {
 
             EditTeamScreen(
                 navController = navController,
-                teamId = teamId
+                teamId = teamId,
+                userRole = currentUserRole
             )
         }
 

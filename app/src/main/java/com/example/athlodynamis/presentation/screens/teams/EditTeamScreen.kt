@@ -61,12 +61,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
+import com.example.athlodynamis.presentation.components.AthloUserRole
 
 
 @Composable
 fun EditTeamScreen(
     navController: NavController,
-    teamId: Int
+    teamId: Int,
+    userRole: AthloUserRole
 ) {
     val viewModel: TeamsViewModel = viewModel()
     val teams by viewModel.teams.collectAsState()
@@ -115,7 +117,10 @@ fun EditTeamScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             EditTeamHeader(
-                onBackClick = { navController.popBackStack() }
+                isAdmin = userRole == AthloUserRole.ADMIN,
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
 
             EditTeamFormCard(
@@ -169,6 +174,7 @@ fun EditTeamScreen(
 
 @Composable
 private fun EditTeamHeader(
+    isAdmin: Boolean,
     onBackClick: () -> Unit
 ) {
     Card(
@@ -217,7 +223,9 @@ private fun EditTeamHeader(
                             )
                         }
 
-                        AdminBadge()
+                        if (isAdmin) {
+                            AdminBadge()
+                        }
                     }
                 }
             }

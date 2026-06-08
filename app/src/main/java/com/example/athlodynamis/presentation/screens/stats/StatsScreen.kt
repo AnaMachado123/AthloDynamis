@@ -22,11 +22,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.data.mock.MockTournaments.tournaments
 import com.example.athlodynamis.domain.model.PlayerStatsData
 import com.example.athlodynamis.domain.model.RecentGameData
 import com.example.athlodynamis.presentation.components.*
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.StatsViewModel
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.domain.model.Tournament
+import com.example.athlodynamis.domain.model.Match
+import com.example.athlodynamis.data.repository.PlayerRepository
+import com.example.athlodynamis.domain.model.Player
+import com.example.athlodynamis.data.repository.UserRepository
+import com.example.athlodynamis.data.remote.dto.UserDto
 
 data class StatSummary(val value: String, val label: String)
 data class ProgressItem(val label: String, val value: String, val progress: Float, val color: Color)
@@ -40,12 +49,77 @@ fun StatsScreen(
     statsViewModel: StatsViewModel = viewModel()
 ) {
     val uiState by statsViewModel.uiState.collectAsState()
+    var organizerTournaments by remember {
+        mutableStateOf<List<Tournament>>(emptyList())
+    }
 
-    LaunchedEffect(userRole) {
+    var organizerMatches by remember {
+        mutableStateOf<List<Match>>(emptyList())
+    }
+    var organizerPlayers by remember {
+        mutableStateOf<List<Player>>(emptyList())
+    }
+    var adminTournaments by remember {
+        mutableStateOf<List<Tournament>>(emptyList())
+    }
+
+    var adminMatches by remember {
+        mutableStateOf<List<Match>>(emptyList())
+    }
+
+    var adminUsers by remember {
+        mutableStateOf<List<UserDto>>(emptyList())
+    }
+
+    LaunchedEffect(userRole, userId) {
         if (userRole == AthloUserRole.PLAYER) {
             if (userId.isNotBlank()) {
                 statsViewModel.loadPlayerStatsByUserId(userId)
             }
+        }
+
+        if (userRole == AthloUserRole.ORGANIZER) {
+
+            val tournaments = TournamentRepository()
+                .getTournaments()
+                .filter { tournament ->
+                    tournament.organizerId == userId
+                }
+
+
+            organizerTournaments = tournaments
+
+            val allMatches = MatchRepository().getAllMatches()
+
+            organizerMatches = allMatches.filter { match ->
+                tournaments.any { tournament ->
+                    tournament.id.toLongOrNull() == match.tournamentId
+                }
+            }
+            val organizerTeamIds = organizerMatches
+                .flatMap { match ->
+                    listOfNotNull(
+                        match.teamAId?.toInt(),
+                        match.teamBId?.toInt()
+                    )
+                }
+                .distinct()
+
+            organizerPlayers = PlayerRepository()
+                .getAllPlayers()
+                .filter { player ->
+                    player.teamId in organizerTeamIds
+                }
+        }
+        if (userRole == AthloUserRole.ADMIN) {
+            adminTournaments = TournamentRepository()
+                .getTournaments()
+
+            adminMatches = MatchRepository()
+                .getAllMatches()
+
+            adminUsers = UserRepository()
+                .getAllUsers()
         }
     }
 
@@ -113,8 +187,16 @@ fun StatsScreen(
                         }
                     }
 
-                    AthloUserRole.ORGANIZER -> OrganizerStatsContent()
-                    AthloUserRole.ADMIN -> AdminStatsContent()
+                    AthloUserRole.ORGANIZER -> OrganizerStatsContent(
+                        tournaments = organizerTournaments,
+                        matches = organizerMatches,
+                        players = organizerPlayers
+                    )
+                    AthloUserRole.ADMIN -> AdminStatsContent(
+                        tournaments = adminTournaments,
+                        matches = adminMatches,
+                        users = adminUsers
+                    )
                 }
             }
         }
@@ -337,14 +419,90 @@ private fun RecentGameRow(
 --------------------------------------------------------- */
 
 @Composable
-private fun OrganizerStatsContent() {
+
+private fun OrganizerStatsContent(
+    tournaments: List<Tournament>,
+    matches: List<Match>,
+    players: List<Player>,
+) {
+    val totalTournaments = tournaments.size
+    val totalMatches = matches.size
+
+    val completedMatches = matches.count {
+        it.status.equals("Terminado", ignoreCase = true)
+    }
+
+    val completionPercentage = if (totalMatches == 0) {
+        0
+    } else {
+        ((completedMatches.toFloat() / totalMatches.toFloat()) * 100).toInt()
+    }
+    val matchesBySport = tournaments
+        .groupBy { it.sport }
+        .mapValues { entry ->
+            val tournamentIds = entry.value.mapNotNull { it.id.toLongOrNull() }
+
+            matches.count { match ->
+                match.tournamentId in tournamentIds
+            }
+        }
+        .filter { it.value > 0 }
+
+    val maxSportCount = matchesBySport.values.maxOrNull() ?: 1
+
+    val modalityItems = matchesBySport.map { (sport, count) ->
+        ProgressItem(
+            label = sport,
+            value = count.toString(),
+            progress = count.toFloat() / maxSportCount.toFloat(),
+            color = when (sport.lowercase()) {
+                "futebol" -> AthloColors.SuccessBg
+                "basquetebol" -> AthloColors.WarningBg
+                "voleibol" -> Color(0xFFBFA7FF)
+                "ténis", "tenis" -> Color(0xFFD7EBFF)
+                else -> AthloColors.Blue
+            }
+        )
+    }
+    val activeTeamsCount = matches
+        .flatMap { match ->
+            listOfNotNull(
+                match.teamAId,
+                match.teamBId
+            )
+        }
+        .distinct()
+        .size
+
+    val totalGoals = matches.sumOf { match ->
+        match.scoreA + match.scoreB
+    }
+
+    val topScorers = players
+        .filter { it.goals > 0 }
+        .sortedByDescending { it.goals }
+        .take(3)
+        .mapIndexed { index, player ->
+            RankingItem(
+                position = index + 1,
+                initials = player.name
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .take(2)
+                    .joinToString("") { it.first().uppercase() },
+                name = player.name,
+                subtitle = "Equipa #${player.teamId ?: "-"}",
+                value = "${player.goals} golos"
+            )
+        }
+
     StatsHeader(
         title = "Estatísticas",
         subtitle = "Os meus torneios",
         summaries = listOf(
-            StatSummary("48", "Torneios"),
-            StatSummary("100", "Jogos"),
-            StatSummary("96%", "Conclusão")
+            StatSummary(totalTournaments.toString(), "Torneios"),
+            StatSummary(totalMatches.toString(), "Jogos"),
+            StatSummary("$completionPercentage%", "Conclusão")
         ),
         showAdminBadge = false
     )
@@ -353,32 +511,33 @@ private fun OrganizerStatsContent() {
 
     ProgressCard(
         title = "JOGOS POR MODALIDADE",
-        items = listOf(
-            ProgressItem("Futsal", "42", 0.82f, AthloColors.Blue),
-            ProgressItem("Futebol", "28", 0.58f, AthloColors.SuccessBg),
-            ProgressItem("Basquetebol", "19", 0.40f, AthloColors.WarningBg),
-            ProgressItem("Voleibol", "8", 0.20f, Color(0xFFBFA7FF))
-        )
+        items = modalityItems
     )
 
     Spacer(modifier = Modifier.height(18.dp))
 
-    OrganizerSeasonSummaryCard()
+    OrganizerSeasonSummaryCard(
+        athletesCount = players.size,
+        activeTeamsCount = activeTeamsCount,
+        goalsCount = totalGoals,
+        tournamentsCount = tournaments.size
+    )
 
     Spacer(modifier = Modifier.height(18.dp))
 
     RankingCard(
         title = "TOP MARCADORES",
-        items = listOf(
-            RankingItem(1, "RM", "Rui Moreira", "SC Viseu", "23 golos"),
-            RankingItem(2, "AF", "Ana Ferreira", "GD Monção", "19 golos"),
-            RankingItem(3, "JS", "João Santos", "Atlético FC", "17 golos")
-        )
+        items = topScorers
     )
 }
 
 @Composable
-private fun OrganizerSeasonSummaryCard() {
+private fun OrganizerSeasonSummaryCard(
+    athletesCount: Int,
+    activeTeamsCount: Int,
+    goalsCount: Int,
+    tournamentsCount: Int
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -394,13 +553,13 @@ private fun OrganizerSeasonSummaryCard() {
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SmallStatBox(
-                    value = "348",
+                    value = athletesCount.toString(),
                     label = "Atletas registados",
                     modifier = Modifier.weight(1f)
                 )
 
                 SmallStatBox(
-                    value = "32",
+                    value = activeTeamsCount.toString(),
                     label = "Equipas ativas",
                     modifier = Modifier.weight(1f)
                 )
@@ -410,13 +569,13 @@ private fun OrganizerSeasonSummaryCard() {
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SmallStatBox(
-                    value = "487",
+                    value = goalsCount.toString(),
                     label = "Golos marcados",
                     modifier = Modifier.weight(1f)
                 )
 
                 SmallStatBox(
-                    value = "12",
+                    value = tournamentsCount.toString(),
                     label = "Torneios geridos",
                     modifier = Modifier.weight(1f)
                 )
@@ -425,19 +584,113 @@ private fun OrganizerSeasonSummaryCard() {
     }
 }
 
+
 /* ---------------------------------------------------------
    ADMIN
 --------------------------------------------------------- */
 
 @Composable
-private fun AdminStatsContent() {
+private fun AdminStatsContent(
+    tournaments: List<Tournament>,
+    matches: List<Match>,
+    users: List<UserDto>
+) {
+    val totalTournaments = tournaments.size
+    val totalUsers = users.size
+    val totalMatches = matches.size
+
+    val completedMatches = matches.count {
+        it.status.equals("Terminado", ignoreCase = true)
+    }
+
+    val maxGrowthValue = listOf(
+        totalUsers,
+        totalTournaments,
+        completedMatches
+    ).maxOrNull() ?: 1
+
+    val growthItems = listOf(
+        ProgressItem(
+            label = "Utilizadores",
+            value = totalUsers.toString(),
+            progress = totalUsers.toFloat() / maxGrowthValue.toFloat(),
+            color = AthloColors.Blue
+        ),
+        ProgressItem(
+            label = "Torneios criados",
+            value = totalTournaments.toString(),
+            progress = totalTournaments.toFloat() / maxGrowthValue.toFloat(),
+            color = AthloColors.SuccessBg
+        ),
+        ProgressItem(
+            label = "Jogos terminados",
+            value = completedMatches.toString(),
+            progress = completedMatches.toFloat() / maxGrowthValue.toFloat(),
+            color = AthloColors.WarningBg
+        )
+    )
+
+    val tournamentsBySport = tournaments
+        .groupBy { it.sport }
+        .mapValues { it.value.size }
+        .filter { it.value > 0 }
+
+    val maxTournamentSportCount = tournamentsBySport.values.maxOrNull() ?: 1
+
+    val tournamentSportItems = tournamentsBySport.map { (sport, count) ->
+        ProgressItem(
+            label = sport,
+            value = count.toString(),
+            progress = count.toFloat() / maxTournamentSportCount.toFloat(),
+            color = when (sport.lowercase()) {
+                "futebol" -> AthloColors.SuccessBg
+                "basquetebol" -> AthloColors.WarningBg
+                "voleibol" -> Color(0xFFBFA7FF)
+                "ténis", "tenis" -> Color(0xFFD7EBFF)
+                else -> AthloColors.Blue
+            }
+        )
+    }
+
+    val organizers = users.filter {
+        it.role.equals("ORGANIZER", ignoreCase = true)
+    }
+
+    val topOrganizers = organizers
+        .map { organizer ->
+            val organizerTournamentCount = tournaments.count { tournament ->
+                tournament.organizerId == organizer.id
+            }
+
+            organizer to organizerTournamentCount
+        }
+        .filter { it.second > 0 }
+        .sortedByDescending { it.second }
+        .take(3)
+        .mapIndexed { index, pair ->
+            val organizer = pair.first
+            val tournamentCount = pair.second
+
+            RankingItem(
+                position = index + 1,
+                initials = organizer.name
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .take(2)
+                    .joinToString("") { it.first().uppercase() },
+                name = organizer.name,
+                subtitle = "$tournamentCount torneios",
+                value = organizer.approvalStatus
+            )
+        }
+
     StatsHeader(
         title = "Estatísticas",
         subtitle = "Vista global da plataforma",
         summaries = listOf(
-            StatSummary("48", "Torneios"),
-            StatSummary("1.2k", "Utilizadores"),
-            StatSummary("312", "Jogos")
+            StatSummary(totalTournaments.toString(), "Torneios"),
+            StatSummary(totalUsers.toString(), "Utilizadores"),
+            StatSummary(totalMatches.toString(), "Jogos")
         ),
         showAdminBadge = true
     )
@@ -445,34 +698,22 @@ private fun AdminStatsContent() {
     Spacer(modifier = Modifier.height(22.dp))
 
     ProgressCard(
-        title = "CRESCIMENTO MENSAL",
-        items = listOf(
-            ProgressItem("Novos Utilizadores", "+184", 0.78f, AthloColors.Blue),
-            ProgressItem("Torneios Criados", "+6", 0.58f, AthloColors.SuccessBg),
-            ProgressItem("Jogos Disputados", "+32", 0.45f, AthloColors.WarningBg)
-        )
+        title = "RESUMO DA PLATAFORMA",
+        items = growthItems
     )
 
     Spacer(modifier = Modifier.height(18.dp))
 
     ProgressCard(
         title = "TORNEIOS POR MODALIDADE",
-        items = listOf(
-            ProgressItem("Futsal", "10", 0.82f, AthloColors.Blue),
-            ProgressItem("Futebol", "7", 0.62f, AthloColors.SuccessBg),
-            ProgressItem("Basquetebol", "5", 0.45f, AthloColors.WarningBg),
-            ProgressItem("Voleibol", "2", 0.22f, Color(0xFFBFA7FF))
-        )
+        items = tournamentSportItems
     )
 
     Spacer(modifier = Modifier.height(18.dp))
 
     RankingCard(
         title = "TOP ORGANIZADORES",
-        items = listOf(
-            RankingItem(1, "CM", "Carlos Mendes", "12 torneios", "4.8 rating"),
-            RankingItem(2, "AC", "Ana Carvalho", "8 torneios", "4.5 rating")
-        )
+        items = topOrganizers
     )
 
     Spacer(modifier = Modifier.height(18.dp))

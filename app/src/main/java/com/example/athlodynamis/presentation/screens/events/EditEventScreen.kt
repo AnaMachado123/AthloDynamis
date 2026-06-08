@@ -28,6 +28,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -52,6 +53,14 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import androidx.compose.runtime.LaunchedEffect
+import com.example.athlodynamis.data.repository.TournamentRepository
+import com.example.athlodynamis.domain.model.Tournament
+import androidx.compose.ui.unit.sp
+import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.domain.model.Team
+import com.example.athlodynamis.data.repository.UserRepository
+import com.example.athlodynamis.data.remote.dto.UserDto
 
 @Composable
 fun EditEventScreen(
@@ -62,17 +71,73 @@ fun EditEventScreen(
     val currentEventId = eventId
     val isAdmin = userRole == AthloUserRole.ADMIN
 
-    var eventName by remember { mutableStateOf("Torneio de Ténis Distrital") }
-    var selectedSport by remember { mutableStateOf("Ténis") }
-    var selectedFormat by remember { mutableStateOf("Liga") }
-    var startDate by remember { mutableStateOf("26/04/2025") }
-    var endDate by remember { mutableStateOf("30/04/2025") }
-    var location by remember { mutableStateOf("Pavilhão Municipal Braga") }
+    var tournament by remember { mutableStateOf<Tournament?>(null) }
+
+    var eventName by remember { mutableStateOf("") }
+    var selectedSport by remember { mutableStateOf("") }
+    var selectedFormat by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
     var maxTeams by remember { mutableStateOf("8 equipas") }
-    var organizer by remember { mutableStateOf("Carlos Moedas") }
+    var organizer by remember { mutableStateOf("") }
     var team1Checked by remember { mutableStateOf(true) }
     var team2Checked by remember { mutableStateOf(true) }
 
+    var teams by remember { mutableStateOf<List<Team>>(emptyList()) }
+    var selectedTeamIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+
+    var organizers by remember {
+        mutableStateOf<List<UserDto>>(emptyList())
+    }
+
+    var selectedOrganizerId by remember {
+        mutableStateOf("")
+    }
+
+    LaunchedEffect(eventId) {
+
+        val loadedTournament = TournamentRepository()
+            .getTournamentById(eventId)
+
+        val loadedOrganizers = UserRepository()
+            .getAllUsers()
+            .filter {
+                it.role.equals("ORGANIZER", ignoreCase = true) &&
+                        it.approvalStatus.equals("APPROVED", ignoreCase = true)
+            }
+
+        organizers = loadedOrganizers
+
+        tournament = loadedTournament
+
+        if (loadedTournament != null) {
+
+            eventName = loadedTournament.name
+            selectedSport = loadedTournament.sport
+            selectedFormat = loadedTournament.format
+
+            val dates = loadedTournament.dateRange.split(" - ")
+            startDate = dates.getOrNull(0) ?: ""
+            endDate = dates.getOrNull(1) ?: ""
+
+            selectedOrganizerId = loadedTournament.organizerId ?: ""
+
+            organizer = loadedOrganizers
+                .firstOrNull { it.id == selectedOrganizerId }
+                ?.name
+                ?: "Sem organizador"
+
+            TeamRepository.fetchTeamsFromSupabase()
+
+            teams = TeamRepository.teams.value.filter { team ->
+                team.sport.equals(
+                    loadedTournament.sport,
+                    ignoreCase = true
+                )
+            }
+        }
+    }
     Scaffold(
         containerColor = AthloColors.Background,
         bottomBar = {
@@ -184,17 +249,28 @@ fun EditEventScreen(
 
                     FieldLabel("Associar equipas")
 
-                    TeamCheckboxRow(
-                        checked = team1Checked,
-                        onCheckedChange = { team1Checked = it },
-                        text = "Equipa 1"
-                    )
-
-                    TeamCheckboxRow(
-                        checked = team2Checked,
-                        onCheckedChange = { team2Checked = it },
-                        text = "Equipa 2"
-                    )
+                    if (teams.isEmpty()) {
+                        Text(
+                            text = "Ainda não existem equipas disponíveis para esta modalidade.",
+                            color = AthloColors.TextMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        teams.forEach { team ->
+                            TeamCheckboxRow(
+                                checked = selectedTeamIds.contains(team.id),
+                                onCheckedChange = { checked ->
+                                    selectedTeamIds = if (checked) {
+                                        selectedTeamIds + team.id
+                                    } else {
+                                        selectedTeamIds - team.id
+                                    }
+                                },
+                                text = team.name
+                            )
+                        }
+                    }
 
                     if (isAdmin) {
                         Spacer(modifier = Modifier.height(18.dp))
@@ -202,8 +278,15 @@ fun EditEventScreen(
                         FieldLabel("Mudar Organizador")
                         AthloDropdown(
                             selectedValue = organizer,
-                            options = listOf("Carlos Moedas", "Carlos Mendes", "Ana Carvalho"),
-                            onValueSelected = { organizer = it }
+                            options = organizers.map { it.name },
+                            onValueSelected = { selectedName ->
+                                val selectedOrganizer = organizers.firstOrNull {
+                                    it.name == selectedName
+                                }
+
+                                organizer = selectedOrganizer?.name ?: "Sem organizador"
+                                selectedOrganizerId = selectedOrganizer?.id ?: ""
+                            }
                         )
                     }
                 }
@@ -299,9 +382,9 @@ private fun EventEditHeader(
             Column {
                 Text(
                     text = backText,
-                    color = Color(0xFF8EC5F4),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF9CC8F2),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable {
                         onBackClick()
                     }
@@ -375,7 +458,12 @@ private fun TeamCheckboxRow(
     ) {
         Checkbox(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            colors = CheckboxDefaults.colors(
+                checkedColor = AthloColors.Blue,
+                uncheckedColor = AthloColors.TextMuted,
+                checkmarkColor = Color.White
+            )
         )
 
         Text(
