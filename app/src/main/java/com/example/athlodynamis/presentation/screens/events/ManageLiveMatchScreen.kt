@@ -159,7 +159,10 @@ fun ManageLiveMatchScreen(
 
     LaunchedEffect(currentMatchId) {
         if (currentMatchId > 0) {
-            matchesViewModel.loadMatchById(currentMatchId)
+            matchesViewModel.loadMatchById(
+                matchId = currentMatchId,
+                context = context
+            )
             matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
         }
     }
@@ -198,13 +201,15 @@ fun ManageLiveMatchScreen(
                 if (liveMinute < 90) {
                     liveMinute += 1
 
-                    matchesViewModel.updateMatchStatus(
-                        context = context,
-                        isOnline = true,
-                        matchId = currentMatchId,
-                        status = "A decorrer",
-                        minute = liveMinute
-                    )
+                    if (isOnline) {
+                        matchesViewModel.updateMatchStatus(
+                            context = context,
+                            isOnline = true,
+                            matchId = currentMatchId,
+                            status = "A decorrer",
+                            minute = liveMinute
+                        )
+                    }
                 } else {
                     break
                 }
@@ -482,6 +487,7 @@ fun ManageLiveMatchScreen(
             eventConfirmation = lastEventConfirmation!!,
             scoreA = scoreA,
             scoreB = scoreB,
+            isOnline = isOnline,
             onClose = {
                 lastEventConfirmation = null
                 showEventSuccess = false
@@ -1372,6 +1378,7 @@ private fun EventSuccessSheet(
     eventConfirmation: LiveEventConfirmation,
     scoreA: Int,
     scoreB: Int,
+    isOnline: Boolean,
     onClose: () -> Unit,
     onContinue: () -> Unit
 ) {
@@ -1420,7 +1427,11 @@ private fun EventSuccessSheet(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "O evento foi guardado no Supabase",
+                text = if (isOnline) {
+                    "O evento foi guardado no Supabase"
+                } else {
+                    "O evento foi guardado offline e será sincronizado depois"
+                },
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )

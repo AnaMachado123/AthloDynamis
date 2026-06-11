@@ -1,5 +1,6 @@
 package com.example.athlodynamis.presentation.screens.home
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,6 +63,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
+import androidx.compose.material.icons.filled.SignalWifiOff
+import androidx.compose.ui.platform.LocalContext
 
 data class DashboardStat(
     val value: String,
@@ -77,9 +80,11 @@ fun HomeScreen(
     playerTeamId: Int? = null
 ) {
     val offlineViewModel: OfflineViewModel = viewModel()
-    //val isOnline by offlineViewModel.isOnline.collectAsState()
+    val context = LocalContext.current
+    val isOnline by offlineViewModel.isOnline.collectAsState()
+    //val isOnline = false
     val pendingOperationsCount by offlineViewModel.pendingOperationsCount.collectAsState()
-    val isOnline = false
+    val isSyncing by offlineViewModel.isSyncing.collectAsState()
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -120,33 +125,43 @@ fun HomeScreen(
             item {
                 Spacer(modifier = Modifier.height(6.dp))
 
-                if (!isOnline) {
-                    NoInternetBanner()
+                if (pendingOperationsCount > 0) {
+                    PendingSyncBanner(count = pendingOperationsCount)
+
+                    /*Button(
+                        onClick = {
+                            offlineViewModel.syncPendingOperations()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sincronizar agora")
+                    }*/
+
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                if (pendingOperationsCount > 0) {
-                    PendingSyncBanner(count = pendingOperationsCount)
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
 
                 when (userRole) {
                     AthloUserRole.ADMIN -> AdminHomeContent(
                         navController = navController,
-                        userName = userName
+                        userName = userName,
+                        context = context
                     )
 
                     AthloUserRole.ORGANIZER -> OrganizerHomeContent(
                         navController = navController,
                         userName = userName,
-                        userId = userId
+                        userId = userId,
+                        context = context
                     )
 
                     AthloUserRole.PLAYER -> PlayerHomeContent(
                         navController = navController,
                         userName = userName,
                         userId = userId,
-                        playerTeamId = playerTeamId
+                        playerTeamId = playerTeamId,
+                        isOnline = isOnline,
+                        context = context
                     )
                 }
 
@@ -163,7 +178,8 @@ fun HomeScreen(
 @Composable
 private fun AdminHomeContent(
     navController: NavController,
-    userName: String
+    userName: String,
+    context: Context
 ) {
     var users by remember {
         mutableStateOf<List<UserDto>>(emptyList())
@@ -187,7 +203,7 @@ private fun AdminHomeContent(
 
         try {
             users = UserRepository().getAllUsers()
-            tournamentsCount = TournamentRepository().getTournaments().size
+            tournamentsCount = TournamentRepository(context).getTournaments().size
         } catch (e: Exception) {
             errorMessage = e.message ?: "Erro ao carregar dados do administrador."
         } finally {
@@ -577,15 +593,16 @@ private fun RecentUserRow(
 private fun OrganizerHomeContent(
     navController: NavController,
     userName: String,
-    userId: String
+    userId: String,
+    context: Context
 ) {
     var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
     var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
     var athletesCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(userId) {
-        tournaments = TournamentRepository().getTournaments()
-        matches = MatchRepository().getAllMatches()
+        tournaments = TournamentRepository(context).getTournaments()
+        matches = MatchRepository(context).getAllMatches()
         athletesCount = PlayerRepository().getAllPlayers().size
     }
 
@@ -725,7 +742,9 @@ private fun PlayerHomeContent(
     navController: NavController,
     userName: String,
     userId: String,
-    playerTeamId: Int?
+    playerTeamId: Int?,
+    isOnline: Boolean,
+    context: Context
 ) {
     val initials = userName.initials().ifBlank { "J" }
 
@@ -750,7 +769,7 @@ private fun PlayerHomeContent(
             TeamRepository.fetchTeamsFromSupabase()
             playerTeam = TeamRepository.getTeamById(playerTeamId)
 
-            val matches = MatchRepository().getMatchesByTeamId(playerTeamId)
+            val matches = MatchRepository(context).getMatchesByTeamId(playerTeamId)
 
             playerMatches = matches
 
@@ -802,7 +821,9 @@ private fun PlayerHomeContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (nextMatch == null) {
+        if (!isOnline) {
+            PlayerOfflineNextMatchCard()
+        } else if (nextMatch == null) {
             EmptyNextMatchCard()
         } else {
             PlayerNextMatchCard(
@@ -1665,42 +1686,6 @@ private fun String.roleColor(): Color {
 }
 
 @Composable
-private fun NoInternetBanner() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF8FAFC)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.WarningAmber,
-                contentDescription = "Sem internet",
-                tint = AthloColors.Navy,
-                modifier = Modifier.size(22.dp)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Text(
-                text = "SEM LIGAÇÃO À INTERNET",
-                color = AthloColors.Navy,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-    }
-}
-
-@Composable
 private fun PendingSyncBanner(count: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1717,5 +1702,44 @@ private fun PendingSyncBanner(count: Int) {
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.ExtraBold
         )
+    }
+}
+
+@Composable
+private fun PlayerOfflineNextMatchCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(170.dp),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = AthloColors.Background
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SignalWifiOff,
+                    contentDescription = "Sem internet",
+                    tint = AthloColors.Navy,
+                    modifier = Modifier.size(34.dp)
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Text(
+                    text = "SEM LIGAÇÃO À INTERNET",
+                    color = AthloColors.Navy,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
     }
 }

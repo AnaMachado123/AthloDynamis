@@ -21,7 +21,9 @@ class MatchesViewModel : ViewModel() {
         encodeDefaults = true
         ignoreUnknownKeys = true
     }
-    private val repository = MatchRepository()
+    private fun repository(context: Context? = null): MatchRepository {
+        return MatchRepository(context)
+    }
 
     private val _matches = MutableStateFlow<List<Match>>(emptyList())
     val matches: StateFlow<List<Match>> = _matches
@@ -33,14 +35,15 @@ class MatchesViewModel : ViewModel() {
     val error: StateFlow<String?> = _error
 
     fun loadMatches(
-        tournamentId: Long
+        tournamentId: Long,
+        context: Context? = null
     ) {
         viewModelScope.launch {
             _error.value = null
 
             try {
                 _matches.value =
-                    repository.getMatchesByTournament(
+                    repository(context).getMatchesByTournament(
                         tournamentId
                     )
             } catch (e: Exception) {
@@ -50,14 +53,15 @@ class MatchesViewModel : ViewModel() {
     }
 
     fun loadMatchById(
-        matchId: Long
+        matchId: Long,
+        context: Context? = null
     ) {
         viewModelScope.launch {
             _error.value = null
 
             try {
                 _selectedMatch.value =
-                    repository.getMatchById(
+                    repository(context).getMatchById(
                         matchId
                     )
             } catch (e: Exception) {
@@ -73,7 +77,7 @@ class MatchesViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.createMatch(match)
+                repository().createMatch(match)
 
                 loadMatches(match.tournamentId)
             } catch (e: Exception) {
@@ -91,7 +95,7 @@ class MatchesViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.updateMatch(
+                repository().updateMatch(
                     matchId = matchId,
                     match = match
                 )
@@ -112,7 +116,7 @@ class MatchesViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.deleteMatch(matchId)
+                repository().deleteMatch(matchId)
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao apagar jogo"
@@ -160,14 +164,14 @@ class MatchesViewModel : ViewModel() {
 
             try {
                 if (isOnline) {
-                    repository.updateMatchScore(
+                    repository().updateMatchScore(
                         matchId = matchId,
                         scoreA = scoreA,
                         scoreB = scoreB,
                         minute = minute
                     )
 
-                    loadMatchById(matchId)
+                    loadMatchById(matchId, context)
                 } else {
                     OfflineSyncRepository(context).savePendingOperation(
                         operationType = "UPDATE_MATCH_SCORE",
@@ -227,13 +231,13 @@ class MatchesViewModel : ViewModel() {
 
             try {
                 if (isOnline) {
-                    repository.updateMatchStatus(
+                    repository().updateMatchStatus(
                         matchId = matchId,
                         status = status,
                         minute = minute
                     )
 
-                    loadMatchById(matchId)
+                    loadMatchById(matchId, context)
                 } else {
                     OfflineSyncRepository(context).savePendingOperation(
                         operationType = "UPDATE_MATCH_STATUS",

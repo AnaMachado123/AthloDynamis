@@ -1,23 +1,39 @@
 package com.example.athlodynamis.data.repository
 
+import android.content.Context
+import com.example.athlodynamis.data.local.offline.OfflineCacheDataSource
 import com.example.athlodynamis.data.remote.SupabaseClientProvider
 import com.example.athlodynamis.data.remote.dto.CreateTournamentDto
 import com.example.athlodynamis.data.remote.dto.TournamentDto
+import com.example.athlodynamis.data.remote.dto.UpdateTournamentDto
 import com.example.athlodynamis.data.remote.dto.toTournament
 import com.example.athlodynamis.domain.model.Tournament
 import io.github.jan.supabase.postgrest.from
-import com.example.athlodynamis.data.remote.dto.UpdateTournamentDto
 
-class TournamentRepository {
-
+class TournamentRepository(
+    private val context: Context? = null
+) {
     private val client = SupabaseClientProvider.client
 
+    private val cacheDataSource =
+        context?.let { OfflineCacheDataSource(it) }
+
     suspend fun getTournaments(): List<Tournament> {
-        return client
-            .from("tournaments")
-            .select()
-            .decodeList<TournamentDto>()
-            .map { it.toTournament() }
+        return try {
+            val remoteTournaments = client
+                .from("tournaments")
+                .select()
+                .decodeList<TournamentDto>()
+
+            cacheDataSource?.saveTournaments(remoteTournaments)
+
+            remoteTournaments.map { it.toTournament() }
+        } catch (e: Exception) {
+            cacheDataSource
+                ?.getCachedTournaments()
+                ?.map { it.toTournament() }
+                ?: emptyList()
+        }
     }
 
     suspend fun createTournament(tournament: CreateTournamentDto) {
@@ -37,16 +53,37 @@ class TournamentRepository {
     }
 
     suspend fun getTournamentById(tournamentId: String): Tournament? {
-        return client
-            .from("tournaments")
-            .select {
-                filter {
-                    eq("id", tournamentId.toLong())
+        return try {
+            val remoteTournament = client
+                .from("tournaments")
+                .select {
+                    filter {
+                        eq("id", tournamentId.toLong())
+                    }
                 }
+                .decodeList<TournamentDto>()
+                .firstOrNull()
+
+            if (remoteTournament != null) {
+                val cachedTournaments =
+                    cacheDataSource?.getCachedTournaments().orEmpty()
+
+                val mergedCache = (
+                        cachedTournaments.filter {
+                            it.id.toString() != tournamentId
+                        } + remoteTournament
+                        ).distinctBy { it.id }
+
+                cacheDataSource?.saveTournaments(mergedCache)
             }
-            .decodeList<TournamentDto>()
-            .firstOrNull()
-            ?.toTournament()
+
+            remoteTournament?.toTournament()
+        } catch (e: Exception) {
+            cacheDataSource
+                ?.getCachedTournaments()
+                ?.firstOrNull { it.id.toString() == tournamentId }
+                ?.toTournament()
+        }
     }
 
     suspend fun updateTournament(

@@ -55,6 +55,8 @@ import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import androidx.compose.ui.platform.LocalContext
+
 
 private data class TournamentTeamStats(
     val teamId: Long?,
@@ -89,6 +91,8 @@ fun TournamentDetailScreen(
     val matches by matchesViewModel.matches.collectAsState()
     val matchesError by matchesViewModel.error.collectAsState()
 
+    val context = LocalContext.current
+
     var selectedTab by remember { mutableStateOf("Equipas") }
 
     val canManageEvent = userRole == AthloUserRole.ADMIN ||
@@ -100,7 +104,10 @@ fun TournamentDetailScreen(
         tournamentsViewModel.loadTournamentById(tournamentId)
 
         tournamentIdLong?.let {
-            matchesViewModel.loadMatches(it)
+            matchesViewModel.loadMatches(
+                tournamentId = it,
+                context = context
+            )
         }
     }
 
