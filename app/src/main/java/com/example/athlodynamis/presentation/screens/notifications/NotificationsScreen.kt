@@ -65,7 +65,8 @@ enum class NotificationType {
 @Composable
 fun NotificationsScreen(
     navController: NavController,
-    userRole: AthloUserRole
+    userRole: AthloUserRole,
+    currentUserId: String
 ) {
     val viewModel: NotificationsViewModel = viewModel()
 
@@ -73,13 +74,17 @@ fun NotificationsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadNotifications()
+    LaunchedEffect(currentUserId) {
+        viewModel.loadNotifications(
+            currentUserId = currentUserId
+        )
     }
 
     LaunchedEffect(notifications) {
         if (notifications.any { !it.isRead }) {
-            viewModel.markAllAsRead()
+            viewModel.markAllAsRead(
+                currentUserId = currentUserId
+            )
         }
     }
 

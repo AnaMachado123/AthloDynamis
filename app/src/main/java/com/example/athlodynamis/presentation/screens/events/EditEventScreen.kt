@@ -63,6 +63,8 @@ import com.example.athlodynamis.data.repository.UserRepository
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.remote.dto.UpdateTournamentDto
 import kotlinx.coroutines.launch
+import com.example.athlodynamis.data.repository.NotificationRepository
+
 
 @Composable
 fun EditEventScreen(
@@ -72,6 +74,7 @@ fun EditEventScreen(
 ) {
     val currentEventId = eventId
     val isAdmin = userRole == AthloUserRole.ADMIN
+    val notificationRepository = remember { NotificationRepository() }
 
     var tournament by remember { mutableStateOf<Tournament?>(null) }
 
@@ -313,6 +316,11 @@ fun EditEventScreen(
                                     tournament?.organizerId
                                 }
                             )
+                        )
+
+                        notificationRepository.createNotification(
+                            title = "Evento atualizado",
+                            message = "O torneio ${eventName.trim()} foi atualizado."
                         )
 
                         navController.popBackStack()

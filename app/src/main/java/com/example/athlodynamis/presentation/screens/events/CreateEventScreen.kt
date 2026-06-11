@@ -51,6 +51,7 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 
 @Composable
 fun CreateEventScreen(
@@ -59,6 +60,7 @@ fun CreateEventScreen(
     currentUserId: String
 ){
     val tournamentsViewModel: TournamentsViewModel = viewModel()
+    val notificationsViewModel: NotificationsViewModel = viewModel()
 
     val error by tournamentsViewModel.error.collectAsState()
     val isLoading by tournamentsViewModel.isLoading.collectAsState()
@@ -79,6 +81,11 @@ fun CreateEventScreen(
 
     LaunchedEffect(tournamentCreated) {
         if (tournamentCreated) {
+            notificationsViewModel.createNotification(
+                title = "Novo evento criado",
+                message = "Foi criado o torneio ${eventName.trim()} na modalidade $selectedSport."
+            )
+
             tournamentsViewModel.resetTournamentCreated()
             navController.popBackStack()
         }

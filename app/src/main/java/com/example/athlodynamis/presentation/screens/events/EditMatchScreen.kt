@@ -59,6 +59,9 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.athlodynamis.data.repository.NotificationRepository
+import kotlinx.coroutines.launch
 
 private data class EditTeamOption(
     val id: Long,
@@ -71,6 +74,9 @@ fun EditMatchScreen(
     matchId: String,
     userRole: AthloUserRole
 ) {
+    val notificationRepository = remember { NotificationRepository() }
+    val coroutineScope = rememberCoroutineScope()
+
     val currentMatchId = matchId.toLongOrNull() ?: 0L
     val isAdmin = userRole == AthloUserRole.ADMIN
 
@@ -278,7 +284,14 @@ fun EditMatchScreen(
                                 status = match.status
                             ),
                             onSuccess = {
-                                navController.popBackStack()
+                                coroutineScope.launch {
+                                    notificationRepository.createNotification(
+                                        title = "Jogo atualizado",
+                                        message = "O jogo ${selectedTeamA.name} vs ${selectedTeamB.name} foi atualizado."
+                                    )
+
+                                    navController.popBackStack()
+                                }
                             }
                         )
                     }

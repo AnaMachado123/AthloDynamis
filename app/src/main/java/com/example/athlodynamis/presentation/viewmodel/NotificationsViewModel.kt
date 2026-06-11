@@ -24,13 +24,18 @@ class NotificationsViewModel : ViewModel() {
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount
 
-    fun loadNotifications() {
+    fun loadNotifications(
+        currentUserId: String? = null
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
             try {
-                val result = repository.getNotifications()
+                val result = repository.getNotifications(
+                    currentUserId = currentUserId
+                )
+
                 _notifications.value = result
                 _unreadCount.value = result.count { !it.isRead }
             } catch (e: Exception) {
@@ -84,10 +89,14 @@ class NotificationsViewModel : ViewModel() {
         }
     }
 
-    fun markAllAsRead() {
+    fun markAllAsRead(
+        currentUserId: String? = null
+    ) {
         viewModelScope.launch {
             try {
-                repository.markAllNotificationsAsRead()
+                repository.markAllNotificationsAsRead(
+                    currentUserId = currentUserId
+                )
 
                 val updatedList = _notifications.value.map { notification ->
                     notification.copy(isRead = true)

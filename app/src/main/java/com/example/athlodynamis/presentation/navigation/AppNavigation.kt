@@ -41,7 +41,6 @@ import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
-import com.example.athlodynamis.presentation.screens.management.AdminUsersScreen
 import com.example.athlodynamis.presentation.screens.management.SuspendOrganizerScreen
 
 @Composable
@@ -413,7 +412,8 @@ fun AppNavigation() {
         composable(Screen.Notifications.route) {
             NotificationsScreen(
                 navController = navController,
-                userRole = currentUserRole
+                userRole = currentUserRole,
+                currentUserId = authState.userId ?: ""
             )
         }
 

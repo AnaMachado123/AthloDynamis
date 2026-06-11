@@ -57,6 +57,10 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.athlodynamis.data.repository.NotificationRepository
+import kotlinx.coroutines.launch
 
 private data class TeamOption(
     val id: Long,
@@ -70,6 +74,8 @@ fun AddMatchScreen(
     userRole: AthloUserRole
 ) {
     val matchesViewModel: MatchesViewModel = viewModel()
+    val notificationRepository = remember { NotificationRepository() }
+    val coroutineScope = rememberCoroutineScope()
 
     val teamsViewModel: TeamsViewModel = viewModel()
     val tournamentsViewModel: TournamentsViewModel = viewModel()
@@ -250,8 +256,14 @@ fun AddMatchScreen(
                                 location = location.trim().ifBlank { null }
                             )
                         )
+                        coroutineScope.launch {
+                            notificationRepository.createNotification(
+                                title = "Novo jogo agendado",
+                                message = "Foi criado o jogo ${selectedTeamA.name} vs ${selectedTeamB.name} para o torneio."
+                            )
 
-                        matchCreated = true
+                            matchCreated = true
+                        }
                     }
                 },
                 enabled = canSave,

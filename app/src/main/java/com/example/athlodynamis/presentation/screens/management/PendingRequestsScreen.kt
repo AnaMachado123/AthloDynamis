@@ -55,12 +55,14 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import kotlinx.coroutines.launch
+import com.example.athlodynamis.data.repository.NotificationRepository
 
 @Composable
 fun PendingRequestsScreen(
     navController: NavController
 ) {
     val repository = remember { UserRepository() }
+    val notificationRepository = remember { NotificationRepository() }
     val coroutineScope = rememberCoroutineScope()
 
     var pendingRequests by remember {
@@ -191,6 +193,11 @@ fun PendingRequestsScreen(
                                                 userId = request.id,
                                                 approvalStatus = "APPROVED"
                                             )
+                                            notificationRepository.createNotification(
+                                                title = "Pedido aprovado",
+                                                message = "${request.name} foi aprovado como organizador.",
+                                                userId = request.id
+                                            )
 
                                             refreshRequests()
                                         } catch (e: Exception) {
@@ -208,6 +215,11 @@ fun PendingRequestsScreen(
                                             repository.updateOrganizerApproval(
                                                 userId = request.id,
                                                 approvalStatus = "REJECTED"
+                                            )
+                                            notificationRepository.createNotification(
+                                                title = "Pedido rejeitado",
+                                                message = "O pedido de ${request.name} para ser organizador foi rejeitado.",
+                                                userId = request.id
                                             )
 
                                             refreshRequests()

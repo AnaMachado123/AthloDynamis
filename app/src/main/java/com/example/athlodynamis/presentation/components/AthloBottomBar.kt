@@ -44,13 +44,16 @@ enum class AthloUserRole {
 fun AthloBottomBar(
     navController: NavController,
     currentRoute: String,
-    userRole: AthloUserRole = AthloUserRole.ADMIN
+    userRole: AthloUserRole = AthloUserRole.ADMIN,
+    currentUserId: String = ""
 ) {
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val unreadCount by notificationsViewModel.unreadCount.collectAsState()
 
-    LaunchedEffect(currentRoute) {
-        notificationsViewModel.loadNotifications()
+    LaunchedEffect(currentRoute, currentUserId) {
+        notificationsViewModel.loadNotifications(
+            currentUserId = currentUserId
+        )
     }
 
     NavigationBar(

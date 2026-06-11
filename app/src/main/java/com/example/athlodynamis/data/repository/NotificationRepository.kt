@@ -12,12 +12,18 @@ class NotificationRepository {
 
     private val client = SupabaseClientProvider.client
 
-    suspend fun getNotifications(): List<Notification> {
+    suspend fun getNotifications(
+        currentUserId: String? = null
+    ): List<Notification> {
         return client
             .from("notifications")
             .select()
             .decodeList<NotificationDto>()
             .map { it.toNotification() }
+            .filter { notification ->
+                notification.userId == null ||
+                        notification.userId == currentUserId
+            }
             .sortedWith(
                 compareByDescending<Notification> { it.createdAt ?: "" }
                     .thenByDescending { it.id }
@@ -55,7 +61,7 @@ class NotificationRepository {
             }
     }
 
-    suspend fun markAllNotificationsAsRead() {
+    /*suspend fun markAllNotificationsAsRead() {
         client
             .from("notifications")
             .update(
@@ -67,5 +73,17 @@ class NotificationRepository {
                     eq("is_read", false)
                 }
             }
+    }*/
+
+    suspend fun markAllNotificationsAsRead(
+        currentUserId: String? = null
+    ) {
+        val visibleUnreadNotifications = getNotifications(
+            currentUserId = currentUserId
+        ).filter { !it.isRead }
+
+        visibleUnreadNotifications.forEach { notification ->
+            markNotificationAsRead(notification.id)
+        }
     }
 }
