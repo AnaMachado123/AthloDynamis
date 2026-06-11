@@ -27,21 +27,20 @@ class OfflineViewModel(
     private val _syncMessage = MutableStateFlow<String?>(null)
     val syncMessage: StateFlow<String?> = _syncMessage
 
-    private var wasOffline = false
-
     init {
         refreshPendingOperationsCount()
 
         viewModelScope.launch {
             isOnline.collect { online ->
-                if (!online) {
-                    wasOffline = true
-                    refreshPendingOperationsCount()
-                }
+                refreshPendingOperationsCount()
 
-                if (online && wasOffline) {
-                    syncPendingOperations()
-                    wasOffline = false
+                if (online) {
+                    val pendingCount =
+                        offlineSyncRepository.getPendingOperations().size
+
+                    if (pendingCount > 0 && !_isSyncing.value) {
+                        syncPendingOperations()
+                    }
                 }
             }
         }
