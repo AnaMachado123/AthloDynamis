@@ -65,4 +65,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation("io.github.jan-tennert.supabase:storage-kt:3.2.2")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    /*implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")*/
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }

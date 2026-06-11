@@ -61,6 +61,8 @@ import com.example.athlodynamis.data.repository.TeamRepository
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.data.repository.UserRepository
 import com.example.athlodynamis.data.remote.dto.UserDto
+import com.example.athlodynamis.data.remote.dto.UpdateTournamentDto
+import kotlinx.coroutines.launch
 
 @Composable
 fun EditEventScreen(
@@ -294,7 +296,27 @@ fun EditEventScreen(
 
             Button(
                 onClick = {
-                    navController.popBackStack()
+                    kotlinx.coroutines.MainScope().launch {
+                        TournamentRepository().updateTournament(
+                            tournamentId = eventId,
+                            tournament = UpdateTournamentDto(
+                                name = eventName.trim(),
+                                sport = selectedSport,
+                                format = selectedFormat,
+                                status = tournament?.status ?: "Em preparação",
+                                startDate = startDate.ifBlank { null },
+                                endDate = endDate.ifBlank { null },
+                                rules = null,
+                                organizerId = if (isAdmin) {
+                                    selectedOrganizerId.ifBlank { null }
+                                } else {
+                                    tournament?.organizerId
+                                }
+                            )
+                        )
+
+                        navController.popBackStack()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
