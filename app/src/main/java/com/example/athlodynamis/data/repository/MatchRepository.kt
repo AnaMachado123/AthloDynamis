@@ -8,6 +8,7 @@ import com.example.athlodynamis.domain.model.Match
 import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.example.athlodynamis.data.remote.dto.UpdateMatchDto
 
 class MatchRepository {
 
@@ -109,7 +110,28 @@ class MatchRepository {
             }
     }
 
+    suspend fun updateMatch(
+        matchId: Long,
+        match: UpdateMatchDto
+    ) {
+        client
+            .from("matches")
+            .update(match) {
+                filter {
+                    eq("id", matchId)
+                }
+            }
+    }
 
+    suspend fun deleteMatch(matchId: Long) {
+        client
+            .from("matches")
+            .delete {
+                filter {
+                    eq("id", matchId)
+                }
+            }
+    }
 
 }
 

@@ -55,6 +55,8 @@ import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import com.example.athlodynamis.presentation.components.AthloBackButton
+import androidx.compose.ui.platform.LocalContext
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
 private const val EVENT_YELLOW_CARD = "Cartão amarelo"
@@ -67,6 +69,11 @@ fun MatchDetailScreen(
     navController: NavController,
     userRole: AthloUserRole
 ) {
+    val context = LocalContext.current
+
+    val offlineViewModel: OfflineViewModel = viewModel()
+    val isOnline by offlineViewModel.isOnline.collectAsState()
+
     val matchesViewModel: MatchesViewModel = viewModel()
     val matchEventsViewModel: MatchEventsViewModel = viewModel()
     val playersViewModel: PlayersViewModel = viewModel()
@@ -201,6 +208,8 @@ fun MatchDetailScreen(
                                     Button(
                                         onClick = {
                                             matchesViewModel.updateMatchStatus(
+                                                context = context,
+                                                isOnline = isOnline,
                                                 matchId = currentMatch.id,
                                                 status = "A decorrer",
                                                 minute = 0,
@@ -256,6 +265,8 @@ fun MatchDetailScreen(
                                     Button(
                                         onClick = {
                                             matchesViewModel.updateMatchStatus(
+                                                context = context,
+                                                isOnline = isOnline,
                                                 matchId = currentMatch.id,
                                                 status = "Terminado",
                                                 minute = currentMatch.minute ?: 90,

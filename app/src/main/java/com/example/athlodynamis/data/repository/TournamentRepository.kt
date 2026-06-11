@@ -6,6 +6,7 @@ import com.example.athlodynamis.data.remote.dto.TournamentDto
 import com.example.athlodynamis.data.remote.dto.toTournament
 import com.example.athlodynamis.domain.model.Tournament
 import io.github.jan.supabase.postgrest.from
+import com.example.athlodynamis.data.remote.dto.UpdateTournamentDto
 
 class TournamentRepository {
 
@@ -46,5 +47,18 @@ class TournamentRepository {
             .decodeList<TournamentDto>()
             .firstOrNull()
             ?.toTournament()
+    }
+
+    suspend fun updateTournament(
+        tournamentId: String,
+        tournament: UpdateTournamentDto
+    ) {
+        client
+            .from("tournaments")
+            .update(tournament) {
+                filter {
+                    eq("id", tournamentId.toLong())
+                }
+            }
     }
 }

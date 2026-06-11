@@ -31,9 +31,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,12 +48,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.data.remote.dto.UpdateMatchDto
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
+import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+
+private data class EditTeamOption(
+    val id: Long,
+    val name: String
+)
 
 @Composable
 fun EditMatchScreen(
@@ -57,13 +71,88 @@ fun EditMatchScreen(
     matchId: String,
     userRole: AthloUserRole
 ) {
-    val currentMatchId = matchId
+    val currentMatchId = matchId.toLongOrNull() ?: 0L
     val isAdmin = userRole == AthloUserRole.ADMIN
 
-    var startDate by remember { mutableStateOf("26/04/2025") }
-    var endDate by remember { mutableStateOf("30/04/2025") }
-    var teamA by remember { mutableStateOf("Equipa 1") }
-    var teamB by remember { mutableStateOf("Equipa 2") }
+    val matchesViewModel: MatchesViewModel = viewModel()
+    val teamsViewModel: TeamsViewModel = viewModel()
+    val tournamentsViewModel: TournamentsViewModel = viewModel()
+
+    val selectedMatch by matchesViewModel.selectedMatch.collectAsState()
+    val error by matchesViewModel.error.collectAsState()
+    val allTeams by teamsViewModel.teams.collectAsState()
+    val tournaments by tournamentsViewModel.tournaments.collectAsState()
+
+    var matchTime by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var teamA by remember { mutableStateOf<EditTeamOption?>(null) }
+    var teamB by remember { mutableStateOf<EditTeamOption?>(null) }
+
+    LaunchedEffect(currentMatchId) {
+        if (currentMatchId > 0L) {
+            matchesViewModel.loadMatchById(currentMatchId)
+        }
+    }
+
+    val currentTournament = tournaments.firstOrNull {
+        it.id == selectedMatch?.tournamentId?.toString()
+    }
+
+    val filteredTeamOptions = allTeams
+        .filter { team ->
+            currentTournament == null ||
+                    team.sport.equals(currentTournament.sport, ignoreCase = true)
+        }
+        .map { team ->
+            EditTeamOption(
+                id = team.id.toLong(),
+                name = team.name
+            )
+        }
+
+    LaunchedEffect(selectedMatch, allTeams) {
+        val match = selectedMatch
+
+        if (match != null) {
+            matchTime = match.matchTime ?: ""
+            location = match.location ?: ""
+
+            teamA = allTeams
+                .firstOrNull { it.id.toLong() == match.teamAId }
+                ?.let {
+                    EditTeamOption(
+                        id = it.id.toLong(),
+                        name = it.name
+                    )
+                } ?: match.teamAId?.let {
+                EditTeamOption(
+                    id = it,
+                    name = match.teamAName
+                )
+            }
+
+            teamB = allTeams
+                .firstOrNull { it.id.toLong() == match.teamBId }
+                ?.let {
+                    EditTeamOption(
+                        id = it.id.toLong(),
+                        name = it.name
+                    )
+                } ?: match.teamBId?.let {
+                EditTeamOption(
+                    id = it,
+                    name = match.teamBName
+                )
+            }
+        }
+    }
+
+    val canSave = currentMatchId > 0L &&
+            matchTime.isNotBlank() &&
+            teamA != null &&
+            teamB != null &&
+            teamA?.id != teamB?.id &&
+            selectedMatch != null
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -88,10 +177,10 @@ fun EditMatchScreen(
 
             MatchEditHeader(
                 title = "Editar Jogo",
-                subtitle = "Torneio de Braga",
+                subtitle = currentTournament?.name ?: "Jogo do torneio",
                 backText = "‹ cancelar",
                 isAdmin = isAdmin,
-                matchId = currentMatchId,
+                matchId = matchId,
                 onBackClick = {
                     navController.popBackStack()
                 }
@@ -106,26 +195,29 @@ fun EditMatchScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data início")
-                            DateBox(value = startDate)
-                        }
+                    FieldLabel("Hora do jogo")
+                    AthloTextField(
+                        value = matchTime,
+                        onValueChange = { matchTime = it },
+                        placeholder = "Ex: 18:30"
+                    )
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data fim")
-                            DateBox(value = endDate)
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    FieldLabel("Local")
+                    AthloTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        placeholder = "Ex: Pavilhão Municipal"
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FieldLabel("Associar Equipa 1")
                     TeamDropdown(
-                        selectedValue = teamA,
-                        options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
+                        selectedTeam = teamA,
+                        placeholder = "Selecionar equipa 1",
+                        options = filteredTeamOptions,
                         onValueSelected = {
                             teamA = it
                         }
@@ -135,8 +227,9 @@ fun EditMatchScreen(
 
                     FieldLabel("Associar Equipa 2")
                     TeamDropdown(
-                        selectedValue = teamB,
-                        options = listOf("Equipa 1", "Equipa 2", "Equipa 3", "Equipa 4"),
+                        selectedTeam = teamB,
+                        placeholder = "Selecionar equipa 2",
+                        options = filteredTeamOptions,
                         onValueSelected = {
                             teamB = it
                         }
@@ -144,16 +237,60 @@ fun EditMatchScreen(
                 }
             }
 
+            if (teamA != null && teamA?.id == teamB?.id) {
+                Text(
+                    text = "As equipas não podem ser iguais.",
+                    color = Color(0xFFCC1F2F),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (error != null) {
+                Text(
+                    text = error ?: "",
+                    color = Color(0xFFCC1F2F),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
             Button(
                 onClick = {
-                    navController.popBackStack()
+                    val selectedTeamA = teamA
+                    val selectedTeamB = teamB
+                    val match = selectedMatch
+
+                    if (
+                        selectedTeamA != null &&
+                        selectedTeamB != null &&
+                        match != null
+                    ) {
+                        matchesViewModel.updateMatch(
+                            matchId = currentMatchId,
+                            match = UpdateMatchDto(
+                                teamAId = selectedTeamA.id,
+                                teamBId = selectedTeamB.id,
+                                teamAName = selectedTeamA.name,
+                                teamBName = selectedTeamB.name,
+                                matchTime = matchTime.trim(),
+                                location = location.trim().ifBlank { null },
+                                status = match.status
+                            ),
+                            onSuccess = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 },
+                enabled = canSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AthloColors.Blue
+                    containerColor = AthloColors.Blue,
+                    disabledContainerColor = AthloColors.TextMuted
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
@@ -177,7 +314,14 @@ fun EditMatchScreen(
             if (isAdmin) {
                 Button(
                     onClick = {
-                        navController.popBackStack()
+                        if (currentMatchId > 0L) {
+                            matchesViewModel.deleteMatch(
+                                matchId = currentMatchId,
+                                onSuccess = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -305,9 +449,7 @@ private fun AdminBadge(
 }
 
 @Composable
-private fun FieldLabel(
-    text: String
-) {
+private fun FieldLabel(text: String) {
     Text(
         text = text,
         color = AthloColors.TextPrimary,
@@ -318,31 +460,38 @@ private fun FieldLabel(
 }
 
 @Composable
-private fun DateBox(
-    value: String
+private fun AthloTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Text(
-            text = value,
-            color = AthloColors.TextPrimary,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = {
+            Text(text = placeholder)
+        },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AthloColors.Blue,
+            unfocusedBorderColor = Color(0xFFE5E7EB),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            cursorColor = AthloColors.Blue,
+            focusedTextColor = AthloColors.TextPrimary,
+            unfocusedTextColor = AthloColors.TextPrimary
         )
-    }
+    )
 }
 
 @Composable
 private fun TeamDropdown(
-    selectedValue: String,
-    options: List<String>,
-    onValueSelected: (String) -> Unit
+    selectedTeam: EditTeamOption?,
+    placeholder: String,
+    options: List<EditTeamOption>,
+    onValueSelected: (EditTeamOption) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -360,8 +509,12 @@ private fun TeamDropdown(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = selectedValue,
-                color = AthloColors.TextPrimary,
+                text = selectedTeam?.name ?: placeholder,
+                color = if (selectedTeam == null) {
+                    AthloColors.TextMuted
+                } else {
+                    AthloColors.TextPrimary
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -384,7 +537,7 @@ private fun TeamDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = option,
+                            text = option.name,
                             color = AthloColors.TextPrimary
                         )
                     },

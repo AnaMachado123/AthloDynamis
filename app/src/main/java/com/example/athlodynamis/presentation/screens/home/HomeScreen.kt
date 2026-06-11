@@ -58,6 +58,10 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 
 data class DashboardStat(
     val value: String,
@@ -72,6 +76,11 @@ fun HomeScreen(
     userId: String,
     playerTeamId: Int? = null
 ) {
+    val offlineViewModel: OfflineViewModel = viewModel()
+    //val isOnline by offlineViewModel.isOnline.collectAsState()
+    val pendingOperationsCount by offlineViewModel.pendingOperationsCount.collectAsState()
+    val isOnline = false
+
     Scaffold(
         containerColor = AthloColors.Background,
         floatingActionButton = {
@@ -110,6 +119,16 @@ fun HomeScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(6.dp))
+
+                if (!isOnline) {
+                    NoInternetBanner()
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (pendingOperationsCount > 0) {
+                    PendingSyncBanner(count = pendingOperationsCount)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 when (userRole) {
                     AthloUserRole.ADMIN -> AdminHomeContent(
@@ -766,7 +785,7 @@ private fun PlayerHomeContent(
                 "Próximos jogos"
             ),
             DashboardStat(playerGoals.toString(), "Golos"),
-            DashboardStat("0", "Troféus")
+            DashboardStat(playerTeam?.wins?.toString() ?: "0", "Troféus")
         ),
         showAdminBadge = false,
         onProfileClick = {
@@ -1192,7 +1211,7 @@ private fun LiveMatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TeamMiniBadge(
-                    label = "EQP",
+                    label = teamA.toAcronym(),
                     color = Color(0xFFFFEFD7)
                 )
 
@@ -1224,6 +1243,11 @@ private fun LiveMatchCard(
                     modifier = Modifier
                         .padding(start = 12.dp)
                         .weight(1f)
+                )
+
+                TeamMiniBadge(
+                    label = teamB.toAcronym(),
+                    color = AthloColors.SoftBlue
                 )
             }
 
@@ -1637,5 +1661,61 @@ private fun String.roleColor(): Color {
         equals("ORGANIZER", ignoreCase = true) -> Color(0xFFDFF3D8)
         equals("PLAYER", ignoreCase = true) -> Color(0xFFD7EBFF)
         else -> Color(0xFFE3D7FF)
+    }
+}
+
+@Composable
+private fun NoInternetBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF8FAFC)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Sem internet",
+                tint = AthloColors.Navy,
+                modifier = Modifier.size(22.dp)
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Text(
+                text = "SEM LIGAÇÃO À INTERNET",
+                color = AthloColors.Navy,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun PendingSyncBanner(count: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFF7CC)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Text(
+            text = "$count operação(ões) pendente(s) de sincronização",
+            modifier = Modifier.padding(14.dp),
+            color = Color(0xFF7A5B00),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }

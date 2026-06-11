@@ -8,9 +8,17 @@ import com.example.athlodynamis.domain.model.MatchEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import com.example.athlodynamis.data.repository.OfflineSyncRepository
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class MatchEventsViewModel : ViewModel() {
 
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
     private val repository = MatchEventRepository()
 
     private val _events = MutableStateFlow<List<MatchEvent>>(emptyList())
@@ -37,7 +45,7 @@ class MatchEventsViewModel : ViewModel() {
         }
     }
 
-    fun createMatchEvent(
+    /*fun createMatchEvent(
         matchId: Int,
         playerId: Int?,
         secondaryPlayerId: Int? = null,
@@ -63,6 +71,51 @@ class MatchEventsViewModel : ViewModel() {
                 )
 
                 loadEventsByMatch(matchId)
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Erro ao criar evento do jogo"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }*/
+
+    fun createMatchEvent(
+        context: Context,
+        isOnline: Boolean,
+        matchId: Int,
+        playerId: Int?,
+        secondaryPlayerId: Int? = null,
+        eventType: String,
+        minute: Int?,
+        teamSide: String?,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            val dto = CreateMatchEventDto(
+                matchId = matchId,
+                playerId = playerId,
+                secondaryPlayerId = secondaryPlayerId,
+                eventType = eventType,
+                minute = minute,
+                teamSide = teamSide
+            )
+
+            try {
+                if (isOnline) {
+                    repository.createMatchEvent(dto)
+                    loadEventsByMatch(matchId)
+                } else {
+                    OfflineSyncRepository(context).savePendingOperation(
+                        operationType = "CREATE_MATCH_EVENT",
+                        entityName = "match_events",
+                        payloadJson = json.encodeToString(dto)
+                    )
+                }
+
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao criar evento do jogo"

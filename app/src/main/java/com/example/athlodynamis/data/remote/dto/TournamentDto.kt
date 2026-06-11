@@ -65,3 +65,22 @@ private fun buildDateRange(
         else -> "Data por definir"
     }
 }
+
+@Serializable
+data class UpdateTournamentDto(
+    val name: String,
+    val sport: String,
+    val format: String,
+    val status: String,
+
+    @SerialName("start_date")
+    val startDate: String? = null,
+
+    @SerialName("end_date")
+    val endDate: String? = null,
+
+    val rules: String? = null,
+
+    @SerialName("organizer_id")
+    val organizerId: String? = null
+)

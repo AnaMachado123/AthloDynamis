@@ -61,6 +61,8 @@ import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
@@ -99,6 +101,12 @@ fun ManageLiveMatchScreen(
     val isLoadingPlayers by goalPlayersViewModel.isLoading.collectAsState()
 
     val eventPlayers by eventPlayersViewModel.players.collectAsState()
+
+    val context = LocalContext.current
+
+    val offlineViewModel: OfflineViewModel = viewModel()
+    val isOnline by offlineViewModel.isOnline.collectAsState()
+    //val isOnline = false
 
     val scoreA = selectedMatch?.scoreA ?: 0
     val scoreB = selectedMatch?.scoreB ?: 0
@@ -191,6 +199,8 @@ fun ManageLiveMatchScreen(
                     liveMinute += 1
 
                     matchesViewModel.updateMatchStatus(
+                        context = context,
+                        isOnline = true,
                         matchId = currentMatchId,
                         status = "A decorrer",
                         minute = liveMinute
@@ -381,6 +391,8 @@ fun ManageLiveMatchScreen(
                 lastEventConfirmation = confirmation
 
                 matchEventsViewModel.createMatchEvent(
+                    context = context,
+                    isOnline = isOnline,
                     matchId = currentMatchId.toInt(),
                     playerId = player.id,
                     secondaryPlayerId = secondaryPlayer?.id,
@@ -388,13 +400,17 @@ fun ManageLiveMatchScreen(
                     minute = confirmation.minute,
                     teamSide = selectedEventSide,
                     onSuccess = {
+                        offlineViewModel.refreshPendingOperationsCount()
                         if (isGoal) {
                             matchesViewModel.updateMatchScore(
+                                context = context,
+                                isOnline = isOnline,
                                 matchId = currentMatchId,
                                 scoreA = newScoreA,
                                 scoreB = newScoreB,
                                 minute = confirmation.minute,
                                 onSuccess = {
+                                    offlineViewModel.refreshPendingOperationsCount()
                                     notificationsViewModel.createNotification(
                                         title = notificationTitleForEvent(
                                             eventType = selectedEventType,

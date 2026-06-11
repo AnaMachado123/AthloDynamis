@@ -72,6 +72,28 @@ data class CreateMatchDto(
     val location: String? = null
 )
 
+@Serializable
+data class UpdateMatchDto(
+    @SerialName("team_a_id")
+    val teamAId: Long? = null,
+
+    @SerialName("team_b_id")
+    val teamBId: Long? = null,
+
+    @SerialName("team_a_name")
+    val teamAName: String,
+
+    @SerialName("team_b_name")
+    val teamBName: String,
+
+    @SerialName("match_time")
+    val matchTime: String? = null,
+
+    val location: String? = null,
+
+    val status: String
+)
+
 fun MatchDto.toMatch(): Match {
     return Match(
         id = id,
