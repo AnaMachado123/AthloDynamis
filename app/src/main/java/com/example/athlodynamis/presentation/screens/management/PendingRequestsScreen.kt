@@ -189,13 +189,16 @@ fun PendingRequestsScreen(
                                         errorMessage = null
 
                                         try {
+                                            val now = java.time.OffsetDateTime.now().toString()
+
                                             repository.updateOrganizerApproval(
                                                 userId = request.id,
-                                                approvalStatus = "APPROVED"
+                                                approvalStatus = "APPROVED",
+                                                approvedAt = now
                                             )
                                             notificationRepository.createNotification(
                                                 title = "Pedido aprovado",
-                                                message = "${request.name} foi aprovado como organizador.",
+                                                message = "A tua conta foi aprovada como organizador.",
                                                 userId = request.id
                                             )
 

@@ -21,7 +21,10 @@ data class UserDto(
     val organizerRequestMessage: String? = null,
 
     @SerialName("created_at")
-    val createdAt: String? = null
+    val createdAt: String? = null,
+
+    @SerialName("approved_at")
+    val approvedAt: String? = null
 )
 
 @Serializable
@@ -42,5 +45,8 @@ data class CreateUserDto(
 @Serializable
 data class UpdateUserApprovalDto(
     @SerialName("approval_status")
-    val approvalStatus: String
+    val approvalStatus: String,
+
+    @SerialName("approved_at")
+    val approvedAt: String? = null
 )

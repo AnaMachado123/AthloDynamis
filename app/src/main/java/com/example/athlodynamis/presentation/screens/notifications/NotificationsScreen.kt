@@ -80,13 +80,6 @@ fun NotificationsScreen(
         )
     }
 
-    LaunchedEffect(notifications) {
-        if (notifications.any { !it.isRead }) {
-            viewModel.markAllAsRead(
-                currentUserId = currentUserId
-            )
-        }
-    }
 
     val unreadCount = notifications.count { !it.isRead }
 

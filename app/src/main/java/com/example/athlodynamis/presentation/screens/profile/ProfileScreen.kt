@@ -128,7 +128,7 @@ fun ProfileScreen(
             AthloBottomBar(
                 navController = navController,
                 currentRoute = Screen.Profile.route,
-                userRole = userRole
+                userRole = userRole,
             )
         }
     ) { innerPadding ->

@@ -482,7 +482,7 @@ fun AppNavigation() {
             AddPlayersScreen(
                 navController = navController,
                 teamId = teamId,
-                userRole = currentUserRole
+                userRole = currentUserRole,
             )
         }
     }

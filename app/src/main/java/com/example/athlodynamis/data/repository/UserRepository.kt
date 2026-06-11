@@ -40,13 +40,15 @@ class UserRepository {
 
     suspend fun updateOrganizerApproval(
         userId: String,
-        approvalStatus: String
+        approvalStatus: String,
+        approvedAt: String? = null
     ) {
         client
             .from("users")
             .update(
                 UpdateUserApprovalDto(
-                    approvalStatus = approvalStatus
+                    approvalStatus = approvalStatus,
+                    approvedAt = approvedAt
                 )
             ) {
                 filter {
