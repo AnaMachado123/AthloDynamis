@@ -7,7 +7,7 @@ object AthloColors {
     val DarkNavy = Color(0xFF0D1B2A)
     val Navy = Color(0xFF173B5F)
     val Blue = Color(0xFF1E6BB8)
-    val SoftBlue = Color(0xFF5782EC)
+    val SoftBlue = Color(0xFFEAF4FF)
     val Background = Color(0xFFF7F8FA)
     val CardWhite = Color(0xFFFFFFFF)
     val TextPrimary = Color(0xFF111827)
