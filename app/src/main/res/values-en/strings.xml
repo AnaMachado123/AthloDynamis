@@ -175,4 +175,14 @@
     <!-- COMMON ACTIONS -->
     <string name="action_back">back</string>
     <string name="action_logout">Log out</string>
+
+    <!-- ONBOARDING -->
+    <string name="onboarding_page1_title">Manage your tournaments</string>
+    <string name="onboarding_page1_desc">Create competitions, define formats and track everything in one place.</string>
+    <string name="onboarding_page2_title">Teams and players</string>
+    <string name="onboarding_page2_desc">Register teams, add players and follow statistics clearly.</string>
+    <string name="onboarding_page3_title">Live match updates</string>
+    <string name="onboarding_page3_desc">Update scores, record goals and keep everyone informed in real time.</string>
+    <string name="onboarding_start">Start</string>
+    <string name="onboarding_next">Next</string>
 </resources>

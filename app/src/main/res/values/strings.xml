@@ -176,4 +176,14 @@
     <string name="action_back">voltar</string>
     <string name="action_logout">Terminar Sessão</string>
 
+    <!-- ONBOARDING -->
+    <string name="onboarding_page1_title">Gere os teus torneios</string>
+    <string name="onboarding_page1_desc">Cria competições, define formatos e acompanha tudo num só lugar.</string>
+    <string name="onboarding_page2_title">Equipas e jogadores</string>
+    <string name="onboarding_page2_desc">Regista equipas, adiciona jogadores e acompanha estatísticas com clareza.</string>
+    <string name="onboarding_page3_title">Resultados ao minuto</string>
+    <string name="onboarding_page3_desc">Atualiza marcadores, regista golos e mantém todos informados em tempo real.</string>
+    <string name="onboarding_start">Começar</string>
+    <string name="onboarding_next">Seguinte</string>
+
 </resources>

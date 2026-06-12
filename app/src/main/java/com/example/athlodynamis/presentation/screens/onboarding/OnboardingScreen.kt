@@ -1,5 +1,6 @@
 package com.example.athlodynamis.presentation.screens.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -32,16 +34,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
-    val title: String,
-    val description: String,
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int,
     val icon: ImageVector
 )
 
@@ -51,18 +56,18 @@ fun OnboardingScreen(
 ) {
     val pages = listOf(
         OnboardingPage(
-            title = "Gere os teus torneios",
-            description = "Cria competições, define formatos e acompanha tudo num só lugar.",
+            titleRes = R.string.onboarding_page1_title,
+            descriptionRes = R.string.onboarding_page1_desc,
             icon = Icons.Default.EmojiEvents
         ),
         OnboardingPage(
-            title = "Equipas e jogadores",
-            description = "Regista equipas, adiciona jogadores e acompanha estatísticas com clareza.",
+            titleRes = R.string.onboarding_page2_title,
+            descriptionRes = R.string.onboarding_page2_desc,
             icon = Icons.Default.Groups
         ),
         OnboardingPage(
-            title = "Resultados ao minuto",
-            description = "Atualiza marcadores, regista golos e mantém todos informados em tempo real.",
+            titleRes = R.string.onboarding_page3_title,
+            descriptionRes = R.string.onboarding_page3_desc,
             icon = Icons.Default.Timer
         )
     )
@@ -82,12 +87,20 @@ fun OnboardingScreen(
                 .padding(horizontal = 22.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "AthloDynamis",
-                color = AthloColors.TextPrimary,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = AthloColors.TextPrimary,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                LanguageSwitcher()
+            }
 
             Spacer(modifier = Modifier.height(22.dp))
 
@@ -124,7 +137,11 @@ fun OnboardingScreen(
                                 height = 10.dp
                             )
                             .background(
-                                color = if (isSelected) AthloColors.Blue else Color(0xFFD1D5DB),
+                                color = if (isSelected) {
+                                    AthloColors.Blue
+                                } else {
+                                    Color(0xFFD1D5DB)
+                                },
                                 shape = CircleShape
                             )
                     )
@@ -137,7 +154,9 @@ fun OnboardingScreen(
                 onClick = {
                     if (pagerState.currentPage < pages.lastIndex) {
                         scope.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            pagerState.animateScrollToPage(
+                                pagerState.currentPage + 1
+                            )
                         }
                     } else {
                         onStartClick()
@@ -154,9 +173,9 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = if (pagerState.currentPage == pages.lastIndex) {
-                        "Começar"
+                        stringResource(R.string.onboarding_start)
                     } else {
-                        "Seguinte"
+                        stringResource(R.string.onboarding_next)
                     },
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
@@ -168,7 +187,12 @@ fun OnboardingScreen(
 }
 
 @Composable
-fun OnboardingPageContent(page: OnboardingPage) {
+fun OnboardingPageContent(
+    page: OnboardingPage
+) {
+    val title = stringResource(page.titleRes)
+    val description = stringResource(page.descriptionRes)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -190,7 +214,7 @@ fun OnboardingPageContent(page: OnboardingPage) {
             ) {
                 Icon(
                     imageVector = page.icon,
-                    contentDescription = page.title,
+                    contentDescription = title,
                     tint = Color.White,
                     modifier = Modifier.size(62.dp)
                 )
@@ -200,7 +224,7 @@ fun OnboardingPageContent(page: OnboardingPage) {
         Spacer(modifier = Modifier.height(46.dp))
 
         Text(
-            text = page.title,
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
             color = AthloColors.TextPrimary,
@@ -210,7 +234,7 @@ fun OnboardingPageContent(page: OnboardingPage) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = page.description,
+            text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = AthloColors.TextSecondary,
             textAlign = TextAlign.Center,
