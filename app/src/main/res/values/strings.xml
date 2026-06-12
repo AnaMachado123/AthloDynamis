@@ -119,4 +119,61 @@
     <!-- OFFLINE -->
     <string name="home_offline_desc">Estás sem ligação à internet. Alguns dados podem não ser carregados até voltares a estar online.</string>
 
+    <!-- PROFILE -->
+    <string name="profile_title">Perfil</string>
+    <string name="profile_edit_subtitle">Editar informações pessoais</string>
+    <string name="profile_contact">Contacto</string>
+    <string name="profile_associated_events">Eventos associados</string>
+    <string name="profile_no_associated_events">Sem eventos associados</string>
+    <string name="profile_language_title">Idioma</string>
+    <string name="profile_language_subtitle">Escolhe o idioma da aplicação</string>
+    <string name="profile_role_player">Jogador</string>
+    <string name="profile_role_organizer">Organizador</string>
+    <string name="profile_role_admin">Administrador</string>
+    <string name="profile_games">Jogos</string>
+    <string name="profile_trophies">Troféus</string>
+    <string name="profile_teams">Equipas</string>
+    <string name="profile_events">Eventos</string>
+    <string name="profile_athletes">Atletas</string>
+    <string name="profile_stats_tab">Estatísticas</string>
+    <string name="profile_teams_tab">Equipas</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_last_games">ÚLTIMOS JOGOS</string>
+    <string name="profile_registered">Inscrito</string>
+    <string name="profile_team_not_found">Equipa não encontrada.</string>
+    <string name="profile_no_info">SEM INFORMAÇÃO</string>
+    <string name="profile_suspend_organizer">Suspender organizador</string>
+    <string name="profile_logout">Terminar sessão</string>
+    <string name="profile_offline_desc">Alguns dados do perfil podem não ser carregados. Ainda podes editar o perfil e guardar alterações offline.</string>
+    <string name="profile_edit_cd">Editar perfil</string>
+    <string name="profile_admin_cd">Admin</string>
+
+    <!-- EDIT PROFILE -->
+    <string name="edit_profile_title">Editar Perfil</string>
+    <string name="edit_profile_subtitle">Altera as tuas informações</string>
+    <string name="edit_profile_header_subtitle">Editar informações pessoais</string>
+    <string name="edit_name_label">Nome</string>
+    <string name="edit_email_label">Email</string>
+    <string name="edit_password_label">Password</string>
+    <string name="edit_photo_label">Foto</string>
+    <string name="edit_upload_photo">Carregar nova foto</string>
+    <string name="edit_upload_photo_subtitle">Funcionalidade preparada para implementação futura</string>
+    <string name="edit_photo_offline_error">A alteração de foto precisa de internet. Para já, só o nome/email/password podem ser guardados offline.</string>
+    <string name="edit_name_empty_error">O nome não pode estar vazio.</string>
+    <string name="edit_email_invalid_error">Insere um email válido.</string>
+    <string name="edit_password_min_error">A password deve ter pelo menos 6 caracteres.</string>
+    <string name="edit_saved_offline">Alteração guardada offline. Será sincronizada quando voltares a ter internet.</string>
+    <string name="edit_save_error">Erro ao guardar alteração offline.</string>
+    <string name="edit_update_button">Atualizar Perfil</string>
+    <string name="edit_save_offline_button">Guardar offline</string>
+    <string name="edit_cancel">Cancelar</string>
+    <string name="edit_offline_desc">As alterações serão guardadas no dispositivo e sincronizadas quando a internet voltar.</string>
+    <string name="edit_update_cd">Atualizar perfil</string>
+    <string name="edit_photo_cd">Foto</string>
+    <string name="edit_upload_photo_cd">Carregar foto</string>
+
+    <!-- COMMON ACTIONS -->
+    <string name="action_back">voltar</string>
+    <string name="action_logout">Terminar Sessão</string>
+
 </resources>

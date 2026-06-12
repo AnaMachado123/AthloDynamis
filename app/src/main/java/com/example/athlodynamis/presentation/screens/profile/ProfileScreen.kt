@@ -44,10 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.repository.MatchRepository
 import com.example.athlodynamis.data.repository.OrganizerStatsRepository
 import com.example.athlodynamis.data.repository.PlayerRepository
@@ -64,6 +66,7 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloLogoutButton
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 
@@ -238,6 +241,10 @@ fun ProfileScreen(
                 }
             }
 
+            item {
+                LanguageSwitchCard()
+            }
+
             when (userRole) {
                 AthloUserRole.PLAYER -> {
                     item {
@@ -252,7 +259,7 @@ fun ProfileScreen(
 
                 AthloUserRole.ORGANIZER -> {
                     item {
-                        SectionTitle("Contacto")
+                        SectionTitle(stringResource(R.string.profile_contact))
                     }
 
                     item {
@@ -262,7 +269,7 @@ fun ProfileScreen(
                     }
 
                     item {
-                        SectionTitle("Eventos associados")
+                        SectionTitle(stringResource(R.string.profile_associated_events))
                     }
 
                     item {
@@ -293,7 +300,7 @@ fun ProfileScreen(
 
                 AthloUserRole.ADMIN -> {
                     item {
-                        SectionTitle("Contacto")
+                        SectionTitle(stringResource(R.string.profile_contact))
                     }
 
                     item {
@@ -303,7 +310,7 @@ fun ProfileScreen(
                     }
 
                     item {
-                        SectionTitle("Eventos associados")
+                        SectionTitle(stringResource(R.string.profile_associated_events))
                     }
 
                     item {
@@ -408,7 +415,7 @@ private fun ProfileHeader(
                 horizontalArrangement = Arrangement.Start
             ) {
                 Text(
-                    text = "Perfil",
+                    text = stringResource(R.string.profile_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -443,7 +450,7 @@ private fun ProfileHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar perfil",
+                        contentDescription = stringResource(R.string.profile_edit_cd),
                         tint = AthloColors.Blue,
                         modifier = Modifier.size(16.dp)
                     )
@@ -488,23 +495,29 @@ private fun ProfileStatsRow(
     adminMatchesCount: Int,
     adminPlayersCount: Int
 ) {
+    val games = stringResource(R.string.profile_games)
+    val trophies = stringResource(R.string.profile_trophies)
+    val teams = stringResource(R.string.profile_teams)
+    val events = stringResource(R.string.profile_events)
+    val athletes = stringResource(R.string.profile_athletes)
+
     val stats = when (userRole) {
         AthloUserRole.PLAYER -> listOf(
-            (playerStats?.totalMatches ?: 0).toString() to "Jogos",
-            (playerStats?.trophies ?: 0).toString() to "Troféus",
-            (playerStats?.teams ?: if (playerTeamId != null) 1 else 0).toString() to "Equipas"
+            (playerStats?.totalMatches ?: 0).toString() to games,
+            (playerStats?.trophies ?: 0).toString() to trophies,
+            (playerStats?.teams ?: if (playerTeamId != null) 1 else 0).toString() to teams
         )
 
         AthloUserRole.ORGANIZER -> listOf(
-            (organizerStats?.tournaments ?: 0).toString() to "Eventos",
-            (organizerStats?.matches ?: 0).toString() to "Jogos",
-            (organizerStats?.athletes ?: 0).toString() to "Atletas"
+            (organizerStats?.tournaments ?: 0).toString() to events,
+            (organizerStats?.matches ?: 0).toString() to games,
+            (organizerStats?.athletes ?: 0).toString() to athletes
         )
 
         AthloUserRole.ADMIN -> listOf(
-            adminEventsCount.toString() to "Eventos",
-            adminMatchesCount.toString() to "Jogos",
-            adminPlayersCount.toString() to "Atletas"
+            adminEventsCount.toString() to events,
+            adminMatchesCount.toString() to games,
+            adminPlayersCount.toString() to athletes
         )
     }
 
@@ -546,9 +559,9 @@ private fun ProfileStatsRow(
 @Composable
 private fun RolePill(userRole: AthloUserRole) {
     val text = when (userRole) {
-        AthloUserRole.PLAYER -> "Jogador"
-        AthloUserRole.ORGANIZER -> "Organizador"
-        AthloUserRole.ADMIN -> "Administrador"
+        AthloUserRole.PLAYER -> stringResource(R.string.profile_role_player)
+        AthloUserRole.ORGANIZER -> stringResource(R.string.profile_role_organizer)
+        AthloUserRole.ADMIN -> stringResource(R.string.profile_role_admin)
     }
 
     Box(
@@ -573,7 +586,10 @@ private fun PlayerProfileTabs(
     playerTeam: Team?,
     onLogoutClick: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf("Estatísticas") }
+    val statsTab = stringResource(R.string.profile_stats_tab)
+    val teamsTab = stringResource(R.string.profile_teams_tab)
+
+    var selectedTab by remember { mutableStateOf(statsTab) }
     val hasTeam = playerTeamId != null
     val hasMatches = !playerStats?.recentGames.isNullOrEmpty()
 
@@ -586,23 +602,23 @@ private fun PlayerProfileTabs(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             ProfileTabButton(
-                text = "Estatísticas",
-                selected = selectedTab == "Estatísticas",
-                onClick = { selectedTab = "Estatísticas" },
+                text = statsTab,
+                selected = selectedTab == statsTab,
+                onClick = { selectedTab = statsTab },
                 modifier = Modifier.weight(1f)
             )
 
             ProfileTabButton(
-                text = "Equipas",
-                selected = selectedTab == "Equipas",
-                onClick = { selectedTab = "Equipas" },
+                text = teamsTab,
+                selected = selectedTab == teamsTab,
+                onClick = { selectedTab = teamsTab },
                 modifier = Modifier.weight(1f)
             )
         }
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        if (selectedTab == "Estatísticas") {
+        if (selectedTab == statsTab) {
             if (!hasMatches) {
                 EmptyMatchesCard()
             } else {
@@ -676,7 +692,7 @@ private fun ContactCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Email,
-                    contentDescription = "Email",
+                    contentDescription = stringResource(R.string.profile_email),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(20.dp)
                 )
@@ -686,7 +702,7 @@ private fun ContactCard(
 
             Column {
                 Text(
-                    text = "Email",
+                    text = stringResource(R.string.profile_email),
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -698,6 +714,49 @@ private fun ContactCard(
                     fontWeight = FontWeight.Bold
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSwitchCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = AthloColors.Navy
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_language_title),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.profile_language_subtitle),
+                    color = Color(0xFFC8DCEF),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            LanguageSwitcher()
         }
     }
 }
@@ -715,7 +774,7 @@ private fun LastGamesCard(
         Column(
             modifier = Modifier.padding(22.dp)
         ) {
-            SectionSmallTitle("ÚLTIMOS JOGOS")
+            SectionSmallTitle(stringResource(R.string.profile_last_games))
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -752,13 +811,13 @@ private fun TeamsCard(
         Column(
             modifier = Modifier.padding(22.dp)
         ) {
-            SectionSmallTitle("EQUIPAS INSCRITAS")
+            SectionSmallTitle(stringResource(R.string.profile_teams_tab).uppercase())
 
             Spacer(modifier = Modifier.height(16.dp))
 
             if (team == null) {
                 Text(
-                    text = "Equipa não encontrada.",
+                    text = stringResource(R.string.profile_team_not_found),
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -767,7 +826,7 @@ private fun TeamsCard(
                     acronym = team.acronym,
                     name = team.name,
                     sport = team.sport,
-                    status = "Inscrito",
+                    status = stringResource(R.string.profile_registered),
                     statusColor = AthloColors.SuccessBg
                 )
             }
@@ -963,7 +1022,7 @@ private fun EmptyAssociatedEventsCard() {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Sem eventos associados",
+                text = stringResource(R.string.profile_no_associated_events),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
@@ -988,7 +1047,7 @@ private fun OfflineProfileCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.SignalWifiOff,
-                contentDescription = "Sem internet",
+                contentDescription = stringResource(R.string.cd_offline),
                 tint = Color(0xFF7A5B00),
                 modifier = Modifier.size(28.dp)
             )
@@ -997,7 +1056,7 @@ private fun OfflineProfileCard() {
 
             Column {
                 Text(
-                    text = "SEM LIGAÇÃO À INTERNET",
+                    text = stringResource(R.string.home_offline),
                     color = Color(0xFF7A5B00),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -1006,7 +1065,7 @@ private fun OfflineProfileCard() {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Alguns dados do perfil podem não ser carregados. Ainda podes editar o perfil e guardar alterações offline.",
+                    text = stringResource(R.string.profile_offline_desc),
                     color = Color(0xFF9A7800),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -1071,14 +1130,14 @@ private fun SuspendOrganizerButton(
     ) {
         Icon(
             imageVector = Icons.Default.Warning,
-            contentDescription = "Suspender organizador",
+            contentDescription = stringResource(R.string.profile_suspend_organizer),
             tint = Color.White
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = "Suspender organizador",
+            text = stringResource(R.string.profile_suspend_organizer),
             color = Color.White,
             fontWeight = FontWeight.Bold
         )
@@ -1101,16 +1160,16 @@ private fun LogoutButton(
     ) {
         Icon(
             imageVector = Icons.Default.Logout,
-            contentDescription = "Terminar sessão",
+            contentDescription = stringResource(R.string.profile_logout),
             tint = Color.White
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        AthloLogoutButton(
-            onClick = {
-                onLogoutClick()
-            }
+        Text(
+            text = stringResource(R.string.profile_logout),
+            color = Color.White,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -1127,7 +1186,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.profile_admin_cd),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(12.dp)
         )
@@ -1159,7 +1218,7 @@ private fun EmptyMatchesCard() {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SectionSmallTitle("ÚLTIMOS JOGOS")
+            SectionSmallTitle(stringResource(R.string.profile_last_games))
 
             Spacer(modifier = Modifier.height(40.dp))
 
@@ -1173,7 +1232,7 @@ private fun EmptyMatchesCard() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "SEM INFORMAÇÃO",
+                text = stringResource(R.string.profile_no_info),
                 color = Color.LightGray,
                 style = MaterialTheme.typography.labelMedium
             )
@@ -1198,7 +1257,7 @@ private fun EmptyTeamsCard() {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SectionSmallTitle("EQUIPAS INSCRITAS")
+            SectionSmallTitle(stringResource(R.string.profile_teams_tab).uppercase())
 
             Spacer(modifier = Modifier.height(40.dp))
 
@@ -1212,7 +1271,7 @@ private fun EmptyTeamsCard() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "SEM INFORMAÇÃO",
+                text = stringResource(R.string.profile_no_info),
                 color = Color.LightGray,
                 style = MaterialTheme.typography.labelMedium
             )

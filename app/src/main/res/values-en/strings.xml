@@ -119,4 +119,60 @@
     <!-- OFFLINE -->
     <string name="home_offline_desc">You are offline. Some data may not load until you are back online.</string>
 
+    <!-- PROFILE -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_edit_subtitle">Edit personal information</string>
+    <string name="profile_contact">Contact</string>
+    <string name="profile_associated_events">Associated events</string>
+    <string name="profile_no_associated_events">No associated events</string>
+    <string name="profile_language_title">Language</string>
+    <string name="profile_language_subtitle">Choose the app language</string>
+    <string name="profile_role_player">Player</string>
+    <string name="profile_role_organizer">Organizer</string>
+    <string name="profile_role_admin">Administrator</string>
+    <string name="profile_games">Matches</string>
+    <string name="profile_trophies">Trophies</string>
+    <string name="profile_teams">Teams</string>
+    <string name="profile_events">Events</string>
+    <string name="profile_athletes">Athletes</string>
+    <string name="profile_stats_tab">Stats</string>
+    <string name="profile_teams_tab">Teams</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_last_games">LAST MATCHES</string>
+    <string name="profile_registered">Registered</string>
+    <string name="profile_team_not_found">Team not found.</string>
+    <string name="profile_no_info">NO INFORMATION</string>
+    <string name="profile_suspend_organizer">Suspend organizer</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_offline_desc">Some profile data may not load. You can still edit your profile and save changes offline.</string>
+    <string name="profile_edit_cd">Edit profile</string>
+    <string name="profile_admin_cd">Admin</string>
+
+    <!-- EDIT PROFILE -->
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="edit_profile_subtitle">Update your information</string>
+    <string name="edit_profile_header_subtitle">Edit personal information</string>
+    <string name="edit_name_label">Name</string>
+    <string name="edit_email_label">Email</string>
+    <string name="edit_password_label">Password</string>
+    <string name="edit_photo_label">Photo</string>
+    <string name="edit_upload_photo">Upload new photo</string>
+    <string name="edit_upload_photo_subtitle">Feature prepared for future implementation</string>
+    <string name="edit_photo_offline_error">Changing the photo requires internet. For now, only name/email/password can be saved offline.</string>
+    <string name="edit_name_empty_error">Name cannot be empty.</string>
+    <string name="edit_email_invalid_error">Enter a valid email.</string>
+    <string name="edit_password_min_error">Password must have at least 6 characters.</string>
+    <string name="edit_saved_offline">Change saved offline. It will be synced when you are back online.</string>
+    <string name="edit_save_error">Error saving offline change.</string>
+    <string name="edit_update_button">Update Profile</string>
+    <string name="edit_save_offline_button">Save offline</string>
+    <string name="edit_cancel">Cancel</string>
+    <string name="edit_offline_desc">Changes will be saved on this device and synced when the internet connection returns.</string>
+    <string name="edit_update_cd">Update profile</string>
+    <string name="edit_photo_cd">Photo</string>
+    <string name="edit_upload_photo_cd">Upload photo</string>
+
+    <!-- COMMON ACTIONS -->
+    <string name="action_back">back</string>
+    <string name="action_logout">Log out</string>
 </resources>

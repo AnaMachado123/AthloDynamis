@@ -47,11 +47,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Row
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.repository.OfflineProfileUpdatePayload
 import com.example.athlodynamis.data.repository.OfflineSyncRepository
 import com.example.athlodynamis.presentation.components.AthloBackButton
@@ -108,6 +111,8 @@ fun EditProfileScreen(
         }
     }
 
+    val photoOfflineError = stringResource(R.string.edit_photo_offline_error)
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -123,8 +128,7 @@ fun EditProfileScreen(
                 if (isOnline) {
                     onPhotoSelected(userId, bytes)
                 } else {
-                    localError =
-                        "A alteração de foto precisa de internet. Para já, só o nome/email/password podem ser guardados offline."
+                    localError = photoOfflineError
                     localMessage = null
                 }
             }
@@ -166,7 +170,7 @@ fun EditProfileScreen(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     Text(
-                        text = "Editar Perfil",
+                        text = stringResource(R.string.edit_profile_title),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
@@ -175,14 +179,14 @@ fun EditProfileScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Altera as tuas informações",
+                        text = stringResource(R.string.edit_profile_subtitle),
                         color = AthloColors.TextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    FieldLabel("Nome")
+                    FieldLabel(stringResource(R.string.edit_name_label))
 
                     OutlinedTextField(
                         value = name,
@@ -199,7 +203,7 @@ fun EditProfileScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Email")
+                    FieldLabel(stringResource(R.string.edit_email_label))
 
                     OutlinedTextField(
                         value = email,
@@ -216,7 +220,7 @@ fun EditProfileScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Password")
+                    FieldLabel(stringResource(R.string.edit_password_label))
 
                     OutlinedTextField(
                         value = password,
@@ -234,7 +238,7 @@ fun EditProfileScreen(
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    FieldLabel("Foto")
+                    FieldLabel(stringResource(R.string.edit_photo_label))
 
                     UploadPhotoButton(
                         onClick = {
@@ -266,6 +270,12 @@ fun EditProfileScreen(
                 }
             }
 
+            val nameEmptyError = stringResource(R.string.edit_name_empty_error)
+            val emailInvalidError = stringResource(R.string.edit_email_invalid_error)
+            val passwordMinError = stringResource(R.string.edit_password_min_error)
+            val savedOfflineMessage = stringResource(R.string.edit_saved_offline)
+            val saveErrorMessage = stringResource(R.string.edit_save_error)
+
             Button(
                 onClick = {
                     val newName = name.trim()
@@ -276,17 +286,17 @@ fun EditProfileScreen(
                     localError = null
 
                     if (newName.isBlank()) {
-                        localError = "O nome não pode estar vazio."
+                        localError = nameEmptyError
                         return@Button
                     }
 
                     if (newEmail.isBlank() || !newEmail.contains("@")) {
-                        localError = "Insere um email válido."
+                        localError = emailInvalidError
                         return@Button
                     }
 
                     if (newPassword.isBlank() || newPassword.length < 6) {
-                        localError = "A password deve ter pelo menos 6 caracteres."
+                        localError = passwordMinError
                         return@Button
                     }
 
@@ -320,11 +330,9 @@ fun EditProfileScreen(
 
                                 offlineViewModel.refreshPendingOperationsCount()
 
-                                localMessage =
-                                    "Alteração guardada offline. Será sincronizada quando voltares a ter internet."
+                                localMessage = savedOfflineMessage
                             } catch (e: Exception) {
-                                localError =
-                                    e.message ?: "Erro ao guardar alteração offline."
+                                localError = e.message ?: saveErrorMessage
                             }
                         }
                     }
@@ -340,7 +348,7 @@ fun EditProfileScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Save,
-                    contentDescription = "Atualizar perfil",
+                    contentDescription = stringResource(R.string.edit_update_cd),
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
@@ -349,9 +357,9 @@ fun EditProfileScreen(
 
                 Text(
                     text = if (isOnline) {
-                        "Atualizar Perfil"
+                        stringResource(R.string.edit_update_button)
                     } else {
-                        "Guardar offline"
+                        stringResource(R.string.edit_save_offline_button)
                     },
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -368,7 +376,7 @@ fun EditProfileScreen(
                 shape = RoundedCornerShape(18.dp)
             ) {
                 Text(
-                    text = "Cancelar",
+                    text = stringResource(R.string.edit_cancel),
                     color = AthloColors.TextSecondary,
                     fontWeight = FontWeight.Bold
                 )
@@ -412,7 +420,7 @@ private fun EditProfileHeader(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Perfil",
+                    text = stringResource(R.string.profile_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -421,7 +429,7 @@ private fun EditProfileHeader(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Editar informações pessoais",
+                    text = stringResource(R.string.edit_profile_header_subtitle),
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -454,13 +462,13 @@ private fun OfflineEditProfileCard() {
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.SignalWifiOff,
-                contentDescription = "Sem internet",
+                contentDescription = stringResource(R.string.cd_offline),
                 tint = Color(0xFF7A5B00),
                 modifier = Modifier.size(28.dp)
             )
@@ -469,7 +477,7 @@ private fun OfflineEditProfileCard() {
 
             Column {
                 Text(
-                    text = "SEM LIGAÇÃO À INTERNET",
+                    text = stringResource(R.string.home_offline),
                     color = Color(0xFF7A5B00),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -478,7 +486,7 @@ private fun OfflineEditProfileCard() {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "As alterações serão guardadas no dispositivo e sincronizadas quando a internet voltar.",
+                    text = stringResource(R.string.edit_offline_desc),
                     color = Color(0xFF9A7800),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -507,7 +515,7 @@ private fun UploadPhotoButton(
 private fun RowContent(
     onClick: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -522,7 +530,7 @@ private fun RowContent(
         ) {
             Icon(
                 imageVector = Icons.Default.Person,
-                contentDescription = "Foto",
+                contentDescription = stringResource(R.string.edit_photo_cd),
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)
             )
@@ -534,13 +542,13 @@ private fun RowContent(
                 .padding(start = 14.dp)
         ) {
             Text(
-                text = "Carregar nova foto",
+                text = stringResource(R.string.edit_upload_photo),
                 color = AthloColors.TextPrimary,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Funcionalidade preparada para implementação futura",
+                text = stringResource(R.string.edit_upload_photo_subtitle),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -548,7 +556,7 @@ private fun RowContent(
 
         Icon(
             imageVector = Icons.Default.Upload,
-            contentDescription = "Carregar foto",
+            contentDescription = stringResource(R.string.edit_upload_photo_cd),
             tint = AthloColors.Blue
         )
     }
