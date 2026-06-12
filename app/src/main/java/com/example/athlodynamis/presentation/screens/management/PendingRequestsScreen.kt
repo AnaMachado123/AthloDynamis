@@ -43,9 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.UserRepository
 import com.example.athlodynamis.presentation.components.AthloBackButton
@@ -64,6 +66,16 @@ fun PendingRequestsScreen(
     val repository = remember { UserRepository() }
     val notificationRepository = remember { NotificationRepository() }
     val coroutineScope = rememberCoroutineScope()
+
+    val loadErrorText = stringResource(R.string.pending_requests_load_error)
+    val loadingText = stringResource(R.string.pending_requests_loading)
+    val approvedNotificationTitle = stringResource(R.string.pending_requests_approved_notification_title)
+    val approvedNotificationMessage = stringResource(R.string.pending_requests_approved_notification_message)
+    val rejectedNotificationTitle = stringResource(R.string.pending_requests_rejected_notification_title)
+    val rejectMessageTemplate = stringResource(R.string.pending_requests_rejected_notification_message, "%s")
+    val approveErrorText = stringResource(R.string.pending_requests_approve_error)
+    val rejectErrorText = stringResource(R.string.pending_requests_reject_error)
+
 
     var pendingRequests by remember {
         mutableStateOf<List<UserDto>>(emptyList())
@@ -107,7 +119,7 @@ fun PendingRequestsScreen(
                     .sortedByDescending { it.createdAt ?: "" }
 
             } catch (e: Exception) {
-                errorMessage = e.message ?: "Erro ao carregar pedidos."
+                errorMessage = e.message ?: loadErrorText
             } finally {
                 isLoading = false
             }
@@ -152,7 +164,7 @@ fun PendingRequestsScreen(
                 isLoading -> {
                     item {
                         InfoCard(
-                            text = "A carregar pedidos..."
+                            text = loadingText
                         )
                     }
                 }
@@ -160,7 +172,7 @@ fun PendingRequestsScreen(
                 errorMessage != null -> {
                     item {
                         InfoCard(
-                            text = errorMessage ?: "Erro ao carregar pedidos."
+                            text = errorMessage ?: loadErrorText
                         )
                     }
                 }
@@ -197,14 +209,14 @@ fun PendingRequestsScreen(
                                                 approvedAt = now
                                             )
                                             notificationRepository.createNotification(
-                                                title = "Pedido aprovado",
-                                                message = "A tua conta foi aprovada como organizador.",
+                                                title = approvedNotificationTitle,
+                                                message = approvedNotificationMessage,
                                                 userId = request.id
                                             )
 
                                             refreshRequests()
                                         } catch (e: Exception) {
-                                            errorMessage = e.message ?: "Erro ao aprovar pedido."
+                                            errorMessage = e.message ?: approveErrorText
                                             isLoading = false
                                         }
                                     }
@@ -220,14 +232,14 @@ fun PendingRequestsScreen(
                                                 approvalStatus = "REJECTED"
                                             )
                                             notificationRepository.createNotification(
-                                                title = "Pedido rejeitado",
-                                                message = "O pedido de ${request.name} para ser organizador foi rejeitado.",
+                                                title = rejectedNotificationTitle,
+                                                message = rejectMessageTemplate.replace("%s", request.name),
                                                 userId = request.id
                                             )
 
                                             refreshRequests()
                                         } catch (e: Exception) {
-                                            errorMessage = e.message ?: "Erro ao rejeitar pedido."
+                                            errorMessage = e.message ?: rejectErrorText
                                             isLoading = false
                                         }
                                     }
@@ -238,7 +250,7 @@ fun PendingRequestsScreen(
 
                     item {
                         SectionTitle(
-                            title = "Histórico"
+                            title = stringResource(R.string.pending_requests_history)
                         )
                     }
 
@@ -288,7 +300,7 @@ private fun PendingRequestsHeader(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Pedidos Pendentes",
+                    text = stringResource(R.string.pending_requests_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -298,9 +310,9 @@ private fun PendingRequestsHeader(
 
                 Text(
                     text = when (pendingCount) {
-                        0 -> "Nenhum pedido a aguardar"
-                        1 -> "1 pedido a aguardar revisão"
-                        else -> "$pendingCount pedidos a aguardar revisão"
+                        0 -> stringResource(R.string.pending_requests_count_zero)
+                        1 -> stringResource(R.string.pending_requests_count_one)
+                        else -> stringResource(R.string.pending_requests_count_many, pendingCount)
                     },
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
@@ -356,7 +368,7 @@ private fun EmptyPendingRequestsCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Sem pedidos",
+                    contentDescription = stringResource(R.string.pending_requests_empty_cd),
                     tint = Color(0xFF3F7A28),
                     modifier = Modifier.size(32.dp)
                 )
@@ -365,7 +377,7 @@ private fun EmptyPendingRequestsCard() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Sem pedidos pendentes",
+                text = stringResource(R.string.pending_requests_empty_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -374,7 +386,7 @@ private fun EmptyPendingRequestsCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando alguém pedir para ser organizador, o pedido aparece aqui.",
+                text = stringResource(R.string.pending_requests_empty_desc),
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -391,7 +403,7 @@ private fun EmptyHistoryCard() {
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Text(
-            text = "Ainda não existe histórico de pedidos aprovados ou rejeitados.",
+            text = stringResource(R.string.pending_requests_empty_history),
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(20.dp)
@@ -421,7 +433,7 @@ private fun OldestRequestWarning(
             ) {
                 Icon(
                     imageVector = Icons.Default.WarningAmber,
-                    contentDescription = "Aviso",
+                    contentDescription = stringResource(R.string.pending_requests_warning_cd),
                     tint = Color(0xFF7A5B00),
                     modifier = Modifier.size(26.dp)
                 )
@@ -432,9 +444,9 @@ private fun OldestRequestWarning(
             ) {
                 Text(
                     text = if (pendingCount == 1) {
-                        "Existe 1 pedido por rever"
+                        stringResource(R.string.pending_requests_warning_one)
                     } else {
-                        "Existem $pendingCount pedidos por rever"
+                        stringResource(R.string.pending_requests_warning_many, pendingCount)
                     },
                     color = Color(0xFF7A5B00),
                     style = MaterialTheme.typography.titleMedium,
@@ -442,7 +454,7 @@ private fun OldestRequestWarning(
                 )
 
                 Text(
-                    text = "Aprova ou rejeita para manter a plataforma organizada",
+                    text = stringResource(R.string.pending_requests_warning_desc),
                     color = Color(0xFFB48A00),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -519,7 +531,7 @@ private fun PendingRequestCard(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Pendente",
+                        text = stringResource(R.string.pending_requests_status_pending),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold
@@ -537,7 +549,7 @@ private fun PendingRequestCard(
             ) {
                 Column {
                     Text(
-                        text = "Mensagem do candidato",
+                        text = stringResource(R.string.pending_requests_candidate_message),
                         color = AthloColors.Navy,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold
@@ -547,7 +559,7 @@ private fun PendingRequestCard(
 
                     Text(
                         text = if (request.organizerRequestMessage.isNullOrBlank()) {
-                            "Sem descrição enviada."
+                            stringResource(R.string.pending_requests_no_description)
                         } else {
                             "\"${request.organizerRequestMessage}\""
                         },
@@ -574,7 +586,7 @@ private fun PendingRequestCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Rejeitar",
+                        contentDescription = stringResource(R.string.pending_requests_reject),
                         tint = Color(0xFFD01E1E),
                         modifier = Modifier.size(18.dp)
                     )
@@ -582,7 +594,7 @@ private fun PendingRequestCard(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "Rejeitar",
+                        text = stringResource(R.string.pending_requests_reject),
                         color = Color(0xFFD01E1E),
                         fontWeight = FontWeight.Bold
                     )
@@ -600,7 +612,7 @@ private fun PendingRequestCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Aprovar",
+                        contentDescription = stringResource(R.string.pending_requests_approve),
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -608,7 +620,7 @@ private fun PendingRequestCard(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "Aprovar",
+                        text = stringResource(R.string.pending_requests_approve),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -625,9 +637,9 @@ private fun HistoryRequestCard(
     val approved = request.approvalStatus.equals("APPROVED", ignoreCase = true)
 
     val statusText = if (approved) {
-        "Aprovado"
+        stringResource(R.string.pending_requests_status_approved)
     } else {
-        "Rejeitado"
+        stringResource(R.string.pending_requests_status_rejected)
     }
 
     val statusBackground = if (approved) {

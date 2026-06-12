@@ -56,7 +56,9 @@ import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import com.example.athlodynamis.presentation.components.AthloBackButton
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
+import com.example.athlodynamis.R
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
 private const val EVENT_YELLOW_CARD = "Cartão amarelo"
@@ -148,8 +150,8 @@ fun MatchDetailScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 MatchHeader(
-                    tournamentName = "Torneio #${currentMatch?.tournamentId ?: ""}",
-                    sport = currentMatch?.status ?: "A carregar",
+                    tournamentName = stringResource(R.string.match_detail_tournament, currentMatch?.tournamentId?.toString() ?: ""),
+                    sport = currentMatch?.status ?: stringResource(R.string.match_detail_loading_short),
                     isAdmin = isAdmin,
                     canManageMatch = canManageMatch && currentMatch != null,
                     onBackClick = {
@@ -166,19 +168,19 @@ fun MatchDetailScreen(
             when {
                 matchIdLong == null -> {
                     item {
-                        InfoCard(text = "ID do jogo inválido.")
+                        InfoCard(text = stringResource(R.string.match_detail_invalid_id))
                     }
                 }
 
                 error != null -> {
                     item {
-                        InfoCard(text = error ?: "Erro ao carregar jogo")
+                        InfoCard(text = error ?: stringResource(R.string.match_detail_error_loading))
                     }
                 }
 
                 currentMatch == null -> {
                     item {
-                        InfoCard(text = "A carregar jogo...")
+                        InfoCard(text = stringResource(R.string.match_detail_loading_match))
                     }
                 }
 
@@ -228,7 +230,7 @@ fun MatchDetailScreen(
                                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                                     ) {
                                         Text(
-                                            text = "Iniciar jogo",
+                                            text = stringResource(R.string.match_detail_start_match),
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -254,7 +256,7 @@ fun MatchDetailScreen(
                                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                                     ) {
                                         Text(
-                                            text = "Gerir jogo ao vivo",
+                                            text = stringResource(R.string.live_match_title),
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -290,7 +292,7 @@ fun MatchDetailScreen(
                                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                                     ) {
                                         Text(
-                                            text = "Terminar jogo",
+                                            text = stringResource(R.string.match_detail_finish_match),
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -300,7 +302,7 @@ fun MatchDetailScreen(
 
                             currentMatch.status.equals("Terminado", ignoreCase = true) -> {
                                 item {
-                                    InfoCard(text = "Jogo terminado. Resultado final registado.")
+                                    InfoCard(text = stringResource(R.string.match_detail_match_finished))
                                 }
                             }
                         }
@@ -368,7 +370,7 @@ private fun MatchHeader(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Detalhe Jogo",
+                    text = stringResource(R.string.match_detail_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -377,7 +379,7 @@ private fun MatchHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "$tournamentName - $sport",
+                    text = "$tournamentName - ${localizedStatusLabel(sport)}",
                     color = Color(0xFF8DC5F0),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -404,7 +406,7 @@ private fun MatchHeader(
 
 @Composable
 private fun MatchScoreSection(match: Match) {
-    val timeText = match.matchTime?.ifBlank { null } ?: "Hora por definir"
+    val timeText = match.matchTime?.ifBlank { null } ?: stringResource(R.string.match_detail_hour_undefined)
     val minuteText = match.minute?.let { "${it}'" }
 
     Column(
@@ -412,7 +414,7 @@ private fun MatchScoreSection(match: Match) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Hora: $timeText",
+            text = stringResource(R.string.match_detail_hour, timeText),
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
@@ -576,7 +578,7 @@ private fun StatusPillLarge(status: String) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = status,
+            text = localizedStatusLabel(status),
             color = textColor,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium
@@ -604,7 +606,7 @@ private fun MatchEventsCard(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "Eventos do Jogo",
+                text = stringResource(R.string.match_detail_events_title),
                 color = Color.Black,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium
@@ -615,7 +617,7 @@ private fun MatchEventsCard(
             when {
                 isLoading -> {
                     Text(
-                        text = "A carregar eventos...",
+                        text = stringResource(R.string.match_detail_loading_events),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -635,7 +637,7 @@ private fun MatchEventsCard(
 
                 events.isEmpty() -> {
                     Text(
-                        text = "Ainda não existem eventos registados.",
+                        text = stringResource(R.string.match_detail_no_events),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -652,15 +654,15 @@ private fun MatchEventsCard(
                             eventType = event.eventType,
                             minute = "${event.minute ?: 0}'",
                             playerName = event.playerId?.let { playerId ->
-                                playerNamesById[playerId] ?: "Jogador não encontrado"
-                            } ?: "Jogador não associado",
+                                playerNamesById[playerId] ?: stringResource(R.string.match_detail_player_not_found)
+                            } ?: stringResource(R.string.match_detail_player_unassociated),
                             secondaryPlayerName = event.secondaryPlayerId?.let { playerId ->
-                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                                playerNamesById[playerId] ?: stringResource(R.string.match_detail_player_not_found)
                             },
                             team = when (event.teamSide) {
                                 "A" -> match.teamAName
                                 "B" -> match.teamBName
-                                else -> "Equipa indefinida"
+                                else -> stringResource(R.string.match_detail_team_undefined)
                             },
                             teamColor = when (event.teamSide) {
                                 "A" -> Color(0xFFD7EBFF)
@@ -704,7 +706,7 @@ private fun EmptyEventsState() {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Jogo ainda não iniciado",
+            text = stringResource(R.string.match_detail_match_not_started),
             color = Color.Black,
             fontWeight = FontWeight.Bold
         )
@@ -762,7 +764,7 @@ private fun EventRow(
                 .padding(start = 12.dp)
         ) {
             Text(
-                text = eventType,
+                text = localizedEventType(eventType),
                 color = Color.Black,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.labelMedium
@@ -770,7 +772,7 @@ private fun EventRow(
 
             Text(
                 text = if (eventType == EVENT_SUBSTITUTION) {
-                    "Entrou: $playerName · Saiu: ${secondaryPlayerName ?: "-"}"
+                    stringResource(R.string.live_match_substitution_row, playerName, secondaryPlayerName ?: "-")
                 } else {
                     playerName
                 },
@@ -805,7 +807,7 @@ private fun AdminBadge() {
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -813,7 +815,7 @@ private fun AdminBadge() {
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -834,7 +836,7 @@ private fun EditBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Edit,
-            contentDescription = "Editar jogo",
+            contentDescription = stringResource(R.string.match_detail_edit_match),
             tint = Color.White,
             modifier = Modifier.size(13.dp)
         )
@@ -842,11 +844,33 @@ private fun EditBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "Editar",
+            text = stringResource(R.string.match_detail_edit),
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
         )
+    }
+}
+
+@Composable
+private fun localizedEventType(eventType: String): String {
+    return when (eventType) {
+        EVENT_GOAL -> stringResource(R.string.live_event_goal)
+        EVENT_ASSIST -> stringResource(R.string.live_event_assist)
+        EVENT_YELLOW_CARD -> stringResource(R.string.live_event_yellow_card)
+        EVENT_RED_CARD -> stringResource(R.string.live_event_red_card)
+        EVENT_SUBSTITUTION -> stringResource(R.string.live_event_substitution)
+        else -> eventType
+    }
+}
+
+@Composable
+private fun localizedStatusLabel(status: String): String {
+    return when {
+        status.equals("Agendado", ignoreCase = true) -> stringResource(R.string.match_detail_status_scheduled)
+        status.equals("A decorrer", ignoreCase = true) -> stringResource(R.string.match_detail_status_live)
+        status.equals("Terminado", ignoreCase = true) -> stringResource(R.string.match_detail_status_finished)
+        else -> status
     }
 }
 

@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.DisposableEffect
@@ -62,6 +63,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.presentation.components.AthloBottomBar
@@ -163,12 +165,12 @@ fun TeamDetailScreen(
             textContentColor = AthloColors.TextSecondary,
             title = {
                 Text(
-                    text = "Apagar equipa",
+                    text = stringResource(R.string.team_detail_delete_title),
                     fontWeight = FontWeight.ExtraBold
                 )
             },
             text = {
-                Text("Tem a certeza que pretende apagar esta equipa?")
+                Text(stringResource(R.string.team_detail_delete_confirm))
             },
             confirmButton = {
                 TextButton(
@@ -178,7 +180,7 @@ fun TeamDetailScreen(
                     }
                 ) {
                     Text(
-                        text = "Apagar",
+                        text = stringResource(R.string.team_detail_delete),
                         color = Color(0xFFCC1F2F),
                         fontWeight = FontWeight.Bold
                     )
@@ -189,7 +191,7 @@ fun TeamDetailScreen(
                     onClick = { showDeleteDialog = false }
                 ) {
                     Text(
-                        text = "Cancelar",
+                        text = stringResource(R.string.create_team_cancel),
                         color = AthloColors.Blue,
                         fontWeight = FontWeight.Bold
                     )
@@ -221,8 +223,8 @@ fun TeamDetailScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 DetailHeader(
-                    title = "Equipas",
-                    subtitle = "Detalhes da equipa",
+                    title = stringResource(R.string.teams_title),
+                    subtitle = stringResource(R.string.team_detail_subtitle),
                     isAdmin = isAdmin,
                     onBackClick = { navController.popBackStack() }
                 )
@@ -233,7 +235,7 @@ fun TeamDetailScreen(
             }
 
             item {
-                SectionTitle(title = "Jogadores")
+                SectionTitle(title = stringResource(R.string.team_detail_players))
             }
 
             if (players.isEmpty()) {
@@ -273,7 +275,7 @@ fun TeamDetailScreen(
             }
 
             item {
-                SectionTitle(title = "Estatísticas")
+                SectionTitle(title = stringResource(R.string.team_detail_stats))
             }
 
             item {
@@ -281,7 +283,7 @@ fun TeamDetailScreen(
             }
 
             item {
-                SectionTitle(title = "Eventos inscritos")
+                SectionTitle(title = stringResource(R.string.team_detail_registered_events))
             }
 
             if (registeredTournaments.isEmpty()) {
@@ -388,7 +390,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.create_team_admin_cd),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -396,7 +398,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.create_team_admin),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -435,7 +437,7 @@ private fun TeamIdentityCard(team: Team) {
                     if (!team.logoUrl.isNullOrBlank()) {
                         AsyncImage(
                             model = team.logoUrl,
-                            contentDescription = "Escudo da equipa",
+                            contentDescription = stringResource(R.string.teams_logo_cd),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(18.dp)),
@@ -444,7 +446,7 @@ private fun TeamIdentityCard(team: Team) {
                     } else {
                         Icon(
                             imageVector = Icons.Default.Groups,
-                            contentDescription = "Equipa",
+                            contentDescription = stringResource(R.string.teams_team_cd),
                             tint = AthloColors.Blue,
                             modifier = Modifier.size(30.dp)
                         )
@@ -464,7 +466,7 @@ private fun TeamIdentityCard(team: Team) {
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = team.sport,
+                        text = localizedTeamTag(team.sport),
                         color = AthloColors.Blue,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
@@ -525,7 +527,7 @@ private fun PlayerRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Jogador",
+                    contentDescription = stringResource(R.string.add_players_player_cd),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(20.dp)
                 )
@@ -546,7 +548,7 @@ private fun PlayerRow(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "${player.position} · Nº ${player.number}",
+                    text = stringResource(R.string.add_players_position_number, player.position, player.number),
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -562,7 +564,7 @@ private fun PlayerRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Remover jogador",
+                        contentDescription = stringResource(R.string.team_detail_remove_player_cd),
                         tint = Color(0xFFCC1F2F),
                         modifier = Modifier.size(18.dp)
                     )
@@ -594,7 +596,7 @@ private fun EmptyPlayersCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Sem jogadores",
+                    contentDescription = stringResource(R.string.team_detail_no_players_cd),
                     tint = AthloColors.Blue
                 )
             }
@@ -602,7 +604,7 @@ private fun EmptyPlayersCard() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Ainda não existem jogadores",
+                text = stringResource(R.string.team_detail_no_players_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -611,7 +613,7 @@ private fun EmptyPlayersCard() {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Adiciona jogadores para completar a equipa.",
+                text = stringResource(R.string.team_detail_no_players_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -638,7 +640,7 @@ private fun ActionButtons(
         ) {
             Icon(
                 imageVector = Icons.Default.GroupAdd,
-                contentDescription = "Adicionar jogador",
+                contentDescription = stringResource(R.string.team_detail_add_player),
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
@@ -646,7 +648,7 @@ private fun ActionButtons(
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = "Adicionar jogador",
+                text = stringResource(R.string.team_detail_add_player),
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
@@ -663,7 +665,7 @@ private fun ActionButtons(
         ) {
             Icon(
                 imageVector = Icons.Default.Edit,
-                contentDescription = "Editar equipa",
+                contentDescription = stringResource(R.string.edit_team_edit),
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
@@ -671,7 +673,7 @@ private fun ActionButtons(
             Spacer(modifier = Modifier.width(8.dp))
 
             Text(
-                text = "Editar equipa",
+                text = stringResource(R.string.edit_team_edit),
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
@@ -697,19 +699,19 @@ private fun TeamStatsCard(stats: TeamStatsData) {
             StatItem(
                 icon = Icons.Default.CalendarMonth,
                 value = stats.games.toString(),
-                label = "JOGOS"
+                label = stringResource(R.string.team_detail_games)
             )
 
             StatItem(
                 icon = Icons.Default.EmojiEvents,
                 value = stats.wins.toString(),
-                label = "VITÓRIAS"
+                label = stringResource(R.string.team_detail_wins)
             )
 
             StatItem(
                 icon = Icons.Default.SportsSoccer,
                 value = stats.goals.toString(),
-                label = "GOLOS"
+                label = stringResource(R.string.team_detail_goals)
             )
         }
     }
@@ -810,7 +812,7 @@ private fun EmptyRegisteredEventsCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.CalendarMonth,
-                contentDescription = "Sem eventos inscritos",
+                contentDescription = stringResource(R.string.team_detail_no_events_cd),
                 tint = AthloColors.TextMuted,
                 modifier = Modifier.size(48.dp)
             )
@@ -818,7 +820,7 @@ private fun EmptyRegisteredEventsCard() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Sem eventos inscritos",
+                text = stringResource(R.string.team_detail_no_events_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -827,7 +829,7 @@ private fun EmptyRegisteredEventsCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando esta equipa estiver associada a jogos de um torneio, o evento aparece aqui.",
+                text = stringResource(R.string.team_detail_no_events_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -844,7 +846,7 @@ private fun EventTagRows(tags: List<String>) {
         ) {
             tags.take(2).forEach { tag ->
                 SmallBadge(
-                    text = tag,
+                    text = localizedTeamTag(tag),
                     background = tagBackground(tag),
                     textColor = tagTextColor(tag)
                 )
@@ -904,7 +906,7 @@ private fun DeleteTeamButton(
     ) {
         Icon(
             imageVector = Icons.Default.Delete,
-            contentDescription = "Apagar Equipa",
+            contentDescription = stringResource(R.string.team_detail_delete_team_cd),
             tint = Color(0xFFCC1F2F),
             modifier = Modifier.size(18.dp)
         )
@@ -912,7 +914,7 @@ private fun DeleteTeamButton(
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = "Apagar Equipa",
+            text = stringResource(R.string.team_detail_delete_team),
             fontWeight = FontWeight.Bold
         )
     }
@@ -943,7 +945,7 @@ private fun TeamNotFoundScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Equipa não encontrada",
+                        text = stringResource(R.string.edit_team_not_found),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -957,7 +959,7 @@ private fun TeamNotFoundScreen(
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(
-                            text = "voltar",
+                            text = stringResource(R.string.common_back),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -965,6 +967,26 @@ private fun TeamNotFoundScreen(
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun localizedTeamTag(tag: String): String {
+    return when (tag) {
+        "Futebol" -> stringResource(R.string.create_team_sport_football)
+        "Basquetebol" -> stringResource(R.string.create_team_sport_basketball)
+        "Ténis" -> stringResource(R.string.create_team_sport_tennis)
+        "Voleibol" -> stringResource(R.string.create_team_sport_volleyball)
+        "Futsal" -> stringResource(R.string.team_detail_sport_futsal)
+        "A decorrer" -> stringResource(R.string.match_detail_status_live)
+        "Agendado" -> stringResource(R.string.match_detail_status_scheduled)
+        "Terminado" -> stringResource(R.string.match_detail_status_finished)
+        "Em preparação" -> stringResource(R.string.event_status_preparing)
+        "Grupos" -> stringResource(R.string.format_group)
+        "Liga" -> stringResource(R.string.format_league)
+        "Eliminatórias" -> stringResource(R.string.format_knockout)
+        else -> tag
     }
 }
 

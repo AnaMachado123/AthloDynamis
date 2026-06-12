@@ -41,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.Match
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBackButton
@@ -75,6 +77,23 @@ private data class TournamentTeamStats(
         get() = goalsFor - goalsAgainst
 }
 
+private const val TOURNAMENT_TAB_TEAMS = "teams"
+private const val TOURNAMENT_TAB_STANDINGS = "standings"
+
+private const val TOURNAMENT_STATUS_SCHEDULED = "Agendado"
+private const val TOURNAMENT_STATUS_LIVE = "A decorrer"
+private const val TOURNAMENT_STATUS_PREPARING = "Em preparação"
+private const val TOURNAMENT_STATUS_FINISHED = "Terminado"
+
+private const val TOURNAMENT_SPORT_FOOTBALL = "Futebol"
+private const val TOURNAMENT_SPORT_BASKETBALL = "Basquetebol"
+private const val TOURNAMENT_SPORT_TENNIS = "Ténis"
+private const val TOURNAMENT_SPORT_VOLLEYBALL = "Voleibol"
+
+private const val TOURNAMENT_FORMAT_LEAGUE = "Liga"
+private const val TOURNAMENT_FORMAT_KNOCKOUT = "Eliminatórias"
+private const val TOURNAMENT_FORMAT_GROUP = "Grupo"
+
 @Composable
 fun TournamentDetailScreen(
     tournamentId: String,
@@ -93,7 +112,7 @@ fun TournamentDetailScreen(
 
     val context = LocalContext.current
 
-    var selectedTab by remember { mutableStateOf("Equipas") }
+    var selectedTab by remember { mutableStateOf(TOURNAMENT_TAB_TEAMS) }
 
     val canManageEvent = userRole == AthloUserRole.ADMIN ||
             userRole == AthloUserRole.ORGANIZER
@@ -112,11 +131,12 @@ fun TournamentDetailScreen(
     }
 
     val currentTournament = tournament
+    val sportFallback = stringResource(R.string.tournament_sport_placeholder)
 
-    val teamStats = remember(matches, currentTournament) {
+    val teamStats = remember(matches, currentTournament, sportFallback) {
         calculateTeamStats(
             matches = matches,
-            sport = currentTournament?.sport ?: "Modalidade"
+            sport = currentTournament?.sport ?: sportFallback
         )
     }
 
@@ -160,25 +180,25 @@ fun TournamentDetailScreen(
             when {
                 tournamentIdLong == null -> {
                     item {
-                        InfoCard(text = "ID do torneio inválido.")
+                        InfoCard(text = stringResource(R.string.tournament_invalid_id))
                     }
                 }
 
                 isLoading -> {
                     item {
-                        InfoCard(text = "A carregar torneio...")
+                        InfoCard(text = stringResource(R.string.tournament_loading))
                     }
                 }
 
                 error != null -> {
                     item {
-                        InfoCard(text = error ?: "Erro ao carregar torneio")
+                        InfoCard(text = error ?: stringResource(R.string.tournament_loading_error))
                     }
                 }
 
                 currentTournament == null -> {
                     item {
-                        InfoCard(text = "Torneio não encontrado.")
+                        InfoCard(text = stringResource(R.string.tournament_not_found))
                     }
                 }
 
@@ -196,7 +216,7 @@ fun TournamentDetailScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Jogos do torneio",
+                                text = stringResource(R.string.tournament_matches_title),
                                 color = AthloColors.TextSecondary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
@@ -219,7 +239,7 @@ fun TournamentDetailScreen(
                                     )
                                 ) {
                                     Text(
-                                        text = "Adicionar Jogo",
+                                        text = stringResource(R.string.tournament_add_match),
                                         color = Color.White,
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold
@@ -229,7 +249,7 @@ fun TournamentDetailScreen(
 
                                     Icon(
                                         imageVector = Icons.Default.AddCircle,
-                                        contentDescription = "Adicionar jogo",
+                                        contentDescription = stringResource(R.string.tournament_add_match_cd),
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -240,11 +260,11 @@ fun TournamentDetailScreen(
 
                     if (matchesError != null) {
                         item {
-                            InfoCard(text = matchesError ?: "Erro ao carregar jogos")
+                            InfoCard(text = matchesError ?: stringResource(R.string.tournament_matches_loading_error))
                         }
                     } else if (matches.isEmpty()) {
                         item {
-                            InfoCard(text = "Ainda não existem jogos neste torneio.")
+                            InfoCard(text = stringResource(R.string.tournament_no_matches))
                         }
                     } else {
                         items(
@@ -274,10 +294,10 @@ fun TournamentDetailScreen(
                     item {
                         if (teamStats.isEmpty()) {
                             EmptyTournamentTable(
-                                text = "Ainda não existem equipas associadas a este torneio."
+                                text = stringResource(R.string.tournament_no_teams)
                             )
                         } else {
-                            if (selectedTab == "Equipas") {
+                            if (selectedTab == TOURNAMENT_TAB_TEAMS) {
                                 TeamsTable(
                                     teams = teamStats
                                 )
@@ -303,7 +323,8 @@ private fun TournamentHeader(
     onEditClick: () -> Unit
 ) {
     val isAdmin = userRole == AthloUserRole.ADMIN
-    val subtitle = tournament?.let { "${it.name} · ${it.sport}" } ?: "A carregar torneio"
+    val subtitle = tournament?.let { "${it.name} · ${localizedTournamentSport(it.sport)}" }
+        ?: stringResource(R.string.tournament_loading)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -327,7 +348,7 @@ private fun TournamentHeader(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Calendário",
+                    text = stringResource(R.string.tournament_calendar_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -351,7 +372,7 @@ private fun TournamentHeader(
                     AdminBadge()
                 } else {
                     StatusPill(
-                        text = tournament?.status ?: "A carregar",
+                        text = tournament?.status?.let { localizedTournamentStatus(it) } ?: stringResource(R.string.tournament_loading_short),
                         background = AthloColors.SuccessBg,
                         textColor = Color(0xFF4D8B4A)
                     )
@@ -359,7 +380,7 @@ private fun TournamentHeader(
 
                 if (canManageEvent && tournament != null) {
                     StatusPill(
-                        text = "Editar",
+                        text = stringResource(R.string.tournament_edit),
                         background = Color(0xFF76B982),
                         textColor = Color.White,
                         modifier = Modifier.clickable { onEditClick() }
@@ -397,19 +418,19 @@ private fun TournamentInfoCard(tournament: Tournament) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusPill(
-                    text = tournament.sport,
+                    text = localizedTournamentSport(tournament.sport),
                     background = AthloColors.InfoBg,
                     textColor = AthloColors.Blue
                 )
 
                 StatusPill(
-                    text = tournament.status,
+                    text = localizedTournamentStatus(tournament.status),
                     background = AthloColors.WarningBg,
                     textColor = Color(0xFF9A6B22)
                 )
 
                 StatusPill(
-                    text = tournament.format,
+                    text = localizedTournamentFormat(tournament.format),
                     background = AthloColors.NeutralBg,
                     textColor = AthloColors.TextSecondary
                 )
@@ -442,7 +463,7 @@ private fun MatchCard(
     onClick: () -> Unit
 ) {
     val minuteText = match.minute?.let { "${it}'" } ?: ""
-    val timeText = match.matchTime?.ifBlank { null } ?: "Hora por definir"
+    val timeText = match.matchTime?.ifBlank { null } ?: stringResource(R.string.home_time_undefined)
 
     Card(
         modifier = Modifier
@@ -516,13 +537,13 @@ private fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 StatusPill(
-                    text = match.status,
-                    background = if (match.status.equals("A decorrer", ignoreCase = true)) {
+                    text = localizedTournamentStatus(match.status),
+                    background = if (match.status.equals(TOURNAMENT_STATUS_LIVE, ignoreCase = true)) {
                         AthloColors.DangerBg
                     } else {
                         AthloColors.NeutralBg
                     },
-                    textColor = if (match.status.equals("A decorrer", ignoreCase = true)) {
+                    textColor = if (match.status.equals(TOURNAMENT_STATUS_LIVE, ignoreCase = true)) {
                         Color(0xFFC83755)
                     } else {
                         AthloColors.TextSecondary
@@ -556,17 +577,17 @@ private fun TournamentTabs(
             modifier = Modifier.fillMaxWidth()
         ) {
             TabButton(
-                text = "Equipas",
-                selected = selectedTab == "Equipas",
+                text = stringResource(R.string.tournament_tab_teams),
+                selected = selectedTab == TOURNAMENT_TAB_TEAMS,
                 modifier = Modifier.weight(1f),
-                onClick = { onTabSelected("Equipas") }
+                onClick = { onTabSelected(TOURNAMENT_TAB_TEAMS) }
             )
 
             TabButton(
-                text = "Classificação",
-                selected = selectedTab == "Classificação",
+                text = stringResource(R.string.tournament_tab_standings),
+                selected = selectedTab == TOURNAMENT_TAB_STANDINGS,
                 modifier = Modifier.weight(1f),
-                onClick = { onTabSelected("Classificação") }
+                onClick = { onTabSelected(TOURNAMENT_TAB_STANDINGS) }
             )
         }
     }
@@ -626,7 +647,7 @@ private fun TeamsTable(
 
                 TeamStandingRow(
                     name = team.teamName,
-                    subtitle = team.sport,
+                    subtitle = localizedTournamentSport(team.sport),
                     points = "${team.points} pts",
                     badgeColor = colors.first,
                     badgeTextColor = colors.second
@@ -690,7 +711,7 @@ private fun TeamStandingRow(
 
         Icon(
             imageVector = Icons.Default.ChevronRight,
-            contentDescription = "Abrir equipa",
+            contentDescription = stringResource(R.string.cd_open_team),
             tint = Color(0xFFC7C7C7),
             modifier = Modifier.size(20.dp)
         )
@@ -725,11 +746,11 @@ private fun StandingsTable(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("#", modifier = Modifier.width(24.dp), color = AthloColors.TextSecondary)
-                Text("Equipa", modifier = Modifier.weight(1f), color = AthloColors.TextSecondary)
+                Text(stringResource(R.string.tournament_table_team), modifier = Modifier.weight(1f), color = AthloColors.TextSecondary)
                 Text("J", modifier = Modifier.width(28.dp), color = AthloColors.TextSecondary)
                 Text("V", modifier = Modifier.width(28.dp), color = AthloColors.TextSecondary)
                 Text("Pts", modifier = Modifier.width(42.dp), color = AthloColors.TextSecondary)
-                Text("Forma", color = AthloColors.TextSecondary)
+                Text(stringResource(R.string.tournament_table_form), color = AthloColors.TextSecondary)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -902,6 +923,30 @@ private fun StatusPill(
     }
 }
 
+
+@Composable
+private fun localizedTournamentStatus(status: String): String {
+    return when (status) {
+        TOURNAMENT_STATUS_SCHEDULED -> stringResource(R.string.filter_scheduled)
+        TOURNAMENT_STATUS_LIVE -> stringResource(R.string.filter_live)
+        TOURNAMENT_STATUS_PREPARING -> stringResource(R.string.filter_preparing)
+        TOURNAMENT_STATUS_FINISHED -> stringResource(R.string.match_status_finished)
+        else -> status
+    }
+}
+
+@Composable
+private fun localizedTournamentSport(sport: String): String {
+    return when (sport) {
+        TOURNAMENT_SPORT_FOOTBALL -> stringResource(R.string.sport_football)
+        TOURNAMENT_SPORT_BASKETBALL -> stringResource(R.string.sport_basketball)
+        TOURNAMENT_SPORT_TENNIS -> stringResource(R.string.sport_tennis)
+        TOURNAMENT_SPORT_VOLLEYBALL -> stringResource(R.string.sport_volleyball)
+        else -> sport
+    }
+}
+
+
 @Composable
 private fun AdminBadge() {
     Row(
@@ -912,7 +957,7 @@ private fun AdminBadge() {
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -920,7 +965,7 @@ private fun AdminBadge() {
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -979,7 +1024,7 @@ private fun calculateTeamStats(
             teamName = match.teamBName
         )
 
-        if (!match.status.equals("Terminado", ignoreCase = true)) {
+        if (!match.status.equals(TOURNAMENT_STATUS_FINISHED, ignoreCase = true)) {
             return@forEach
         }
 

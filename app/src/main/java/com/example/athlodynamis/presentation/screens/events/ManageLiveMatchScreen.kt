@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.MatchEvent
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.presentation.components.AthloBackButton
@@ -62,6 +63,7 @@ import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 
 private const val EVENT_GOAL = "Golo"
@@ -112,11 +114,11 @@ fun ManageLiveMatchScreen(
     val scoreB = selectedMatch?.scoreB ?: 0
     val teamAId = selectedMatch?.teamAId
     val teamBId = selectedMatch?.teamBId
-    val teamAName = selectedMatch?.teamAName ?: "Equipa A"
-    val teamBName = selectedMatch?.teamBName ?: "Equipa B"
+    val teamAName = selectedMatch?.teamAName ?: stringResource(R.string.live_match_default_team_a)
+    val teamBName = selectedMatch?.teamBName ?: stringResource(R.string.live_match_default_team_b)
     val matchStatus = selectedMatch?.status ?: "Agendado"
     val matchMinute = selectedMatch?.minute ?: 0
-    val matchTime = selectedMatch?.matchTime?.ifBlank { null } ?: "Hora por definir"
+    val matchTime = selectedMatch?.matchTime?.ifBlank { null } ?: stringResource(R.string.home_time_undefined)
     val matchLocation = selectedMatch?.location?.ifBlank { null }
 
     var liveMinute by remember {
@@ -260,7 +262,7 @@ fun ManageLiveMatchScreen(
 
             if (!matchStatus.equals("A decorrer", ignoreCase = true)) {
                 InfoCard(
-                    text = "Este jogo não está a decorrer. Só é possível registar eventos quando o jogo está ativo."
+                    text = stringResource(R.string.live_match_not_active)
                 )
             }
 
@@ -576,7 +578,7 @@ private fun ManageMatchHeader(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Gerir Jogo",
+                    text = stringResource(R.string.live_match_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -585,7 +587,7 @@ private fun ManageMatchHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Jogo #$matchId · $status",
+                    text = stringResource(R.string.live_match_header_info, matchId, localizedMatchStatus(status)),
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -685,7 +687,7 @@ private fun LiveScoreCard(
             }
 
             StatusPill(
-                text = status,
+                text = localizedMatchStatus(status),
                 background = if (status.equals("A decorrer", ignoreCase = true)) {
                     AthloColors.DangerBg
                 } else {
@@ -753,7 +755,7 @@ private fun EventTypeSelector(
             modifier = Modifier.padding(18.dp)
         ) {
             Text(
-                text = "Tipo de evento",
+                text = stringResource(R.string.live_match_event_type),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -816,7 +818,7 @@ private fun EventTypeButton(
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = option.label,
+                text = eventLabel(option.label),
                 color = textColor,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
@@ -887,7 +889,7 @@ private fun EventsOfGameCard(
             modifier = Modifier.padding(22.dp)
         ) {
             Text(
-                text = "Eventos do Jogo",
+                text = stringResource(R.string.live_match_events_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -898,7 +900,7 @@ private fun EventsOfGameCard(
             when {
                 isLoading -> {
                     Text(
-                        text = "A carregar eventos...",
+                        text = stringResource(R.string.live_match_loading_events),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -914,7 +916,7 @@ private fun EventsOfGameCard(
 
                 events.isEmpty() -> {
                     Text(
-                        text = "Ainda não existem eventos registados.",
+                        text = stringResource(R.string.live_match_no_events),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -932,13 +934,13 @@ private fun EventsOfGameCard(
                             teamName = when (event.teamSide) {
                                 "A" -> teamAName
                                 "B" -> teamBName
-                                else -> "Equipa indefinida"
+                                else -> stringResource(R.string.live_match_undefined_team)
                             },
                             playerName = event.playerId?.let { playerId ->
-                                playerNamesById[playerId] ?: "Jogador não encontrado"
-                            } ?: "Jogador não associado",
+                                playerNamesById[playerId] ?: stringResource(R.string.live_match_player_not_found)
+                            } ?: stringResource(R.string.live_match_player_unassociated),
                             secondaryPlayerName = event.secondaryPlayerId?.let { playerId ->
-                                playerNamesById[playerId] ?: "Jogador não encontrado"
+                                playerNamesById[playerId] ?: stringResource(R.string.live_match_player_not_found)
                             }
                         )
 
@@ -988,14 +990,14 @@ private fun LiveEventRow(
                 .padding(start = 12.dp)
         ) {
             Text(
-                text = event.eventType,
+                text = eventLabel(event.eventType),
                 color = AthloColors.TextPrimary,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = if (event.eventType == EVENT_SUBSTITUTION) {
-                    "Entrou: $playerName · Saiu: ${secondaryPlayerName ?: "-"}"
+                    stringResource(R.string.live_match_substitution_row, playerName, secondaryPlayerName ?: "-")
                 } else {
                     playerName
                 },
@@ -1095,7 +1097,7 @@ private fun EventPlayerPickerSheet(
             when {
                 isLoading -> {
                     Text(
-                        text = "A carregar jogadores da equipa...",
+                        text = stringResource(R.string.live_match_loading_players),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -1103,7 +1105,7 @@ private fun EventPlayerPickerSheet(
 
                 players.isEmpty() -> {
                     Text(
-                        text = "Esta equipa ainda não tem jogadores associados.",
+                        text = stringResource(R.string.live_match_no_players),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -1111,7 +1113,7 @@ private fun EventPlayerPickerSheet(
 
                 eventType == EVENT_SUBSTITUTION -> {
                     Text(
-                        text = "Jogador que entra",
+                        text = stringResource(R.string.live_match_player_in),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
@@ -1133,7 +1135,7 @@ private fun EventPlayerPickerSheet(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "Jogador que sai",
+                        text = stringResource(R.string.live_match_player_out),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
@@ -1226,7 +1228,7 @@ private fun MinuteSelector(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Minuto do evento",
+            text = stringResource(R.string.live_match_event_minute),
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
@@ -1296,7 +1298,7 @@ private fun MinuteSelector(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "O minuto live é sugerido, mas podes ajustar antes de guardar.",
+            text = stringResource(R.string.live_match_event_minute_help),
             color = AthloColors.TextMuted,
             style = MaterialTheme.typography.labelSmall
         )
@@ -1409,7 +1411,7 @@ private fun EventSuccessSheet(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Evento registado",
+                    contentDescription = stringResource(R.string.live_match_event_saved),
                     tint = Color(0xFF4D8B4A),
                     modifier = Modifier.size(52.dp)
                 )
@@ -1418,7 +1420,7 @@ private fun EventSuccessSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Evento registado!",
+                text = stringResource(R.string.live_match_event_saved),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
@@ -1464,9 +1466,19 @@ private fun EventSuccessSheet(
 
                     Text(
                         text = if (eventConfirmation.eventType == EVENT_SUBSTITUTION) {
-                            "Entrou: ${eventConfirmation.playerName} · Saiu: ${eventConfirmation.secondaryPlayerName ?: "-"} · ${eventConfirmation.minute}'"
+                            stringResource(
+                                R.string.live_match_success_substitution_summary,
+                                eventConfirmation.playerName,
+                                eventConfirmation.secondaryPlayerName ?: "-",
+                                eventConfirmation.minute
+                            )
                         } else {
-                            "${eventConfirmation.eventType} · ${eventConfirmation.team} · ${eventConfirmation.minute}'"
+                            stringResource(
+                                R.string.live_match_success_event_summary,
+                                eventLabel(eventConfirmation.eventType),
+                                eventConfirmation.team,
+                                eventConfirmation.minute
+                            )
                         },
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.labelSmall
@@ -1496,7 +1508,7 @@ private fun EventSuccessSheet(
                     )
                 ) {
                     Text(
-                        text = "Fechar",
+                        text = stringResource(R.string.live_match_close),
                         color = AthloColors.TextPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -1510,7 +1522,7 @@ private fun EventSuccessSheet(
                     )
                 ) {
                     Text(
-                        text = "Continuar",
+                        text = stringResource(R.string.live_match_continue),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -1574,7 +1586,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -1582,11 +1594,34 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
         )
+    }
+}
+
+@Composable
+private fun eventLabel(eventType: String): String {
+    return when (eventType) {
+        EVENT_GOAL -> stringResource(R.string.live_event_goal)
+        EVENT_ASSIST -> stringResource(R.string.live_event_assist)
+        EVENT_YELLOW_CARD -> stringResource(R.string.live_event_yellow_card)
+        EVENT_RED_CARD -> stringResource(R.string.live_event_red_card)
+        EVENT_SUBSTITUTION -> stringResource(R.string.live_event_substitution)
+        else -> eventType
+    }
+}
+
+@Composable
+private fun localizedMatchStatus(status: String): String {
+    return when {
+        status.equals("Agendado", ignoreCase = true) -> stringResource(R.string.filter_scheduled)
+        status.equals("A decorrer", ignoreCase = true) -> stringResource(R.string.filter_live)
+        status.equals("Em preparação", ignoreCase = true) -> stringResource(R.string.filter_preparing)
+        status.equals("Terminado", ignoreCase = true) -> stringResource(R.string.match_status_finished)
+        else -> status
     }
 }
 

@@ -60,7 +60,23 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.example.athlodynamis.R
+
+private const val TEAM_SPORT_FOOTBALL_VALUE = "Futebol"
+private const val TEAM_SPORT_BASKETBALL_VALUE = "Basquetebol"
+private const val TEAM_SPORT_TENNIS_VALUE = "Ténis"
+private const val TEAM_SPORT_VOLLEYBALL_VALUE = "Voleibol"
+
+private const val TEAM_LEVEL_ADVANCED_VALUE = "Avançado"
+private const val TEAM_LEVEL_MEDIUM_VALUE = "Médio"
+private const val TEAM_LEVEL_BEGINNER_VALUE = "Iniciante"
+
+private data class TeamChoiceOption(
+    val value: String,
+    val label: String
+)
 
 @Composable
 fun CreateTeamScreen(
@@ -79,8 +95,8 @@ fun CreateTeamScreen(
     }
 
     var teamName by remember { mutableStateOf("") }
-    var selectedSport by remember { mutableStateOf("Futebol") }
-    var selectedLevel by remember { mutableStateOf("Avançado") }
+    var selectedSport by remember { mutableStateOf(TEAM_SPORT_FOOTBALL_VALUE) }
+    var selectedLevel by remember { mutableStateOf(TEAM_LEVEL_ADVANCED_VALUE) }
     var selectedLogoUri by remember { mutableStateOf<Uri?>(null) }
 
     val logoPickerLauncher = rememberLauncherForActivityResult(
@@ -146,7 +162,7 @@ fun CreateTeamScreen(
                 shape = RoundedCornerShape(18.dp)
             ) {
                 Text(
-                    text = "Cancelar",
+                    text = stringResource(R.string.create_team_cancel),
                     fontWeight = FontWeight.Bold,
                     color = AthloColors.TextSecondary
                 )
@@ -177,7 +193,7 @@ private fun CreateTeamHeader(
             ) {
                 Column {
                     Text(
-                        text = "‹ cancelar",
+                        text = stringResource(R.string.create_team_cancel_small),
                         color = Color(0xFF9CC8F2),
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Medium,
@@ -193,7 +209,7 @@ private fun CreateTeamHeader(
                     ) {
                         Column {
                             Text(
-                                text = "Equipas",
+                                text = stringResource(R.string.create_team_title),
                                 color = Color.White,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.ExtraBold
@@ -202,7 +218,7 @@ private fun CreateTeamHeader(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "Criar equipa",
+                                text = stringResource(R.string.create_team_create),
                                 color = Color(0xFF8EC5F4),
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -239,7 +255,7 @@ private fun CreateTeamFormCard(
             modifier = Modifier.padding(24.dp)
         ) {
             Text(
-                text = "Criar equipa",
+                text = stringResource(R.string.create_team_create),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold
@@ -248,19 +264,19 @@ private fun CreateTeamFormCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Personaliza a tua equipa",
+                text = stringResource(R.string.create_team_subtitle),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            FieldLabel("Nome")
+            FieldLabel(stringResource(R.string.create_team_name))
 
             OutlinedTextField(
                 value = teamName,
                 onValueChange = onTeamNameChange,
-                placeholder = { Text("Nome da equipa") },
+                placeholder = { Text(stringResource(R.string.create_team_name_hint)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
@@ -269,29 +285,38 @@ private fun CreateTeamFormCard(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            FieldLabel("Modalidade")
+            FieldLabel(stringResource(R.string.create_team_sport))
 
             AthloDropdown(
                 selectedValue = selectedSport,
-                options = listOf("Futebol", "Basquetebol", "Ténis", "Voleibol"),
+                options = listOf(
+                    TeamChoiceOption(TEAM_SPORT_FOOTBALL_VALUE, stringResource(R.string.create_team_sport_football)),
+                    TeamChoiceOption(TEAM_SPORT_BASKETBALL_VALUE, stringResource(R.string.create_team_sport_basketball)),
+                    TeamChoiceOption(TEAM_SPORT_TENNIS_VALUE, stringResource(R.string.create_team_sport_tennis)),
+                    TeamChoiceOption(TEAM_SPORT_VOLLEYBALL_VALUE, stringResource(R.string.create_team_sport_volleyball))
+                ),
                 onValueSelected = onSportChange,
                 icon = Icons.Default.SportsSoccer
             )
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            FieldLabel("Nível")
+            FieldLabel(stringResource(R.string.create_team_level))
 
             AthloDropdown(
                 selectedValue = selectedLevel,
-                options = listOf("Avançado", "Médio", "Iniciante"),
+                options = listOf(
+                    TeamChoiceOption(TEAM_LEVEL_ADVANCED_VALUE, stringResource(R.string.create_team_level_advanced)),
+                    TeamChoiceOption(TEAM_LEVEL_MEDIUM_VALUE, stringResource(R.string.create_team_level_medium)),
+                    TeamChoiceOption(TEAM_LEVEL_BEGINNER_VALUE, stringResource(R.string.create_team_level_beginner))
+                ),
                 onValueSelected = onLevelChange,
                 icon = Icons.Default.Star
             )
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            FieldLabel("Escudo")
+            FieldLabel(stringResource(R.string.create_team_logo))
 
             UploadShieldButton(
                 selectedLogoUri = selectedLogoUri,
@@ -327,7 +352,7 @@ private fun UploadShieldButton(
             ) {
                 Icon(
                     imageVector = Icons.Default.Shield,
-                    contentDescription = "Escudo",
+                    contentDescription = stringResource(R.string.create_team_logo_cd),
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -339,16 +364,16 @@ private fun UploadShieldButton(
                     .padding(start = 14.dp)
             ) {
                 Text(
-                    text = if (selectedLogoUri == null) "Carregar escudo" else "Escudo selecionado",
+                    text = if (selectedLogoUri == null) stringResource(R.string.create_team_upload_logo) else stringResource(R.string.create_team_logo_selected),
                     color = AthloColors.TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = if (selectedLogoUri == null)
-                        "Selecionar imagem da galeria"
+                        stringResource(R.string.create_team_pick_image)
                     else
-                        "Imagem pronta para upload",
+                        stringResource(R.string.create_team_image_ready),
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -356,7 +381,7 @@ private fun UploadShieldButton(
 
             Icon(
                 imageVector = Icons.Default.Upload,
-                contentDescription = "Carregar",
+                contentDescription = stringResource(R.string.create_team_upload_cd),
                 tint = AthloColors.Blue
             )
         }
@@ -383,7 +408,7 @@ private fun CreateButton(
     ) {
         Icon(
             imageVector = Icons.Default.Save,
-            contentDescription = "Criar equipa",
+            contentDescription = stringResource(R.string.create_team_create_cd),
             tint = Color.White,
             modifier = Modifier.size(20.dp)
         )
@@ -391,7 +416,7 @@ private fun CreateButton(
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = "Criar equipa",
+            text = stringResource(R.string.create_team_create),
             color = Color.White,
             fontWeight = FontWeight.Bold
         )
@@ -410,7 +435,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.create_team_admin_cd),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -418,7 +443,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.create_team_admin),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -440,11 +465,12 @@ private fun FieldLabel(text: String) {
 @Composable
 private fun AthloDropdown(
     selectedValue: String,
-    options: List<String>,
+    options: List<TeamChoiceOption>,
     onValueSelected: (String) -> Unit,
     icon: ImageVector
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label ?: selectedValue
 
     Box {
         Row(
@@ -462,7 +488,7 @@ private fun AthloDropdown(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = selectedValue,
+                    contentDescription = selectedLabel,
                     tint = AthloColors.TextMuted,
                     modifier = Modifier.size(20.dp)
                 )
@@ -470,7 +496,7 @@ private fun AthloDropdown(
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Text(
-                    text = selectedValue,
+                    text = selectedLabel,
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
@@ -479,7 +505,7 @@ private fun AthloDropdown(
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Abrir opções",
+                contentDescription = stringResource(R.string.create_team_options_cd),
                 tint = AthloColors.TextMuted
             )
         }
@@ -493,13 +519,13 @@ private fun AthloDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = option,
+                            text = option.label,
                             style = MaterialTheme.typography.bodySmall,
                             color = AthloColors.TextPrimary
                         )
                     },
                     onClick = {
-                        onValueSelected(option)
+                        onValueSelected(option.value)
                         expanded = false
                     }
                 )

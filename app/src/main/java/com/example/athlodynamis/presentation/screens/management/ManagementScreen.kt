@@ -42,8 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.TournamentRepository
 import com.example.athlodynamis.data.repository.UserRepository
@@ -162,7 +164,7 @@ fun ManagementScreen(navController: NavController) {
             }
 
             item {
-                SectionTitle("Acessos rápidos")
+                SectionTitle(stringResource(R.string.management_quick_access))
             }
 
             item {
@@ -174,8 +176,8 @@ fun ManagementScreen(navController: NavController) {
                         icon = Icons.Default.PersonAdd,
                         iconBackground = Color(0xFFFFD928),
                         iconTint = Color(0xFF7A5B00),
-                        title = "Pedidos pendentes",
-                        subtitle = "${stats.pendingRequestsCount} a aguardar",
+                        title = stringResource(R.string.management_pending_requests),
+                        subtitle = "${stats.pendingRequestsCount} ${stringResource(R.string.management_waiting)}",
                         counterText = stats.pendingRequestsCount.toString(),
                         showCounter = stats.pendingRequestsCount > 0,
                         modifier = Modifier.weight(1f),
@@ -188,8 +190,8 @@ fun ManagementScreen(navController: NavController) {
                         icon = Icons.Default.Groups,
                         iconBackground = Color(0xFFD7EBFF),
                         iconTint = AthloColors.Blue,
-                        title = "Utilizadores",
-                        subtitle = "${stats.usersCount} registados",
+                        title = stringResource(R.string.management_users),
+                        subtitle = "${stats.usersCount} ${stringResource(R.string.management_registered)}",
                         counterText = stats.usersCount.toString(),
                         showCounter = false,
                         modifier = Modifier.weight(1f),
@@ -211,8 +213,8 @@ fun ManagementScreen(navController: NavController) {
                         icon = Icons.Default.SupervisorAccount,
                         iconBackground = Color(0xFFDFF3D8),
                         iconTint = Color(0xFF4D8B4A),
-                        title = "Organizadores",
-                        subtitle = "${stats.organizersCount} registados",
+                        title = stringResource(R.string.management_organizers),
+                        subtitle = "${stats.organizersCount} ${stringResource(R.string.management_registered)}",
                         counterText = stats.organizersCount.toString(),
                         showCounter = false,
                         modifier = Modifier.weight(1f),
@@ -227,8 +229,8 @@ fun ManagementScreen(navController: NavController) {
                         icon = Icons.Default.Groups,
                         iconBackground = Color(0xFFE3D7FF),
                         iconTint = Color(0xFF6A3FCB),
-                        title = "Jogadores",
-                        subtitle = "${stats.playersCount} registados",
+                        title = stringResource(R.string.management_players),
+                        subtitle = "${stats.playersCount} ${stringResource(R.string.management_registered)}",
                         counterText = stats.playersCount.toString(),
                         showCounter = false,
                         modifier = Modifier.weight(1f),
@@ -242,7 +244,7 @@ fun ManagementScreen(navController: NavController) {
             }
 
             item {
-                SectionTitle("Eventos")
+                SectionTitle(stringResource(R.string.management_events))
             }
 
             item {
@@ -255,7 +257,7 @@ fun ManagementScreen(navController: NavController) {
             }
 
             item {
-                SectionTitle("Últimos utilizadores")
+                SectionTitle(stringResource(R.string.management_recent_users))
             }
 
             item {
@@ -291,7 +293,7 @@ private fun AdminManagementHeader(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Bom dia",
+                        text = stringResource(R.string.management_greeting),
                         color = Color(0xFFBBD7EF),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -337,19 +339,19 @@ private fun AdminManagementHeader(
             ) {
                 AdminStatBox(
                     value = if (isLoading) "..." else stats.eventsCount.toString(),
-                    label = "Eventos",
+                    label = stringResource(R.string.management_events),
                     modifier = Modifier.weight(1f)
                 )
 
                 AdminStatBox(
                     value = if (isLoading) "..." else stats.usersCount.toString(),
-                    label = "Utilizadores",
+                    label = stringResource(R.string.management_users),
                     modifier = Modifier.weight(1f)
                 )
 
                 AdminStatBox(
                     value = if (isLoading) "..." else stats.organizersCount.toString(),
-                    label = "Organizadores",
+                    label = stringResource(R.string.management_organizers),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -542,7 +544,7 @@ private fun EventsAccessCard(
                     .padding(start = 16.dp)
             ) {
                 Text(
-                    text = "Ver todos os eventos",
+                    text = stringResource(R.string.management_view_all_events),
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold
@@ -551,7 +553,7 @@ private fun EventsAccessCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "$eventsCount eventos",
+                    text = "$eventsCount ${stringResource(R.string.management_events)}",
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -584,7 +586,7 @@ private fun RecentUsersCard(
             when {
                 isLoading -> {
                     Text(
-                        text = "A carregar utilizadores...",
+                        text = stringResource(R.string.management_loading_users),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -592,7 +594,7 @@ private fun RecentUsersCard(
 
                 users.isEmpty() -> {
                     Text(
-                        text = "Ainda não existem utilizadores registados.",
+                        text = stringResource(R.string.management_no_users),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )

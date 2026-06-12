@@ -30,9 +30,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
@@ -67,7 +69,7 @@ fun OfflineScreen(navController: NavController) {
             }
 
             item {
-                SectionTitle(title = "Próximo jogo")
+                SectionTitle(title = stringResource(R.string.offline_next_match))
             }
 
             item {
@@ -75,15 +77,15 @@ fun OfflineScreen(navController: NavController) {
             }
 
             item {
-                SectionTitle(title = "As minhas equipas")
+                SectionTitle(title = stringResource(R.string.offline_my_teams))
             }
 
             item {
                 OfflineTeamCard(
                     acronym = "EQP",
-                    name = "Equipa 1",
-                    sport = "Futebol",
-                    status = "A decorrer",
+                    name = stringResource(R.string.offline_team_1),
+                    sport = stringResource(R.string.sport_football),
+                    status = stringResource(R.string.match_detail_status_live),
                     badgeBackground = AthloColors.DangerBg,
                     badgeText = Color(0xFFC83755),
                     logoBackground = Color(0xFFD7EBFF),
@@ -94,9 +96,9 @@ fun OfflineScreen(navController: NavController) {
             item {
                 OfflineTeamCard(
                     acronym = "EQP",
-                    name = "Equipa 4",
-                    sport = "Voleibol",
-                    status = "Inscrito",
+                    name = stringResource(R.string.offline_team_4),
+                    sport = stringResource(R.string.sport_volleyball),
+                    status = stringResource(R.string.offline_status_registered),
                     badgeBackground = AthloColors.SoftBlue,
                     badgeText = AthloColors.Blue,
                     logoBackground = Color(0xFFF7FFA6),
@@ -127,7 +129,7 @@ private fun OfflinePlayerHeader() {
             ) {
                 Column {
                     Text(
-                        text = "Bom dia",
+                        text = stringResource(R.string.management_greeting),
                         color = Color(0xFF8EC5F4),
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -165,19 +167,19 @@ private fun OfflinePlayerHeader() {
             ) {
                 HeaderStatCard(
                     value = "2",
-                    label = "Próximos jogos",
+                    label = stringResource(R.string.offline_upcoming_matches),
                     modifier = Modifier.weight(1f)
                 )
 
                 HeaderStatCard(
                     value = "19",
-                    label = "Golos",
+                    label = stringResource(R.string.offline_goals),
                     modifier = Modifier.weight(1f)
                 )
 
                 HeaderStatCard(
                     value = "3",
-                    label = "Troféus",
+                    label = stringResource(R.string.offline_trophies),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -246,7 +248,7 @@ private fun NoInternetCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.SignalWifiOff,
-                contentDescription = "Sem internet",
+                contentDescription = stringResource(R.string.offline_no_internet_cd),
                 tint = AthloColors.Navy,
                 modifier = Modifier.size(42.dp)
             )
@@ -254,7 +256,7 @@ private fun NoInternetCard() {
             Spacer(modifier = Modifier.width(18.dp))
 
             Text(
-                text = "SEM LIGAÇÃO À INTERNET",
+                text = stringResource(R.string.offline_no_connection),
                 color = AthloColors.Navy,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -331,7 +333,7 @@ private fun OfflineTeamCard(
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Abrir equipa",
+                contentDescription = stringResource(R.string.offline_open_team_cd),
                 tint = Color(0xFFD1D5DB),
                 modifier = Modifier.size(26.dp)
             )

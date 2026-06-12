@@ -185,4 +185,532 @@
     <string name="onboarding_page3_desc">Update scores, record goals and keep everyone informed in real time.</string>
     <string name="onboarding_start">Start</string>
     <string name="onboarding_next">Next</string>
+
+
+    <!-- EVENTS -->
+    <string name="events_title">Events</string>
+    <string name="events_global_view">Global View - %1$d tournaments on the platform</string>
+    <string name="events_created_by_you">%1$d tournaments created by you</string>
+    <string name="events_available">Available events</string>
+    <string name="events_search">Search events...</string>
+    <string name="events_search_cd">Search</string>
+    <string name="events_search_history">Search history</string>
+    <string name="events_clear">Clear</string>
+    <string name="events_filters">Filters</string>
+    <string name="events_my_count">%1$d mine</string>
+    <string name="events_tournaments_count">%1$d tournaments</string>
+    <string name="events_loading">Loading tournaments...</string>
+    <string name="events_loading_error">Error loading tournaments</string>
+    <string name="events_my_events">My events</string>
+    <string name="events_all_events">All events</string>
+    <string name="events_other_events">Other events</string>
+    <string name="events_create">Create Event</string>
+    <string name="events_create_cd">Create event</string>
+    <string name="events_no_results_my">No results found for "%1$s" in your events.</string>
+    <string name="events_no_results">No results found for "%1$s".</string>
+    <string name="events_no_created">You have not created any tournaments yet.</string>
+    <string name="events_no_tournaments">There are no tournaments to display yet.</string>
+    <string name="events_no_other_tournaments">There are no other tournaments to display.</string>
+    <string name="events_open">Open event</string>
+
+    <!-- COMMON FILTERS / SPORTS -->
+    <string name="filter_all">All</string>
+    <string name="filter_scheduled">Scheduled</string>
+    <string name="filter_live">Live</string>
+    <string name="filter_preparing">Preparing</string>
+    <string name="sport_football">Football</string>
+    <string name="sport_basketball">Basketball</string>
+    <string name="sport_tennis">Tennis</string>
+    <string name="sport_volleyball">Volleyball</string>
+    <string name="admin_badge">ADMIN</string>
+
+
+
+    <!-- ADD MATCH -->
+    <string name="add_match_title">Add Match</string>
+    <string name="add_match_subtitle">New tournament match</string>
+    <string name="add_match_cancel">‹ cancel</string>
+    <string name="add_match_tournament_id">Tournament #%1$s</string>
+    <string name="add_match_time_label">Match time</string>
+    <string name="add_match_time_hint">Ex: 18:30</string>
+    <string name="add_match_location_label">Location</string>
+    <string name="add_match_location_hint">Ex: Municipal Sports Hall</string>
+    <string name="add_match_team_1_label">Assign Team 1</string>
+    <string name="add_match_team_1_hint">Select team 1</string>
+    <string name="add_match_team_2_label">Assign Team 2</string>
+    <string name="add_match_team_2_hint">Select team 2</string>
+    <string name="add_match_same_teams_error">Teams cannot be the same.</string>
+    <string name="add_match_invalid_tournament_error">Invalid tournament ID.</string>
+    <string name="add_match_create">Create Match</string>
+    <string name="add_match_create_cd">Create match</string>
+    <string name="add_match_select_team_cd">Select team</string>
+    <string name="add_match_notification_title">New match scheduled</string>
+    <string name="add_match_notification_message">The match %1$s vs %2$s was created for the tournament.</string>
+
+    <!-- CREATE EVENT -->
+    <string name="create_event_title">Create Event</string>
+    <string name="create_event_cancel">‹ cancel</string>
+
+    <string name="create_event_tournament_name">Tournament name</string>
+    <string name="create_event_tournament_name_hint">Tournament name</string>
+
+    <string name="create_event_sport">Sport</string>
+    <string name="create_event_format">Format</string>
+
+    <string name="create_event_start_date">Start date</string>
+    <string name="create_event_end_date">End date</string>
+    <string name="create_event_date_hint">YYYY-MM-DD</string>
+
+    <string name="create_event_location">Location</string>
+    <string name="create_event_location_hint">Location</string>
+
+    <string name="create_event_max_teams">Maximum number of teams</string>
+    <string name="create_event_max_teams_hint">Select limit</string>
+
+    <string name="create_event_create">Create Event</string>
+    <string name="create_event_creating">Creating...</string>
+    <string name="create_event_create_cd">Create event</string>
+
+    <string name="create_event_notification_title">New event created</string>
+    <string name="create_event_notification_message">The tournament %1$s was created in the %2$s category.</string>
+
+    <string name="format_league">League</string>
+    <string name="format_knockout">Knockout</string>
+    <string name="format_group">Group</string>
+
+    <string name="max_teams_4">4 teams</string>
+    <string name="max_teams_8">8 teams</string>
+    <string name="max_teams_16">16 teams</string>
+    <string name="max_teams_32">32 teams</string>
+
+    <string name="dropdown_open_options">Open options</string>
+
+    <!-- EDIT EVENT -->
+    <string name="edit_event_title">Edit Event</string>
+    <string name="edit_event_cancel">‹ cancel</string>
+    <string name="edit_event_id">Event #%1$s</string>
+    <string name="edit_event_no_organizer">No organizer</string>
+    <string name="edit_event_assign_teams">Assign teams</string>
+    <string name="edit_event_no_teams">There are no teams available for this sport yet.</string>
+    <string name="edit_event_change_organizer">Change Organizer</string>
+    <string name="edit_event_save">Save Changes</string>
+    <string name="edit_event_save_cd">Save</string>
+    <string name="edit_event_delete">Delete event</string>
+    <string name="edit_event_delete_cd">Delete</string>
+    <string name="edit_event_notification_title">Event updated</string>
+    <string name="edit_event_notification_message">The tournament %1$s was updated.</string>
+
+    <!-- EDIT MATCH -->
+    <string name="edit_match_title">Edit Match</string>
+    <string name="edit_match_default_subtitle">Tournament match</string>
+    <string name="edit_match_cancel">‹ cancel</string>
+    <string name="edit_match_id">Match #%1$s</string>
+    <string name="edit_match_save">Save Changes</string>
+    <string name="edit_match_save_cd">Save changes</string>
+    <string name="edit_match_delete">Delete match</string>
+    <string name="edit_match_delete_cd">Delete match</string>
+    <string name="edit_match_notification_title">Match updated</string>
+    <string name="edit_match_notification_message">The match %1$s vs %2$s was updated.</string>
+
+    <!-- MANAGE LIVE MATCH -->
+    <string name="live_match_title">Manage Match</string>
+    <string name="live_match_loading_events">Loading events...</string>
+    <string name="live_match_events_title">Match Events</string>
+    <string name="live_match_no_events">No events have been recorded yet.</string>
+
+    <string name="live_match_event_type">Event Type</string>
+    <string name="live_match_event_minute">Event Minute</string>
+    <string name="live_match_event_minute_help">The live minute is suggested, but you can adjust it before saving.</string>
+
+    <string name="live_match_player_in">Player In</string>
+    <string name="live_match_player_out">Player Out</string>
+
+    <string name="live_match_loading_players">Loading team players...</string>
+    <string name="live_match_no_players">This team has no associated players yet.</string>
+
+    <string name="live_match_continue">Continue</string>
+    <string name="live_match_close">Close</string>
+
+    <string name="live_match_event_saved">Event recorded!</string>
+
+    <string name="live_match_not_active">This match is not live. Events can only be registered while the match is active.</string>
+
+    <string name="live_match_admin_badge">ADMIN</string>
+
+    <!-- LIVE MATCH EXTRA -->
+    <string name="live_event_goal">Goal</string>
+    <string name="live_event_assist">Assist</string>
+    <string name="live_event_yellow_card">Yellow card</string>
+    <string name="live_event_red_card">Red card</string>
+    <string name="live_event_substitution">Substitution</string>
+    <string name="live_match_default_team_a">Team A</string>
+    <string name="live_match_default_team_b">Team B</string>
+    <string name="live_match_header_info">Match #%1$s · %2$s</string>
+    <string name="match_status_finished">Finished</string>
+    <string name="live_match_undefined_team">Undefined team</string>
+    <string name="live_match_player_not_found">Player not found</string>
+    <string name="live_match_player_unassociated">No player associated</string>
+    <string name="live_match_substitution_row">In: %1$s · Out: %2$s</string>
+    <string name="live_match_picker_substitution_desc">Select who comes in, who goes out, and confirm the minute</string>
+    <string name="live_match_picker_event_desc">Select the player and confirm the event minute</string>
+    <string name="live_match_confirm_substitution">Confirm substitution at %1$d min</string>
+    <string name="live_match_confirm_player">Confirm - %1$s at %2$d min</string>
+    <string name="live_match_select_player">Select a player</string>
+    <string name="live_match_saved_online">The event was saved in Supabase</string>
+    <string name="live_match_saved_offline">The event was saved offline and will be synced later</string>
+    <string name="live_match_success_substitution_summary">In: %1$s · Out: %2$s · %3$d min</string>
+    <string name="live_match_success_event_summary">%1$s · %2$s · %3$d min</string>
+    <string name="live_match_player_not_specified">player not specified</string>
+
+    <string name="tournament_sport_placeholder">Sport</string>
+    <string name="tournament_invalid_id">Invalid tournament ID.</string>
+    <string name="tournament_loading">Loading tournament...</string>
+    <string name="tournament_loading_short">Loading</string>
+    <string name="tournament_loading_error">Error loading tournament</string>
+    <string name="tournament_not_found">Tournament not found.</string>
+    <string name="tournament_matches_title">Tournament matches</string>
+    <string name="tournament_add_match">Add Match</string>
+    <string name="tournament_add_match_cd">Add match</string>
+    <string name="tournament_matches_loading_error">Error loading matches</string>
+    <string name="tournament_no_matches">There are no matches in this tournament yet.</string>
+    <string name="tournament_no_teams">There are no teams associated with this tournament yet.</string>
+    <string name="tournament_calendar_title">Calendar</string>
+    <string name="tournament_edit">Edit</string>
+    <string name="tournament_tab_teams">Teams</string>
+    <string name="tournament_tab_standings">Standings</string>
+    <string name="tournament_table_team">Team</string>
+    <string name="tournament_table_form">Form</string>
+
+    <!-- ADMIN USERS -->
+    <string name="admin_users_title_organizers">Organizers</string>
+    <string name="admin_users_title_players">Players</string>
+    <string name="admin_users_title_all">Users</string>
+    <string name="admin_users_subtitle_organizers">List of registered organizers</string>
+    <string name="admin_users_subtitle_players">List of registered players</string>
+    <string name="admin_users_subtitle_all">All platform users</string>
+    <string name="admin_users_load_error">Error loading users.</string>
+    <string name="admin_users_listing">Listing</string>
+    <string name="admin_users_loading">Loading users...</string>
+    <string name="admin_users_empty_filter">There are no users for this filter.</string>
+    <string name="admin_users_records_found">records found</string>
+    <string name="admin_users_role_admin">Admin</string>
+    <string name="admin_users_role_organizer">Organizer</string>
+    <string name="admin_users_role_player">Player</string>
+    <string name="admin_users_approval_approved">Approved</string>
+    <string name="admin_users_approval_pending">Pending</string>
+    <string name="admin_users_approval_rejected">Rejected</string>
+
+    <string name="management_load_error">Error loading management data.</string>
+    <string name="management_quick_access">Quick Access</string>
+    <string name="management_pending_requests">Pending Requests</string>
+    <string name="management_waiting">waiting</string>
+    <string name="management_users">Users</string>
+    <string name="management_registered">registered</string>
+    <string name="management_organizers">Organizers</string>
+    <string name="management_players">Players</string>
+    <string name="management_events">Events</string>
+    <string name="management_recent_users">Recent Users</string>
+    <string name="management_greeting">Good morning</string>
+    <string name="management_view_all_events">View all events</string>
+    <string name="management_loading_users">Loading users...</string>
+    <string name="management_no_users">There are no registered users yet.</string>
+
+    <string name="pending_requests_load_error">Error loading requests.</string>
+    <string name="pending_requests_loading">Loading requests...</string>
+    <string name="pending_requests_history">History</string>
+    <string name="pending_requests_title">Pending Requests</string>
+    <string name="pending_requests_count_zero">No requests waiting</string>
+    <string name="pending_requests_count_one">1 request waiting for review</string>
+    <string name="pending_requests_count_many">%1$d requests waiting for review</string>
+    <string name="pending_requests_empty_cd">No requests</string>
+    <string name="pending_requests_empty_title">No pending requests</string>
+    <string name="pending_requests_empty_desc">When someone asks to become an organizer, the request will appear here.</string>
+    <string name="pending_requests_empty_history">There is no history of approved or rejected requests yet.</string>
+    <string name="pending_requests_warning_cd">Warning</string>
+    <string name="pending_requests_warning_one">There is 1 request to review</string>
+    <string name="pending_requests_warning_many">There are %1$d requests to review</string>
+    <string name="pending_requests_warning_desc">Approve or reject requests to keep the platform organized</string>
+    <string name="pending_requests_status_pending">Pending</string>
+    <string name="pending_requests_candidate_message">Candidate message</string>
+    <string name="pending_requests_no_description">No description submitted.</string>
+    <string name="pending_requests_reject">Reject</string>
+    <string name="pending_requests_approve">Approve</string>
+    <string name="pending_requests_status_approved">Approved</string>
+    <string name="pending_requests_status_rejected">Rejected</string>
+    <string name="pending_requests_approved_notification_title">Request approved</string>
+    <string name="pending_requests_approved_notification_message">Your account was approved as an organizer.</string>
+    <string name="pending_requests_rejected_notification_title">Request rejected</string>
+    <string name="pending_requests_rejected_notification_message">%1$s’s request to become an organizer was rejected.</string>
+    <string name="pending_requests_approve_error">Error approving request.</string>
+    <string name="pending_requests_reject_error">Error rejecting request.</string>
+
+    <string name="suspend_organizer_load_error">Error loading organizers.</string>
+    <string name="suspend_organizer_select_title">Select organizer</string>
+    <string name="suspend_organizer_select_subtitle">Choose the organizer you want to suspend</string>
+    <string name="suspend_organizer_loading">Loading organizers...</string>
+    <string name="suspend_organizer_empty">There are no organizers available to suspend.</string>
+    <string name="suspend_organizer_success">Organizer suspended successfully.</string>
+    <string name="suspend_organizer_error">Error suspending organizer.</string>
+    <string name="suspend_organizer_suspend_cd">Suspend</string>
+    <string name="suspend_organizer_button">Suspend organizer</string>
+    <string name="suspend_organizer_header_title">Organizers</string>
+    <string name="suspend_organizer_header_subtitle">Suspend organizer</string>
+    <string name="suspend_organizer_organizer_cd">Organizer</string>
+
+    <string name="match_detail_title">Match Detail</string>
+    <string name="match_detail_invalid_id">Invalid match ID.</string>
+    <string name="match_detail_loading_match">Loading match...</string>
+    <string name="match_detail_loading_events">Loading events...</string>
+    <string name="match_detail_loading_short">Loading</string>
+    <string name="match_detail_error_loading">Error loading match</string>
+
+    <string name="match_detail_status_scheduled">Scheduled</string>
+    <string name="match_detail_status_live">Live</string>
+    <string name="match_detail_status_finished">Finished</string>
+
+    <string name="match_detail_edit">Edit</string>
+    <string name="match_detail_edit_match">Edit Match</string>
+    <string name="match_detail_start_match">Start Match</string>
+    <string name="match_detail_finish_match">Finish Match</string>
+
+    <string name="match_detail_events_title">Match Events</string>
+    <string name="match_detail_no_events">No events recorded yet.</string>
+    <string name="match_detail_no_events_desc">Events will appear here when the match starts</string>
+
+    <string name="match_detail_tournament">Tournament #%1$s</string>
+    <string name="match_detail_hour">Time: %1$s</string>
+    <string name="match_detail_hour_undefined">Time not defined</string>
+
+    <string name="match_detail_team_undefined">Undefined team</string>
+    <string name="match_detail_player_not_found">Player not found</string>
+    <string name="match_detail_player_unassociated">Player not associated</string>
+
+    <string name="match_detail_draw_registered">Draw recorded</string>
+    <string name="match_detail_match_not_started">Match has not started yet</string>
+    <string name="match_detail_match_finished">Match finished. Final result recorded.</string>
+
+    <string name="match_detail_victory_team_a">Victory for %1$s</string>
+    <string name="match_detail_victory_team_b">Victory for %1$s</string>
+
+    <string name="match_detail_draw_notification">%1$s and %2$s drew %3$s - %4$s.</string>
+    <string name="match_detail_team_a_won">%1$s defeated %2$s by %3$s - %4$s.</string>
+    <string name="match_detail_team_b_won">%1$s defeated %2$s by %3$s - %4$s.</string>
+
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_loading">Loading notifications...</string>
+    <string name="notifications_load_error">Error loading notifications</string>
+    <string name="notifications_unread_zero">You have no unread notifications</string>
+    <string name="notifications_unread_one">1 unread notification</string>
+    <string name="notifications_unread_many">%1$d unread notifications</string>
+    <string name="notifications_empty_cd">No notifications</string>
+    <string name="notifications_empty_title">No notifications</string>
+    <string name="notifications_empty_desc">When there are updates, they will appear here.</string>
+    <string name="notifications_recent">RECENT</string>
+    <string name="notifications_no_date">No date</string>
+    <string name="notifications_new">New</string>
+
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_mark_read">Mark as read</string>
+
+    <string name="notifications_today">Today</string>
+    <string name="notifications_yesterday">Yesterday</string>
+
+    <string name="notifications_section_recent">Recent</string>
+    <string name="notifications_section_older">Older</string>
+
+    <string name="notifications_type_match">Match</string>
+    <string name="notifications_type_tournament">Tournament</string>
+    <string name="notifications_type_team">Team</string>
+    <string name="notifications_type_system">System</string>
+
+    <string name="notifications_no_message">No message</string>
+
+    <string name="notifications_error_mark_read">Error marking notification as read.</string>
+    <string name="notifications_error_mark_all">Error marking notifications as read.</string>
+
+    <string name="notifications_all_read">All notifications were marked as read.</string>
+    <string name="notifications_read">Notification marked as read.</string>
+    <string name="notifications_text_new_event_created">New event created</string>
+    <string name="notifications_text_event_updated">Event updated</string>
+    <string name="notifications_text_new_match_scheduled">New match scheduled</string>
+    <string name="notifications_text_match_updated">Match updated</string>
+    <string name="notifications_text_request_approved">Request approved</string>
+    <string name="notifications_text_request_rejected">Request rejected</string>
+    <string name="notifications_text_was_updated">was updated</string>
+    <string name="notifications_text_was_created">was created</string>
+    <string name="notifications_text_was_created_capitalized">Was created</string>
+    <string name="notifications_text_tournament">tournament</string>
+    <string name="notifications_text_sport_category">sport</string>
+    <string name="notifications_text_match">match</string>
+    <string name="notifications_text_at_minute">at minute</string>
+    <string name="offline_next_match">Next match</string>
+    <string name="offline_my_teams">My teams</string>
+    <string name="offline_team_1">Team 1</string>
+    <string name="offline_team_4">Team 4</string>
+    <string name="offline_status_registered">Registered</string>
+    <string name="offline_upcoming_matches">Upcoming matches</string>
+    <string name="offline_goals">Goals</string>
+    <string name="offline_trophies">Trophies</string>
+    <string name="offline_no_internet_cd">No internet</string>
+    <string name="offline_no_connection">NO INTERNET CONNECTION</string>
+    <string name="offline_open_team_cd">Open team</string>
+
+    <string name="stats_error_loading">Error loading statistics</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stats_my_stats">My stats</string>
+    <string name="stats_games">Matches</string>
+    <string name="stats_trophies">Trophies</string>
+    <string name="stats_teams">Teams</string>
+    <string name="stats_performance">PERFORMANCE</string>
+    <string name="stats_draws">%1$d Draws</string>
+    <string name="stats_wins">%1$d Wins</string>
+    <string name="stats_losses">%1$d Losses</string>
+    <string name="stats_season_numbers">SEASON NUMBERS</string>
+    <string name="stats_goals_scored">Goals scored</string>
+    <string name="stats_assists">Assists</string>
+    <string name="stats_yellow_cards">Yellow cards</string>
+    <string name="stats_red_cards">Red cards</string>
+    <string name="stats_recent_games">RECENT MATCHES</string>
+    <string name="stats_no_games">No matches recorded</string>
+    <string name="stats_finished">Finished</string>
+    <string name="stats_team">Team #%1$d</string>
+    <string name="stats_goals">%1$d goals</string>
+
+    <string name="stats_my_tournaments">My tournaments</string>
+    <string name="stats_tournaments">Tournaments</string>
+    <string name="stats_completion">Completion</string>
+    <string name="stats_games_by_sport">MATCHES BY SPORT</string>
+    <string name="stats_top_scorers">TOP SCORERS</string>
+    <string name="stats_season_summary">SEASON SUMMARY</string>
+    <string name="stats_registered_athletes">Registered athletes</string>
+    <string name="stats_active_teams">Active teams</string>
+    <string name="stats_managed_tournaments">Managed tournaments</string>
+    <string name="stats_organizer">ORGANIZER</string>
+    <string name="stats_organizer_tournaments">%1$d tournaments</string>
+
+    <string name="stats_platform_overview">Platform overview</string>
+    <string name="stats_users">Users</string>
+    <string name="stats_platform_summary">PLATFORM SUMMARY</string>
+    <string name="stats_tournaments_by_sport">TOURNAMENTS BY SPORT</string>
+    <string name="stats_top_organizers">TOP ORGANIZERS</string>
+    <string name="stats_admin">Admin</string>
+    <string name="stats_platform_status">PLATFORM STATUS</string>
+    <string name="stats_api">API</string>
+    <string name="stats_operational">Operational</string>
+    <string name="stats_offline_sync">Offline Sync</string>
+    <string name="stats_slow">Slow</string>
+    <string name="stats_created_tournaments">Created tournaments</string>
+    <string name="stats_finished_games">Finished matches</string>
+    <string name="teams_favorites">Favorite teams</string>
+    <string name="teams_all">All teams</string>
+    <string name="teams_mine">My teams</string>
+    <string name="teams_create">Create team</string>
+    <string name="teams_create_cd">Create team</string>
+    <string name="teams_title">Teams</string>
+    <string name="teams_list_title">Team List</string>
+    <string name="teams_sports">Sports</string>
+    <string name="teams_search_hint">Search team...</string>
+    <string name="teams_search_cd">Search</string>
+    <string name="teams_search_history">Search history</string>
+    <string name="teams_clear">Clear</string>
+    <string name="teams_players_count">%1$d Players</string>
+    <string name="teams_favorite_cd">Favorite team</string>
+    <string name="teams_open_cd">Open team</string>
+    <string name="teams_logo_cd">Team logo</string>
+    <string name="teams_team_cd">Team</string>
+    <string name="teams_empty_cd">No teams</string>
+    <string name="teams_empty_title">No team found</string>
+    <string name="teams_empty_desc">Try changing the search or selected filter.</string>
+    <string name="add_players_associate_players">Assign players</string>
+    <string name="add_players_subtitle">Add players to teams</string>
+    <string name="add_players_players">Players</string>
+    <string name="add_players_loading">Loading available players...</string>
+    <string name="add_players_load_error">Error loading players</string>
+    <string name="add_players_add">Add</string>
+    <string name="add_players_cancel">‹ cancel</string>
+    <string name="add_players_position_number">%1$s · No. %2$s</string>
+    <string name="add_players_player_cd">Player</string>
+    <string name="add_players_empty_cd">No players</string>
+    <string name="add_players_empty_title">No players to add</string>
+    <string name="add_players_empty_desc">All players are already assigned to teams.</string>
+
+    <string name="create_team_cancel">Cancel</string>
+    <string name="create_team_cancel_small">‹ cancel</string>
+
+    <string name="create_team_title">Teams</string>
+    <string name="create_team_create">Create Team</string>
+    <string name="create_team_subtitle">Customize your team</string>
+
+    <string name="create_team_name">Name</string>
+    <string name="create_team_name_hint">Team name</string>
+
+    <string name="create_team_sport">Sport</string>
+    <string name="create_team_sport_football">Football</string>
+    <string name="create_team_sport_basketball">Basketball</string>
+    <string name="create_team_sport_tennis">Tennis</string>
+    <string name="create_team_sport_volleyball">Volleyball</string>
+
+    <string name="create_team_level">Level</string>
+    <string name="create_team_level_advanced">Advanced</string>
+    <string name="create_team_level_medium">Intermediate</string>
+    <string name="create_team_level_beginner">Beginner</string>
+
+    <string name="create_team_logo">Logo</string>
+    <string name="create_team_logo_cd">Logo</string>
+    <string name="create_team_upload_logo">Upload logo</string>
+    <string name="create_team_logo_selected">Logo selected</string>
+    <string name="create_team_pick_image">Select image from gallery</string>
+    <string name="create_team_image_ready">Image ready for upload</string>
+
+    <string name="create_team_upload_cd">Upload</string>
+    <string name="create_team_create_cd">Create team</string>
+
+    <string name="create_team_admin_cd">Admin</string>
+    <string name="create_team_admin">ADMIN</string>
+
+    <string name="create_team_options_cd">Open options</string>
+
+    <string name="edit_team_edit">Edit team</string>
+    <string name="edit_team_subtitle">Update team details</string>
+    <string name="edit_team_save">Save changes</string>
+    <string name="edit_team_save_cd">Save</string>
+    <string name="edit_team_not_found">Team not found</string>
+    <string name="common_back">back</string>
+
+    <string name="team_detail_subtitle">Team details</string>
+    <string name="team_detail_players">Players</string>
+    <string name="team_detail_stats">Statistics</string>
+    <string name="team_detail_registered_events">Registered events</string>
+    <string name="team_detail_delete_title">Delete team</string>
+    <string name="team_detail_delete_confirm">Are you sure you want to delete this team?</string>
+    <string name="team_detail_delete">Delete</string>
+    <string name="team_detail_remove_player_cd">Remove player</string>
+    <string name="team_detail_no_players_cd">No players</string>
+    <string name="team_detail_no_players_title">There are no players yet</string>
+    <string name="team_detail_no_players_desc">Add players to complete the team.</string>
+    <string name="team_detail_add_player">Add player</string>
+    <string name="team_detail_games">MATCHES</string>
+    <string name="team_detail_wins">WINS</string>
+    <string name="team_detail_goals">GOALS</string>
+    <string name="team_detail_no_events_cd">No registered events</string>
+    <string name="team_detail_no_events_title">No registered events</string>
+    <string name="team_detail_no_events_desc">When this team is associated with tournament matches, the event will appear here.</string>
+    <string name="team_detail_delete_team_cd">Delete team</string>
+    <string name="team_detail_delete_team">Delete team</string>
+    <string name="team_detail_sport_futsal">Futsal</string>
+    <string name="event_status_preparing">Preparing</string>
+
+    <string name="tournament_format_league">League</string>
+    <string name="tournament_format_group">Group</string>
+    <string name="tournament_format_knockout">Knockout</string>
+    <string name="pending_title">Account under review</string>
+    <string name="pending_description">Your organizer request is still waiting for admin approval.</string>
+    <string name="pending_default_organizer">Organizer</string>
+    <string name="pending_email_unavailable">Email unavailable</string>
+    <string name="pending_after_approval">Once your request is approved, you will be able to sign in normally.</string>
+    <string name="pending_back_to_login">Back to login</string>
+    <string name="pending_hero_subtitle">Organizer request received</string>
+    <string name="pending_request_message_title">Submitted description</string>
+    <string name="pending_cd_account_review">Account under review</string>
+    <string name="pending_cd_logo">Logo</string>
 </resources>

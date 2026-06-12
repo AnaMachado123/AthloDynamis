@@ -1,7 +1,12 @@
 package com.example.athlodynamis.presentation.screens.onboarding
 
+import android.app.Activity
+import android.app.LocaleManager
+import android.os.Build
+import android.os.LocaleList
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
-import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
@@ -99,7 +104,7 @@ fun OnboardingScreen(
                     fontWeight = FontWeight.ExtraBold
                 )
 
-                LanguageSwitcher()
+                OnboardingLanguageSwitcher()
             }
 
             Spacer(modifier = Modifier.height(22.dp))
@@ -163,7 +168,10 @@ fun OnboardingScreen(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AthloColors.Blue
+                    containerColor = Color(0xFF111827),
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0xFF111827),
+                    disabledContentColor = Color.White
                 ),
                 shape = RoundedCornerShape(18.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
@@ -183,6 +191,44 @@ fun OnboardingScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun OnboardingLanguageSwitcher() {
+    val context = LocalContext.current
+
+    fun changeLanguage(languageTag: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val localeManager = context.getSystemService(LocaleManager::class.java)
+            localeManager.applicationLocales = LocaleList.forLanguageTags(languageTag)
+            (context as? Activity)?.recreate()
+        }
+    }
+
+    Row {
+        Text(
+            text = "PT",
+            color = AthloColors.TextPrimary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.clickable {
+                changeLanguage("pt")
+            }
+        )
+
+        Text(
+            text = " | ",
+            color = AthloColors.TextSecondary
+        )
+
+        Text(
+            text = "EN",
+            color = AthloColors.TextPrimary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.clickable {
+                changeLanguage("en")
+            }
+        )
     }
 }
 

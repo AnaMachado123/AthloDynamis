@@ -19,8 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -37,17 +37,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.UserRepository
+import com.example.athlodynamis.presentation.components.AthloBackButton
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import com.example.athlodynamis.presentation.components.AthloBackButton
+
 @Composable
 fun AdminUsersScreen(
     navController: NavController,
@@ -66,15 +69,15 @@ fun AdminUsersScreen(
     }
 
     val title = when (filter) {
-        "organizers" -> "Organizadores"
-        "players" -> "Jogadores"
-        else -> "Utilizadores"
+        "organizers" -> stringResource(R.string.admin_users_title_organizers)
+        "players" -> stringResource(R.string.admin_users_title_players)
+        else -> stringResource(R.string.admin_users_title_all)
     }
 
     val subtitle = when (filter) {
-        "organizers" -> "Lista de organizadores registados"
-        "players" -> "Lista de jogadores registados"
-        else -> "Todos os utilizadores da plataforma"
+        "organizers" -> stringResource(R.string.admin_users_subtitle_organizers)
+        "players" -> stringResource(R.string.admin_users_subtitle_players)
+        else -> stringResource(R.string.admin_users_subtitle_all)
     }
 
     val icon = when (filter) {
@@ -82,6 +85,8 @@ fun AdminUsersScreen(
         "players" -> Icons.Default.Groups
         else -> Icons.Default.Person
     }
+
+    val genericLoadError = stringResource(R.string.admin_users_load_error)
 
     LaunchedEffect(filter) {
         isLoading = true
@@ -105,7 +110,7 @@ fun AdminUsersScreen(
             }
 
         } catch (e: Exception) {
-            errorMessage = e.message ?: "Erro ao carregar utilizadores."
+            errorMessage = e.message ?: genericLoadError
         } finally {
             isLoading = false
         }
@@ -148,14 +153,14 @@ fun AdminUsersScreen(
             if (errorMessage != null) {
                 item {
                     InfoCard(
-                        text = errorMessage ?: "Erro ao carregar utilizadores."
+                        text = errorMessage ?: genericLoadError
                     )
                 }
             }
 
             item {
                 Text(
-                    text = "Listagem",
+                    text = stringResource(R.string.admin_users_listing),
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Medium,
@@ -167,7 +172,7 @@ fun AdminUsersScreen(
                 isLoading -> {
                     item {
                         EmptyStateCard(
-                            text = "A carregar utilizadores..."
+                            text = stringResource(R.string.admin_users_loading)
                         )
                     }
                 }
@@ -175,7 +180,7 @@ fun AdminUsersScreen(
                 users.isEmpty() -> {
                     item {
                         EmptyStateCard(
-                            text = "Não existem utilizadores para este filtro."
+                            text = stringResource(R.string.admin_users_empty_filter)
                         )
                     }
                 }
@@ -212,7 +217,7 @@ private fun AdminUsersHeader(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 AthloBackButton(
-                    text = "voltar",
+                    text = stringResource(R.string.action_back),
                     onClick = onBackClick
                 )
 
@@ -241,19 +246,6 @@ private fun AdminUsersHeader(
                         )
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .background(AthloColors.Blue, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = title,
-                            tint = Color.White,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
                 }
             }
 
@@ -280,7 +272,7 @@ private fun AdminUsersHeader(
                     )
 
                     Text(
-                        text = "registos encontrados",
+                        text = stringResource(R.string.admin_users_records_found),
                         color = Color(0xFFC8DCEF),
                         style = MaterialTheme.typography.labelSmall
                     )
@@ -345,13 +337,13 @@ private fun AdminUserCard(user: UserDto) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     UserChip(
-                        text = user.role.toRoleLabel(),
+                        text = roleLabel(user.role),
                         backgroundColor = user.role.roleBackgroundColor(),
                         textColor = user.role.roleTextColor()
                     )
 
                     UserChip(
-                        text = user.approvalStatus.toApprovalLabel(),
+                        text = approvalLabel(user.approvalStatus),
                         backgroundColor = user.approvalStatus.approvalBackgroundColor(),
                         textColor = user.approvalStatus.approvalTextColor()
                     )
@@ -428,12 +420,13 @@ private fun String.initials(): String {
         .ifBlank { "U" }
 }
 
-private fun String.toRoleLabel(): String {
+@Composable
+private fun roleLabel(role: String): String {
     return when {
-        equals("ADMIN", ignoreCase = true) -> "Admin"
-        equals("ORGANIZER", ignoreCase = true) -> "Organizador"
-        equals("PLAYER", ignoreCase = true) -> "Jogador"
-        else -> this
+        role.equals("ADMIN", ignoreCase = true) -> stringResource(R.string.admin_users_role_admin)
+        role.equals("ORGANIZER", ignoreCase = true) -> stringResource(R.string.admin_users_role_organizer)
+        role.equals("PLAYER", ignoreCase = true) -> stringResource(R.string.admin_users_role_player)
+        else -> role
     }
 }
 
@@ -455,12 +448,13 @@ private fun String.roleTextColor(): Color {
     }
 }
 
-private fun String.toApprovalLabel(): String {
+@Composable
+private fun approvalLabel(status: String): String {
     return when {
-        equals("APPROVED", ignoreCase = true) -> "Aprovado"
-        equals("PENDING", ignoreCase = true) -> "Pendente"
-        equals("REJECTED", ignoreCase = true) -> "Rejeitado"
-        else -> this
+        status.equals("APPROVED", ignoreCase = true) -> stringResource(R.string.admin_users_approval_approved)
+        status.equals("PENDING", ignoreCase = true) -> stringResource(R.string.admin_users_approval_pending)
+        status.equals("REJECTED", ignoreCase = true) -> stringResource(R.string.admin_users_approval_rejected)
+        else -> status
     }
 }
 

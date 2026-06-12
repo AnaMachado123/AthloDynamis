@@ -41,16 +41,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UpdateMatchDto
+import com.example.athlodynamis.data.repository.NotificationRepository
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
@@ -59,8 +63,6 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
-import androidx.compose.runtime.rememberCoroutineScope
-import com.example.athlodynamis.data.repository.NotificationRepository
 import kotlinx.coroutines.launch
 
 private data class EditTeamOption(
@@ -93,6 +95,9 @@ fun EditMatchScreen(
     var location by remember { mutableStateOf("") }
     var teamA by remember { mutableStateOf<EditTeamOption?>(null) }
     var teamB by remember { mutableStateOf<EditTeamOption?>(null) }
+
+    val notificationTitle = stringResource(R.string.edit_match_notification_title)
+    val sameTeamsError = stringResource(R.string.add_match_same_teams_error)
 
     LaunchedEffect(currentMatchId) {
         if (currentMatchId > 0L) {
@@ -182,9 +187,10 @@ fun EditMatchScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             MatchEditHeader(
-                title = "Editar Jogo",
-                subtitle = currentTournament?.name ?: "Jogo do torneio",
-                backText = "‹ cancelar",
+                title = stringResource(R.string.edit_match_title),
+                subtitle = currentTournament?.name
+                    ?: stringResource(R.string.edit_match_default_subtitle),
+                backText = stringResource(R.string.edit_match_cancel),
                 isAdmin = isAdmin,
                 matchId = matchId,
                 onBackClick = {
@@ -201,28 +207,28 @@ fun EditMatchScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    FieldLabel("Hora do jogo")
+                    FieldLabel(stringResource(R.string.add_match_time_label))
                     AthloTextField(
                         value = matchTime,
                         onValueChange = { matchTime = it },
-                        placeholder = "Ex: 18:30"
+                        placeholder = stringResource(R.string.add_match_time_hint)
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Local")
+                    FieldLabel(stringResource(R.string.add_match_location_label))
                     AthloTextField(
                         value = location,
                         onValueChange = { location = it },
-                        placeholder = "Ex: Pavilhão Municipal"
+                        placeholder = stringResource(R.string.add_match_location_hint)
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    FieldLabel("Associar Equipa 1")
+                    FieldLabel(stringResource(R.string.add_match_team_1_label))
                     TeamDropdown(
                         selectedTeam = teamA,
-                        placeholder = "Selecionar equipa 1",
+                        placeholder = stringResource(R.string.add_match_team_1_hint),
                         options = filteredTeamOptions,
                         onValueSelected = {
                             teamA = it
@@ -231,10 +237,10 @@ fun EditMatchScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Associar Equipa 2")
+                    FieldLabel(stringResource(R.string.add_match_team_2_label))
                     TeamDropdown(
                         selectedTeam = teamB,
-                        placeholder = "Selecionar equipa 2",
+                        placeholder = stringResource(R.string.add_match_team_2_hint),
                         options = filteredTeamOptions,
                         onValueSelected = {
                             teamB = it
@@ -245,7 +251,7 @@ fun EditMatchScreen(
 
             if (teamA != null && teamA?.id == teamB?.id) {
                 Text(
-                    text = "As equipas não podem ser iguais.",
+                    text = sameTeamsError,
                     color = Color(0xFFCC1F2F),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold
@@ -272,6 +278,7 @@ fun EditMatchScreen(
                         selectedTeamB != null &&
                         match != null
                     ) {
+                        val notificationMessage = ""
                         matchesViewModel.updateMatch(
                             matchId = currentMatchId,
                             match = UpdateMatchDto(
@@ -286,8 +293,10 @@ fun EditMatchScreen(
                             onSuccess = {
                                 coroutineScope.launch {
                                     notificationRepository.createNotification(
-                                        title = "Jogo atualizado",
-                                        message = "O jogo ${selectedTeamA.name} vs ${selectedTeamB.name} foi atualizado."
+                                        title = notificationTitle,
+                                        message = notificationMessage.ifBlank {
+                                            "O jogo ${selectedTeamA.name} vs ${selectedTeamB.name} foi atualizado."
+                                        }
                                     )
 
                                     navController.popBackStack()
@@ -310,7 +319,7 @@ fun EditMatchScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Save,
-                    contentDescription = "Guardar alterações",
+                    contentDescription = stringResource(R.string.edit_match_save_cd),
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
@@ -318,7 +327,7 @@ fun EditMatchScreen(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = "Guardar Alterações",
+                    text = stringResource(R.string.edit_match_save),
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -348,7 +357,7 @@ fun EditMatchScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Apagar jogo",
+                        contentDescription = stringResource(R.string.edit_match_delete_cd),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -356,7 +365,7 @@ fun EditMatchScreen(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "Apagar jogo",
+                        text = stringResource(R.string.edit_match_delete),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -418,7 +427,7 @@ private fun MatchEditHeader(
                 )
 
                 Text(
-                    text = "Jogo #$matchId",
+                    text = stringResource(R.string.edit_match_id, matchId),
                     color = Color(0xFF8EC5F4).copy(alpha = 0.65f),
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -445,7 +454,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -453,7 +462,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -534,7 +543,7 @@ private fun TeamDropdown(
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Selecionar equipa",
+                contentDescription = stringResource(R.string.add_match_select_team_cd),
                 tint = AthloColors.TextMuted
             )
         }

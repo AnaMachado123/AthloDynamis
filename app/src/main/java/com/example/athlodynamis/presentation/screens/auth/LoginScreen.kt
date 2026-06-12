@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.Image
 @Composable
 fun LoginScreen(
     errorMessage: String? = null,
@@ -254,12 +256,7 @@ private fun LoginHeroCard() {
                     .background(AthloColors.Blue, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = "Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -1,9 +1,11 @@
 package com.example.athlodynamis.presentation.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,12 +31,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
-
 @Composable
 fun AccountPendingScreen(
     userName: String,
@@ -78,7 +83,7 @@ fun AccountPendingScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.HourglassTop,
-                            contentDescription = "Conta em análise",
+                            contentDescription = stringResource(R.string.pending_cd_account_review),
                             tint = Color(0xFF9A6B22),
                             modifier = Modifier.size(40.dp)
                         )
@@ -87,7 +92,7 @@ fun AccountPendingScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Conta em análise",
+                        text = stringResource(R.string.pending_title),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
@@ -97,7 +102,7 @@ fun AccountPendingScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "O teu pedido para seres organizador ainda está a aguardar aprovação do administrador.",
+                        text = stringResource(R.string.pending_description),
                         color = AthloColors.TextSecondary,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
@@ -106,16 +111,20 @@ fun AccountPendingScreen(
                     Spacer(modifier = Modifier.height(26.dp))
 
                     PendingInfoCard(
-                        title = "Nome",
-                        value = userName.ifBlank { "Organizador" },
+                        title = stringResource(R.string.name_label),
+                        value = userName.ifBlank {
+                            stringResource(R.string.pending_default_organizer)
+                        },
                         iconType = PendingInfoIconType.USER
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     PendingInfoCard(
-                        title = "Email",
-                        value = userEmail.ifBlank { "Email não disponível" },
+                        title = stringResource(R.string.profile_email),
+                        value = userEmail.ifBlank {
+                            stringResource(R.string.pending_email_unavailable)
+                        },
                         iconType = PendingInfoIconType.EMAIL
                     )
 
@@ -130,7 +139,7 @@ fun AccountPendingScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Assim que o pedido for aprovado, já vais conseguir entrar normalmente na aplicação.",
+                        text = stringResource(R.string.pending_after_approval),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center
@@ -144,13 +153,14 @@ fun AccountPendingScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = AthloColors.Blue
+                            containerColor = AthloColors.Blue,
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(18.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                     ) {
                         Text(
-                            text = "Voltar ao login",
+                            text = stringResource(R.string.pending_back_to_login),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -166,49 +176,59 @@ private fun AccountPendingHeroCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(190.dp),
+            .height(220.dp),
         shape = RoundedCornerShape(AthloRadius.ExtraLarge),
         colors = CardDefaults.cardColors(containerColor = AthloColors.DarkNavy),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(22.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(58.dp)
-                    .background(AthloColors.Blue, CircleShape),
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = "Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .background(AthloColors.Blue, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(42.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = stringResource(R.string.pending_hero_subtitle),
+                    color = Color(0xFFC8DCEF),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "AthloDynamis",
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Pedido de organizador recebido",
-                color = Color(0xFFC8DCEF),
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center
-            )
         }
     }
 }
@@ -230,7 +250,7 @@ private fun PendingInfoCard(
         colors = CardDefaults.cardColors(containerColor = AthloColors.NeutralBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
@@ -292,7 +312,7 @@ private fun RequestMessageCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Descrição enviada",
+                text = stringResource(R.string.pending_request_message_title),
                 color = AthloColors.Navy,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.ExtraBold

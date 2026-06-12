@@ -18,10 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.mock.MockTournaments.tournaments
 import com.example.athlodynamis.domain.model.PlayerStatsData
 import com.example.athlodynamis.domain.model.RecentGameData
@@ -161,7 +163,7 @@ fun StatsScreen(
 
                             uiState.error != null -> {
                                 Text(
-                                    text = uiState.error ?: "Erro ao carregar estatísticas",
+                                    text = uiState.error ?: stringResource(R.string.stats_error_loading),
                                     color = Color(0xFFC83755),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold
@@ -208,12 +210,12 @@ fun StatsScreen(
 @Composable
 private fun PlayerStatsContent(stats: PlayerStatsData) {
     StatsHeader(
-        title = "Estatísticas",
-        subtitle = "As minhas stats",
+        title = stringResource(R.string.stats_title),
+        subtitle = stringResource(R.string.stats_my_stats),
         summaries = listOf(
-            StatSummary(stats.totalMatches.toString(), "Jogos"),
-            StatSummary(stats.trophies.toString(), "Troféus"),
-            StatSummary(stats.teams.toString(), "Equipas")
+            StatSummary(stats.totalMatches.toString(), stringResource(R.string.stats_games)),
+            StatSummary(stats.trophies.toString(), stringResource(R.string.stats_trophies)),
+            StatSummary(stats.teams.toString(), stringResource(R.string.stats_teams))
         ),
         showAdminBadge = false
     )
@@ -241,7 +243,7 @@ private fun PerformanceCard(stats: PlayerStatsData) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                SectionMiniTitle("DESEMPENHO")
+                SectionMiniTitle(stringResource(R.string.stats_performance))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -253,9 +255,9 @@ private fun PerformanceCard(stats: PlayerStatsData) {
                     Spacer(modifier = Modifier.width(22.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        LegendItem(AthloColors.Blue, "${stats.wins} Vitórias")
-                        LegendItem(Color(0xFFE84D4D), "${stats.draws} Empates")
-                        LegendItem(Color(0xFF9CA3AF), "${stats.losses} Derrotas")
+                        LegendItem(AthloColors.Blue, stringResource(R.string.stats_wins, stats.wins))
+                        LegendItem(Color(0xFFE84D4D), stringResource(R.string.stats_draws, stats.draws))
+                        LegendItem(Color(0xFF9CA3AF), stringResource(R.string.stats_losses, stats.losses))
                     }
                 }
             }
@@ -272,19 +274,19 @@ private fun PlayerSeasonNumbersCard(stats: PlayerStatsData) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(22.dp)) {
-            SectionMiniTitle("NÚMEROS DA ÉPOCA")
+            SectionMiniTitle(stringResource(R.string.stats_season_numbers))
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallStatBox(stats.goals.toString(), "Golos marcados", Modifier.weight(1f))
-                SmallStatBox(stats.assists.toString(), "Assistências", Modifier.weight(1f))
+                SmallStatBox(stats.goals.toString(), stringResource(R.string.stats_goals_scored), Modifier.weight(1f))
+                SmallStatBox(stats.assists.toString(), stringResource(R.string.stats_assists), Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallStatBox(stats.yellowCards.toString(), "Cartões amarelos", Modifier.weight(1f))
-                SmallStatBox(stats.redCards.toString(), "Cartões vermelhos", Modifier.weight(1f))
+                SmallStatBox(stats.yellowCards.toString(), stringResource(R.string.stats_yellow_cards), Modifier.weight(1f))
+                SmallStatBox(stats.redCards.toString(), stringResource(R.string.stats_red_cards), Modifier.weight(1f))
             }
         }
     }
@@ -307,7 +309,7 @@ private fun RecentGamesCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                SectionMiniTitle("ÚLTIMOS JOGOS")
+                SectionMiniTitle(stringResource(R.string.stats_recent_games))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -315,7 +317,7 @@ private fun RecentGamesCard(
             if (recentGames.isEmpty()) {
                 Icon(
                     imageVector = Icons.Default.Sync,
-                    contentDescription = "Sem jogos registados",
+                    contentDescription = stringResource(R.string.stats_no_games),
                     tint = AthloColors.TextMuted,
                     modifier = Modifier.size(48.dp)
                 )
@@ -323,7 +325,7 @@ private fun RecentGamesCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Sem jogos registados",
+                    text = stringResource(R.string.stats_no_games),
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold
@@ -452,7 +454,7 @@ private fun OrganizerStatsContent(
 
     val modalityItems = matchesBySport.map { (sport, count) ->
         ProgressItem(
-            label = sport,
+            label = localizedSportName(sport),
             value = count.toString(),
             progress = count.toFloat() / maxSportCount.toFloat(),
             color = when (sport.lowercase()) {
@@ -491,18 +493,18 @@ private fun OrganizerStatsContent(
                     .take(2)
                     .joinToString("") { it.first().uppercase() },
                 name = player.name,
-                subtitle = "Equipa #${player.teamId ?: "-"}",
-                value = "${player.goals} golos"
+                subtitle = stringResource(R.string.stats_team, player.teamId ?: 0),
+                value = stringResource(R.string.stats_goals, player.goals)
             )
         }
 
     StatsHeader(
-        title = "Estatísticas",
-        subtitle = "Os meus torneios",
+        title = stringResource(R.string.stats_title),
+        subtitle = stringResource(R.string.stats_my_tournaments),
         summaries = listOf(
-            StatSummary(totalTournaments.toString(), "Torneios"),
-            StatSummary(totalMatches.toString(), "Jogos"),
-            StatSummary("$completionPercentage%", "Conclusão")
+            StatSummary(totalTournaments.toString(), stringResource(R.string.stats_tournaments)),
+            StatSummary(totalMatches.toString(), stringResource(R.string.stats_games)),
+            StatSummary("$completionPercentage%", stringResource(R.string.stats_completion))
         ),
         showAdminBadge = false
     )
@@ -510,7 +512,7 @@ private fun OrganizerStatsContent(
     Spacer(modifier = Modifier.height(22.dp))
 
     ProgressCard(
-        title = "JOGOS POR MODALIDADE",
+        title = stringResource(R.string.stats_games_by_sport),
         items = modalityItems
     )
 
@@ -526,7 +528,7 @@ private fun OrganizerStatsContent(
     Spacer(modifier = Modifier.height(18.dp))
 
     RankingCard(
-        title = "TOP MARCADORES",
+        title = stringResource(R.string.stats_top_scorers),
         items = topScorers
     )
 }
@@ -547,20 +549,20 @@ private fun OrganizerSeasonSummaryCard(
         Column(
             modifier = Modifier.padding(22.dp)
         ) {
-            SectionMiniTitle("RESUMO DA TEMPORADA")
+            SectionMiniTitle(stringResource(R.string.stats_season_summary))
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SmallStatBox(
                     value = athletesCount.toString(),
-                    label = "Atletas registados",
+                    label = stringResource(R.string.stats_registered_athletes),
                     modifier = Modifier.weight(1f)
                 )
 
                 SmallStatBox(
                     value = activeTeamsCount.toString(),
-                    label = "Equipas ativas",
+                    label = stringResource(R.string.stats_active_teams),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -570,13 +572,13 @@ private fun OrganizerSeasonSummaryCard(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SmallStatBox(
                     value = goalsCount.toString(),
-                    label = "Golos marcados",
+                    label = stringResource(R.string.stats_goals_scored),
                     modifier = Modifier.weight(1f)
                 )
 
                 SmallStatBox(
                     value = tournamentsCount.toString(),
-                    label = "Torneios geridos",
+                    label = stringResource(R.string.stats_managed_tournaments),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -611,19 +613,19 @@ private fun AdminStatsContent(
 
     val growthItems = listOf(
         ProgressItem(
-            label = "Utilizadores",
+            label = stringResource(R.string.stats_users),
             value = totalUsers.toString(),
             progress = totalUsers.toFloat() / maxGrowthValue.toFloat(),
             color = AthloColors.Blue
         ),
         ProgressItem(
-            label = "Torneios criados",
+            label = stringResource(R.string.stats_created_tournaments),
             value = totalTournaments.toString(),
             progress = totalTournaments.toFloat() / maxGrowthValue.toFloat(),
             color = AthloColors.SuccessBg
         ),
         ProgressItem(
-            label = "Jogos terminados",
+            label = stringResource(R.string.stats_finished_games),
             value = completedMatches.toString(),
             progress = completedMatches.toFloat() / maxGrowthValue.toFloat(),
             color = AthloColors.WarningBg
@@ -639,7 +641,7 @@ private fun AdminStatsContent(
 
     val tournamentSportItems = tournamentsBySport.map { (sport, count) ->
         ProgressItem(
-            label = sport,
+            label = localizedSportName(sport),
             value = count.toString(),
             progress = count.toFloat() / maxTournamentSportCount.toFloat(),
             color = when (sport.lowercase()) {
@@ -679,18 +681,18 @@ private fun AdminStatsContent(
                     .take(2)
                     .joinToString("") { it.first().uppercase() },
                 name = organizer.name,
-                subtitle = "$tournamentCount torneios",
+                subtitle = stringResource(R.string.stats_organizer_tournaments, tournamentCount),
                 value = organizer.approvalStatus
             )
         }
 
     StatsHeader(
-        title = "Estatísticas",
-        subtitle = "Vista global da plataforma",
+        title = stringResource(R.string.stats_title),
+        subtitle = stringResource(R.string.stats_platform_overview),
         summaries = listOf(
-            StatSummary(totalTournaments.toString(), "Torneios"),
-            StatSummary(totalUsers.toString(), "Utilizadores"),
-            StatSummary(totalMatches.toString(), "Jogos")
+            StatSummary(totalTournaments.toString(), stringResource(R.string.stats_tournaments)),
+            StatSummary(totalUsers.toString(), stringResource(R.string.stats_users)),
+            StatSummary(totalMatches.toString(), stringResource(R.string.stats_games))
         ),
         showAdminBadge = true
     )
@@ -698,21 +700,21 @@ private fun AdminStatsContent(
     Spacer(modifier = Modifier.height(22.dp))
 
     ProgressCard(
-        title = "RESUMO DA PLATAFORMA",
+        title = stringResource(R.string.stats_platform_summary),
         items = growthItems
     )
 
     Spacer(modifier = Modifier.height(18.dp))
 
     ProgressCard(
-        title = "TORNEIOS POR MODALIDADE",
+        title = stringResource(R.string.stats_tournaments_by_sport),
         items = tournamentSportItems
     )
 
     Spacer(modifier = Modifier.height(18.dp))
 
     RankingCard(
-        title = "TOP ORGANIZADORES",
+        title = stringResource(R.string.stats_top_organizers),
         items = topOrganizers
     )
 
@@ -837,7 +839,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.stats_admin),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(12.dp)
         )
@@ -845,7 +847,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(3.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.stats_admin),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold,
@@ -1055,14 +1057,14 @@ private fun PlatformStatusCard() {
         Column(
             modifier = Modifier.padding(22.dp)
         ) {
-            SectionMiniTitle("ESTADO DA PLATAFORMA")
+            SectionMiniTitle(stringResource(R.string.stats_platform_status))
 
             Spacer(modifier = Modifier.height(18.dp))
 
             PlatformStatusRow(
                 icon = Icons.Default.Api,
-                title = "API",
-                status = "Operacional",
+                title = stringResource(R.string.stats_api),
+                status = stringResource(R.string.stats_operational),
                 statusColor = Color(0xFF3F7A28)
             )
 
@@ -1070,8 +1072,8 @@ private fun PlatformStatusCard() {
 
             PlatformStatusRow(
                 icon = Icons.Default.Sync,
-                title = "Sync Offline",
-                status = "Lenta",
+                title = stringResource(R.string.stats_offline_sync),
+                status = stringResource(R.string.stats_slow),
                 statusColor = Color(0xFF9A6B22)
             )
         }
@@ -1112,6 +1114,18 @@ private fun PlatformStatusRow(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+
+@Composable
+private fun localizedSportName(sport: String): String {
+    return when (sport.lowercase()) {
+        "futebol" -> stringResource(R.string.sport_football)
+        "basquetebol" -> stringResource(R.string.sport_basketball)
+        "voleibol" -> stringResource(R.string.sport_volleyball)
+        "ténis", "tenis" -> stringResource(R.string.sport_tennis)
+        else -> sport
     }
 }
 

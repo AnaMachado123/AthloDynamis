@@ -40,10 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.Notification
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
@@ -82,6 +84,9 @@ fun NotificationsScreen(
 
 
     val unreadCount = notifications.count { !it.isRead }
+    val loadingText = stringResource(R.string.notifications_loading)
+    val loadErrorText = stringResource(R.string.notifications_load_error)
+    val recentText = stringResource(R.string.notifications_recent)
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -113,13 +118,13 @@ fun NotificationsScreen(
             when {
                 isLoading -> {
                     item {
-                        InfoCard(text = "A carregar notificações...")
+                        InfoCard(text = loadingText)
                     }
                 }
 
                 error != null -> {
                     item {
-                        InfoCard(text = error ?: "Erro ao carregar notificações")
+                        InfoCard(text = error ?: loadErrorText)
                     }
                 }
 
@@ -131,7 +136,7 @@ fun NotificationsScreen(
 
                 else -> {
                     val groupedNotifications = notifications.groupBy {
-                        dayGroupFromCreatedAt(it.createdAt)
+                        dayGroupFromCreatedAt(it.createdAt, recentText)
                     }
 
                     groupedNotifications.forEach { (day, items) ->
@@ -181,7 +186,7 @@ private fun NotificationsHeader(
             ) {
                 Column {
                     Text(
-                        text = "Notificações",
+                        text = stringResource(R.string.notifications_title),
                         color = Color.White,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
@@ -191,9 +196,9 @@ private fun NotificationsHeader(
 
                     Text(
                         text = when (unreadCount) {
-                            0 -> "Não tens notificações por ler"
-                            1 -> "1 notificação por ler"
-                            else -> "$unreadCount notificações por ler"
+                            0 -> stringResource(R.string.notifications_unread_zero)
+                            1 -> stringResource(R.string.notifications_unread_one)
+                            else -> stringResource(R.string.notifications_unread_many, unreadCount)
                         },
                         color = Color(0xFF8EC5F4),
                         style = MaterialTheme.typography.titleMedium
@@ -208,7 +213,7 @@ private fun NotificationsHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notificações",
+                        contentDescription = stringResource(R.string.notifications_title),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -258,7 +263,7 @@ private fun EmptyNotificationsCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
-                    contentDescription = "Sem notificações",
+                    contentDescription = stringResource(R.string.notifications_empty_cd),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(28.dp)
                 )
@@ -267,7 +272,7 @@ private fun EmptyNotificationsCard() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Sem notificações",
+                text = stringResource(R.string.notifications_empty_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold
@@ -276,7 +281,7 @@ private fun EmptyNotificationsCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando houver novidades, elas aparecem aqui.",
+                text = stringResource(R.string.notifications_empty_desc),
                 color = AthloColors.TextMuted,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -373,7 +378,7 @@ private fun NotificationCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = notification.title,
+                        text = localizedNotificationText(notification.title),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.ExtraBold,
@@ -390,7 +395,7 @@ private fun NotificationCard(
                 Spacer(modifier = Modifier.height(5.dp))
 
                 Text(
-                    text = notification.message,
+                    text = localizedNotificationText(notification.message),
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -398,7 +403,7 @@ private fun NotificationCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = formatNotificationTime(notification.createdAt),
+                    text = formatNotificationTime(notification.createdAt, stringResource(R.string.notifications_no_date)),
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Medium
@@ -417,12 +422,35 @@ private fun NewBadge() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Nova",
+            text = stringResource(R.string.notifications_new),
             color = Color.White,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+@Composable
+private fun localizedNotificationText(text: String): String {
+    return text
+        .replace("Novo evento criado", stringResource(R.string.notifications_text_new_event_created))
+        .replace("Evento atualizado", stringResource(R.string.notifications_text_event_updated))
+        .replace("Novo jogo agendado", stringResource(R.string.notifications_text_new_match_scheduled))
+        .replace("Jogo atualizado", stringResource(R.string.notifications_text_match_updated))
+        .replace("Pedido aprovado", stringResource(R.string.notifications_text_request_approved))
+        .replace("Pedido rejeitado", stringResource(R.string.notifications_text_request_rejected))
+        .replace("Golo", stringResource(R.string.live_event_goal))
+        .replace("Assistência", stringResource(R.string.live_event_assist))
+        .replace("Cartão amarelo", stringResource(R.string.live_event_yellow_card))
+        .replace("Cartão vermelho", stringResource(R.string.live_event_red_card))
+        .replace("Substituição", stringResource(R.string.live_event_substitution))
+        .replace("foi atualizado", stringResource(R.string.notifications_text_was_updated))
+        .replace("foi criado", stringResource(R.string.notifications_text_was_created))
+        .replace("Foi criado", stringResource(R.string.notifications_text_was_created_capitalized))
+        .replace("torneio", stringResource(R.string.notifications_text_tournament))
+        .replace("modalidade", stringResource(R.string.notifications_text_sport_category))
+        .replace("jogo", stringResource(R.string.notifications_text_match))
+        .replace("aos", stringResource(R.string.notifications_text_at_minute))
 }
 
 private data class NotificationVisualColors(
@@ -502,17 +530,13 @@ private fun notificationIcon(type: NotificationType): ImageVector {
     }
 }
 
-private fun dayGroupFromCreatedAt(createdAt: String?): String {
-    if (createdAt.isNullOrBlank()) {
-        return "RECENTES"
-    }
-
-    return "RECENTES"
+private fun dayGroupFromCreatedAt(createdAt: String?, recentText: String): String {
+    return recentText
 }
 
-private fun formatNotificationTime(createdAt: String?): String {
+private fun formatNotificationTime(createdAt: String?, noDateText: String): String {
     if (createdAt.isNullOrBlank()) {
-        return "Sem data"
+        return noDateText
     }
 
     val cleanDate = createdAt

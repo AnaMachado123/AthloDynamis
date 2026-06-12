@@ -230,7 +230,7 @@ fun TeamsScreen(
             if (userRole == AthloUserRole.PLAYER && favoriteTeams.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Equipas favoritas",
+                        text = stringResource(R.string.teams_favorites),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextPrimary
@@ -261,7 +261,7 @@ fun TeamsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Todas as equipas",
+                        text = stringResource(R.string.teams_all),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextPrimary
@@ -272,7 +272,7 @@ fun TeamsScreen(
             if (isAdmin || userRole == AthloUserRole.ORGANIZER) {
                 item {
                     Text(
-                        text = "As minhas equipas",
+                        text = stringResource(R.string.teams_mine),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextPrimary
@@ -309,7 +309,7 @@ fun TeamsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Todas as equipas",
+                        text = stringResource(R.string.teams_all),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextPrimary
@@ -360,7 +360,7 @@ fun TeamsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Criar equipa",
+                            contentDescription = stringResource(R.string.teams_create_cd),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -368,7 +368,7 @@ fun TeamsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Text(
-                            text = "Criar equipa",
+                            text = stringResource(R.string.teams_create),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -405,7 +405,7 @@ private fun TeamsHeader(
                 ) {
                     Column {
                         Text(
-                            text = "Equipas",
+                            text = stringResource(R.string.teams_title),
                             color = Color.White,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold
@@ -414,7 +414,7 @@ private fun TeamsHeader(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = "Lista de Equipas",
+                            text = stringResource(R.string.teams_list_title),
                             color = Color(0xFF8EC5F4),
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -434,13 +434,13 @@ private fun TeamsHeader(
             ) {
                 HeaderStatBox(
                     value = totalTeams.toString(),
-                    label = "Equipas",
+                    label = stringResource(R.string.teams_title),
                     modifier = Modifier.weight(1f)
                 )
 
                 HeaderStatBox(
                     value = totalSports.toString(),
-                    label = "Modalidades",
+                    label = stringResource(R.string.teams_sports),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -494,7 +494,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -502,7 +502,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold,
@@ -520,11 +520,11 @@ private fun SearchBox(
     OutlinedTextField(
         value = searchText,
         onValueChange = onSearchChange,
-        placeholder = { Text("Pesquisar equipa...") },
+        placeholder = { Text(stringResource(R.string.teams_search_hint)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Pesquisar",
+                contentDescription = stringResource(R.string.teams_search_cd),
                 tint = AthloColors.TextMuted
             )
         },
@@ -569,14 +569,14 @@ private fun SearchHistorySection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Histórico de pesquisas",
+                text = stringResource(R.string.teams_search_history),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Limpar",
+                text = stringResource(R.string.teams_clear),
                 color = AthloColors.Blue,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
@@ -619,7 +619,7 @@ private fun TeamFilterRows(
             ) {
                 rowFilters.forEach { filter ->
                     FilterPill(
-                        text = filter,
+                        text = localizedTeamFilter(filter),
                         selected = selectedFilter == filter,
                         onClick = { onFilterClick(filter) }
                     )
@@ -706,13 +706,13 @@ private fun TeamListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     SmallBadge(
-                        text = "$playersCount Jogadores",
+                        text = stringResource(R.string.teams_players_count, playersCount),
                         background = AthloColors.InfoBg,
                         textColor = AthloColors.Blue
                     )
 
                     SmallBadge(
-                        text = team.sport,
+                        text = localizedSportName(team.sport),
                         background = sportColor(team.sport),
                         textColor = sportTextColor(team.sport)
                     )
@@ -734,7 +734,7 @@ private fun TeamListCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Favoritar equipa",
+                        contentDescription = stringResource(R.string.teams_favorite_cd),
                         tint = if (isFavorite) Color(0xFFFFC107) else AthloColors.TextMuted,
                         modifier = Modifier.size(20.dp)
                     )
@@ -752,7 +752,7 @@ private fun TeamListCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Abrir equipa",
+                    contentDescription = stringResource(R.string.teams_open_cd),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(20.dp)
                 )
@@ -777,7 +777,7 @@ private fun TeamLogoBox(
         if (!logoUrl.isNullOrBlank()) {
             AsyncImage(
                 model = logoUrl,
-                contentDescription = "Escudo da equipa",
+                contentDescription = stringResource(R.string.teams_logo_cd),
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(16.dp)),
@@ -786,7 +786,7 @@ private fun TeamLogoBox(
         } else {
             Icon(
                 imageVector = Icons.Default.Groups,
-                contentDescription = "Equipa",
+                contentDescription = stringResource(R.string.teams_team_cd),
                 tint = AthloColors.Blue,
                 modifier = Modifier.size(24.dp)
             )
@@ -816,7 +816,7 @@ private fun EmptyTeamsCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Sem equipas",
+                    contentDescription = stringResource(R.string.teams_empty_cd),
                     tint = AthloColors.Blue
                 )
             }
@@ -824,7 +824,7 @@ private fun EmptyTeamsCard() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Nenhuma equipa encontrada",
+                text = stringResource(R.string.teams_empty_title),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -833,7 +833,7 @@ private fun EmptyTeamsCard() {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Tenta alterar a pesquisa ou o filtro selecionado.",
+                text = stringResource(R.string.teams_empty_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -900,6 +900,26 @@ private fun SmallBadge(
             fontWeight = FontWeight.SemiBold,
             maxLines = 1
         )
+    }
+}
+
+
+@Composable
+private fun localizedTeamFilter(filter: String): String {
+    return when (filter) {
+        "Todos" -> stringResource(R.string.filter_all)
+        else -> localizedSportName(filter)
+    }
+}
+
+@Composable
+private fun localizedSportName(sport: String): String {
+    return when (sport) {
+        "Futebol" -> stringResource(R.string.sport_football)
+        "Basquetebol" -> stringResource(R.string.sport_basketball)
+        "Voleibol" -> stringResource(R.string.sport_volleyball)
+        "Ténis" -> stringResource(R.string.sport_tennis)
+        else -> sport
     }
 }
 

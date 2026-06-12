@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +56,8 @@ import androidx.compose.ui.res.stringResource
 import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
 
 private const val ACCOUNT_PLAYER = "PLAYER"
 private const val ACCOUNT_ORGANIZER = "ORGANIZER"
@@ -630,12 +633,19 @@ private fun RegisterHeroCard() {
                     .background(AthloColors.Blue, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = "Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .background(AthloColors.Blue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

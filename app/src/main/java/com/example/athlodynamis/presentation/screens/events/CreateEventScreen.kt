@@ -43,22 +43,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
-import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
+import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+
+private const val STATUS_PREPARING = "Em preparação"
+
+private const val SPORT_TENNIS_VALUE = "Ténis"
+private const val SPORT_FOOTBALL_VALUE = "Futebol"
+private const val SPORT_BASKETBALL_VALUE = "Basquetebol"
+private const val SPORT_VOLLEYBALL_VALUE = "Voleibol"
+
+private const val FORMAT_LEAGUE_VALUE = "Liga"
+private const val FORMAT_KNOCKOUT_VALUE = "Eliminatórias"
+private const val FORMAT_GROUP_VALUE = "Grupo"
+
+private data class ChoiceOption(
+    val value: String,
+    val label: String
+)
 
 @Composable
 fun CreateEventScreen(
     navController: NavController,
     userRole: AthloUserRole,
     currentUserId: String
-){
+) {
     val tournamentsViewModel: TournamentsViewModel = viewModel()
     val notificationsViewModel: NotificationsViewModel = viewModel()
 
@@ -67,6 +85,7 @@ fun CreateEventScreen(
     val tournamentCreated by tournamentsViewModel.tournamentCreated.collectAsState()
 
     val isAdmin = userRole == AthloUserRole.ADMIN
+
     var eventName by remember { mutableStateOf("") }
     var selectedSport by remember { mutableStateOf("") }
     var selectedFormat by remember { mutableStateOf("") }
@@ -75,6 +94,38 @@ fun CreateEventScreen(
     var location by remember { mutableStateOf("") }
     var maxTeams by remember { mutableStateOf("") }
 
+    val sportOptions = listOf(
+        ChoiceOption(SPORT_TENNIS_VALUE, stringResource(R.string.sport_tennis)),
+        ChoiceOption(SPORT_FOOTBALL_VALUE, stringResource(R.string.sport_football)),
+        ChoiceOption(SPORT_BASKETBALL_VALUE, stringResource(R.string.sport_basketball)),
+        ChoiceOption(SPORT_VOLLEYBALL_VALUE, stringResource(R.string.sport_volleyball))
+    )
+
+    val formatOptions = listOf(
+        ChoiceOption(FORMAT_LEAGUE_VALUE, stringResource(R.string.format_league)),
+        ChoiceOption(FORMAT_KNOCKOUT_VALUE, stringResource(R.string.format_knockout)),
+        ChoiceOption(FORMAT_GROUP_VALUE, stringResource(R.string.format_group))
+    )
+
+    val maxTeamOptions = listOf(
+        stringResource(R.string.max_teams_4),
+        stringResource(R.string.max_teams_8),
+        stringResource(R.string.max_teams_16),
+        stringResource(R.string.max_teams_32)
+    )
+
+    val selectedSportLabel = sportOptions
+        .firstOrNull { it.value == selectedSport }
+        ?.label
+        .orEmpty()
+
+    val notificationTitle = stringResource(R.string.create_event_notification_title)
+    val notificationMessage = stringResource(
+        R.string.create_event_notification_message,
+        eventName.trim(),
+        selectedSportLabel.ifBlank { selectedSport }
+    )
+
     val canSave = eventName.isNotBlank() &&
             selectedSport.isNotBlank() &&
             selectedFormat.isNotBlank()
@@ -82,8 +133,8 @@ fun CreateEventScreen(
     LaunchedEffect(tournamentCreated) {
         if (tournamentCreated) {
             notificationsViewModel.createNotification(
-                title = "Novo evento criado",
-                message = "Foi criado o torneio ${eventName.trim()} na modalidade $selectedSport."
+                title = notificationTitle,
+                message = notificationMessage
             )
 
             tournamentsViewModel.resetTournamentCreated()
@@ -106,9 +157,9 @@ fun CreateEventScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             AdminEventHeader(
-                title = "Criar Evento",
+                title = stringResource(R.string.create_event_title),
                 subtitle = "",
-                backText = "‹ cancelar",
+                backText = stringResource(R.string.create_event_cancel),
                 isAdmin = isAdmin,
                 onBackClick = { navController.popBackStack() }
             )
@@ -122,31 +173,29 @@ fun CreateEventScreen(
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-
-
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Nome do torneio")
+                    FieldLabel(stringResource(R.string.create_event_tournament_name))
                     AthloTextField(
                         value = eventName,
                         onValueChange = { eventName = it },
-                        placeholder = "Nome do torneio"
+                        placeholder = stringResource(R.string.create_event_tournament_name_hint)
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Modalidade")
+                    FieldLabel(stringResource(R.string.create_event_sport))
                     ChoiceRows(
-                        options = listOf("Ténis", "Futebol", "Basquetebol", "Voleibol"),
+                        options = sportOptions,
                         selected = selectedSport,
                         onSelected = { selectedSport = it }
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Formato")
+                    FieldLabel(stringResource(R.string.create_event_format))
                     ChoiceRows(
-                        options = listOf("Liga", "Eliminatórias", "Grupo"),
+                        options = formatOptions,
                         selected = selectedFormat,
                         onSelected = { selectedFormat = it }
                     )
@@ -155,40 +204,40 @@ fun CreateEventScreen(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data início")
+                            FieldLabel(stringResource(R.string.create_event_start_date))
                             AthloTextField(
                                 value = startDate,
                                 onValueChange = { startDate = it },
-                                placeholder = "YYYY-MM-DD"
+                                placeholder = stringResource(R.string.create_event_date_hint)
                             )
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
-                            FieldLabel("Data fim")
+                            FieldLabel(stringResource(R.string.create_event_end_date))
                             AthloTextField(
                                 value = endDate,
                                 onValueChange = { endDate = it },
-                                placeholder = "YYYY-MM-DD"
+                                placeholder = stringResource(R.string.create_event_date_hint)
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Local")
+                    FieldLabel(stringResource(R.string.create_event_location))
                     AthloTextField(
                         value = location,
                         onValueChange = { location = it },
-                        placeholder = "Local"
+                        placeholder = stringResource(R.string.create_event_location_hint)
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    FieldLabel("Número máximo de equipas")
+                    FieldLabel(stringResource(R.string.create_event_max_teams))
                     AthloDropdown(
                         selectedValue = maxTeams,
-                        placeholder = "Selecionar limite",
-                        options = listOf("4 equipas", "8 equipas", "16 equipas", "32 equipas"),
+                        placeholder = stringResource(R.string.create_event_max_teams_hint),
+                        options = maxTeamOptions,
                         onValueSelected = { maxTeams = it }
                     )
                 }
@@ -210,7 +259,7 @@ fun CreateEventScreen(
                         sport = selectedSport,
                         startDate = startDate.trim().ifBlank { null },
                         endDate = endDate.trim().ifBlank { null },
-                        status = "Em preparação",
+                        status = STATUS_PREPARING,
                         format = selectedFormat,
                         rules = null,
                         organizerId = currentUserId.ifBlank { null }
@@ -229,14 +278,18 @@ fun CreateEventScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Save,
-                    contentDescription = "Criar evento",
+                    contentDescription = stringResource(R.string.create_event_create_cd),
                     tint = Color.White
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = if (isLoading) "A criar..." else "Criar Evento",
+                    text = if (isLoading) {
+                        stringResource(R.string.create_event_creating)
+                    } else {
+                        stringResource(R.string.create_event_create)
+                    },
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -313,7 +366,7 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -321,7 +374,7 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -349,7 +402,9 @@ private fun AthloTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
+        placeholder = {
+            Text(text = placeholder)
+        },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -387,14 +442,18 @@ private fun AthloDropdown(
         ) {
             Text(
                 text = selectedValue.ifBlank { placeholder },
-                color = if (selectedValue.isBlank()) AthloColors.TextMuted else AthloColors.TextPrimary,
+                color = if (selectedValue.isBlank()) {
+                    AthloColors.TextMuted
+                } else {
+                    AthloColors.TextPrimary
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
 
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Abrir opções",
+                contentDescription = stringResource(R.string.dropdown_open_options),
                 tint = AthloColors.TextMuted
             )
         }
@@ -406,7 +465,12 @@ private fun AthloDropdown(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option, color = AthloColors.TextPrimary) },
+                    text = {
+                        Text(
+                            text = option,
+                            color = AthloColors.TextPrimary
+                        )
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false
@@ -419,7 +483,7 @@ private fun AthloDropdown(
 
 @Composable
 private fun ChoiceRows(
-    options: List<String>,
+    options: List<ChoiceOption>,
     selected: String,
     onSelected: (String) -> Unit
 ) {
@@ -427,9 +491,9 @@ private fun ChoiceRows(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             options.take(3).forEach { option ->
                 ChoicePill(
-                    text = option,
-                    selected = selected == option,
-                    onClick = { onSelected(option) }
+                    text = option.label,
+                    selected = selected == option.value,
+                    onClick = { onSelected(option.value) }
                 )
             }
         }
@@ -438,9 +502,9 @@ private fun ChoiceRows(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 options.drop(3).forEach { option ->
                     ChoicePill(
-                        text = option,
-                        selected = selected == option,
-                        onClick = { onSelected(option) }
+                        text = option.label,
+                        selected = selected == option.value,
+                        onClick = { onSelected(option.value) }
                     )
                 }
             }

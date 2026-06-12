@@ -43,11 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.Player
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
@@ -111,7 +113,7 @@ fun AddPlayersScreen(
             item {
                 Column {
                     Text(
-                        text = "Associar jogadores",
+                        text = stringResource(R.string.add_players_associate_players),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
@@ -120,7 +122,7 @@ fun AddPlayersScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Adiciona jogadores para as equipas",
+                        text = stringResource(R.string.add_players_subtitle),
                         color = AthloColors.TextSecondary,
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -133,7 +135,7 @@ fun AddPlayersScreen(
 
             item {
                 Text(
-                    text = "Jogadores",
+                    text = stringResource(R.string.add_players_players),
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -143,13 +145,13 @@ fun AddPlayersScreen(
             if (isLoading) {
                 item {
                     InfoCard(
-                        text = "A carregar jogadores disponíveis..."
+                        text = stringResource(R.string.add_players_loading)
                     )
                 }
             } else if (error != null) {
                 item {
                     InfoCard(
-                        text = error ?: "Erro ao carregar jogadores"
+                        text = error ?: stringResource(R.string.add_players_load_error)
                     )
                 }
             } else if (availablePlayers.isEmpty()) {
@@ -198,7 +200,7 @@ fun AddPlayersScreen(
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
                     Text(
-                        text = "Adicionar",
+                        text = stringResource(R.string.add_players_add),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -227,7 +229,7 @@ private fun AddPlayersHeader(
         ) {
             Column {
                 Text(
-                    text = "‹ cancelar",
+                    text = stringResource(R.string.add_players_cancel),
                     color = Color(0xFF9CC8F2),
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Medium,
@@ -237,7 +239,7 @@ private fun AddPlayersHeader(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Jogadores",
+                    text = stringResource(R.string.add_players_players),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -246,7 +248,7 @@ private fun AddPlayersHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Associar jogadores",
+                    text = stringResource(R.string.add_players_associate_players),
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -281,7 +283,7 @@ private fun TeamSummaryCard() {
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Futebol",
+                text = stringResource(R.string.sport_football),
                 color = AthloColors.Blue,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -348,7 +350,7 @@ private fun PlayerSelectionRow(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "${player.position} · Nº ${player.number}",
+                    text = stringResource(R.string.add_players_position_number, player.position, player.number.toString()),
                     color = AthloColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -362,7 +364,7 @@ private fun PlayerSelectionRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Jogador",
+                    contentDescription = stringResource(R.string.add_players_player_cd),
                     tint = Color.White,
                     modifier = Modifier.size(22.dp)
                 )
@@ -387,7 +389,7 @@ private fun EmptyPlayersToAddCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.Group,
-                contentDescription = "Sem jogadores",
+                contentDescription = stringResource(R.string.add_players_empty_cd),
                 tint = AthloColors.Navy,
                 modifier = Modifier.size(92.dp)
             )
@@ -395,7 +397,7 @@ private fun EmptyPlayersToAddCard() {
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = "Sem Jogadores para adicionar",
+                text = stringResource(R.string.add_players_empty_title),
                 color = AthloColors.Navy,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
@@ -404,7 +406,7 @@ private fun EmptyPlayersToAddCard() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Todos os jogadores já estão associados a equipas.",
+                text = stringResource(R.string.add_players_empty_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -443,7 +445,7 @@ private fun AdminBadge(
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -451,7 +453,7 @@ private fun AdminBadge(
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold

@@ -16,9 +16,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.UserRepository
 import com.example.athlodynamis.presentation.components.*
@@ -33,6 +35,10 @@ fun SuspendOrganizerScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(true) }
     var message by remember { mutableStateOf<String?>(null) }
 
+    val loadErrorText = stringResource(R.string.suspend_organizer_load_error)
+    val successText = stringResource(R.string.suspend_organizer_success)
+    val suspendErrorText = stringResource(R.string.suspend_organizer_error)
+
     LaunchedEffect(Unit) {
         try {
             organizers = UserRepository().getAllUsers()
@@ -41,7 +47,7 @@ fun SuspendOrganizerScreen(navController: NavController) {
                             !it.approvalStatus.equals("REJECTED", true)
                 }
         } catch (e: Exception) {
-            message = e.message ?: "Erro ao carregar organizadores."
+            message = e.message ?: loadErrorText
         } finally {
             isLoading = false
         }
@@ -74,7 +80,7 @@ fun SuspendOrganizerScreen(navController: NavController) {
             item {
                 Column {
                     Text(
-                        text = "Selecionar organizador",
+                        text = stringResource(R.string.suspend_organizer_select_title),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
@@ -83,7 +89,7 @@ fun SuspendOrganizerScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Escolhe o organizador que pretendes suspender",
+                        text = stringResource(R.string.suspend_organizer_select_subtitle),
                         color = AthloColors.TextSecondary,
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -91,10 +97,10 @@ fun SuspendOrganizerScreen(navController: NavController) {
             }
 
             when {
-                isLoading -> item { InfoCard("A carregar organizadores...") }
+                isLoading -> item { InfoCard(stringResource(R.string.suspend_organizer_loading)) }
 
                 organizers.isEmpty() -> item {
-                    InfoCard("Não existem organizadores disponíveis para suspender.")
+                    InfoCard(stringResource(R.string.suspend_organizer_empty))
                 }
 
                 else -> {
@@ -130,9 +136,9 @@ fun SuspendOrganizerScreen(navController: NavController) {
 
                                 organizers = organizers.filter { it.id != organizer.id }
                                 selectedOrganizer = null
-                                message = "Organizador suspenso com sucesso."
+                                message = successText
                             } catch (e: Exception) {
-                                message = e.message ?: "Erro ao suspender organizador."
+                                message = e.message ?: suspendErrorText
                             } finally {
                                 isLoading = false
                             }
@@ -151,14 +157,14 @@ fun SuspendOrganizerScreen(navController: NavController) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Suspender",
+                        contentDescription = stringResource(R.string.suspend_organizer_suspend_cd),
                         tint = Color.White
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "Suspender organizador",
+                        text = stringResource(R.string.suspend_organizer_button),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -190,7 +196,7 @@ private fun SuspendOrganizerHeader(onBackClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Organizadores",
+                    text = stringResource(R.string.suspend_organizer_header_title),
                     color = Color.White,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -199,7 +205,7 @@ private fun SuspendOrganizerHeader(onBackClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Suspender organizador",
+                    text = stringResource(R.string.suspend_organizer_header_subtitle),
                     color = Color(0xFF8EC5F4),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -281,7 +287,7 @@ private fun OrganizerSelectionRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "Organizador",
+                    contentDescription = stringResource(R.string.suspend_organizer_organizer_cd),
                     tint = Color.White,
                     modifier = Modifier.size(22.dp)
                 )
@@ -317,7 +323,7 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -325,7 +331,7 @@ private fun AdminBadge(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.width(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold

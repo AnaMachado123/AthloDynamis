@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ChevronRight
@@ -44,13 +47,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
@@ -58,10 +64,15 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
+
+private const val FILTER_ALL = "Todos"
+private const val FILTER_SCHEDULED = "Agendado"
+private const val FILTER_LIVE = "A decorrer"
+private const val FILTER_PREPARING = "Em preparação"
+private const val SPORT_FOOTBALL = "Futebol"
+private const val SPORT_BASKETBALL = "Basquetebol"
+private const val SPORT_TENNIS = "Ténis"
+private const val SPORT_VOLLEYBALL = "Voleibol"
 
 @Composable
 fun EventsScreen(
@@ -77,13 +88,11 @@ fun EventsScreen(
     val error by tournamentsViewModel.error.collectAsState()
 
     var searchText by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("Todos") }
-
+    var selectedFilter by remember { mutableStateOf(FILTER_ALL) }
     var searchHistory by remember { mutableStateOf<List<String>>(emptyList()) }
 
     fun saveSearchHistory() {
         val query = searchText.trim()
-
         if (query.isNotBlank() && !searchHistory.contains(query)) {
             searchHistory = listOf(query) + searchHistory.take(4)
         }
@@ -91,7 +100,7 @@ fun EventsScreen(
 
     val isAdmin = userRole == AthloUserRole.ADMIN
     val isOrganizer = userRole == AthloUserRole.ORGANIZER
-    val canCreateEvent = userRole == AthloUserRole.ADMIN || userRole == AthloUserRole.ORGANIZER
+    val canCreateEvent = isAdmin || isOrganizer
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -113,14 +122,14 @@ fun EventsScreen(
                     tournament.sport.contains(searchText, ignoreCase = true)
 
         val matchesFilter = when (selectedFilter) {
-            "Todos" -> true
-            "Agendado" -> tournament.status == "Agendado"
-            "A decorrer" -> tournament.status == "A decorrer"
-            "Em preparação" -> tournament.status == "Em preparação"
-            "Futebol" -> tournament.sport == "Futebol"
-            "Basquetebol" -> tournament.sport == "Basquetebol"
-            "Ténis" -> tournament.sport == "Ténis"
-            "Voleibol" -> tournament.sport == "Voleibol"
+            FILTER_ALL -> true
+            FILTER_SCHEDULED -> tournament.status == FILTER_SCHEDULED
+            FILTER_LIVE -> tournament.status == FILTER_LIVE
+            FILTER_PREPARING -> tournament.status == FILTER_PREPARING
+            SPORT_FOOTBALL -> tournament.sport == SPORT_FOOTBALL
+            SPORT_BASKETBALL -> tournament.sport == SPORT_BASKETBALL
+            SPORT_TENNIS -> tournament.sport == SPORT_TENNIS
+            SPORT_VOLLEYBALL -> tournament.sport == SPORT_VOLLEYBALL
             else -> true
         }
 
@@ -128,14 +137,8 @@ fun EventsScreen(
     }
 
     val filteredTournaments = allTournaments.filter { matchesSearchAndFilter(it) }
-
-    val myTournaments = filteredTournaments.filter { tournament ->
-        tournament.organizerId == currentUserId
-    }
-
-    val otherTournaments = filteredTournaments.filter { tournament ->
-        tournament.organizerId != currentUserId
-    }
+    val myTournaments = filteredTournaments.filter { it.organizerId == currentUserId }
+    val otherTournaments = filteredTournaments.filter { it.organizerId != currentUserId }
 
     val headerTotal = when (userRole) {
         AthloUserRole.ORGANIZER -> myTournaments.size
@@ -174,25 +177,23 @@ fun EventsScreen(
                     onFilterClick = { selectedFilter = it },
                     total = headerTotal,
                     userRole = userRole,
-                    onClearHistory = {
-                        searchHistory = emptyList()
-                    },
+                    onClearHistory = { searchHistory = emptyList() }
                 )
             }
 
             if (isLoading) {
                 item {
-                    InfoCard(text = "A carregar torneios...")
+                    InfoCard(text = stringResource(R.string.events_loading))
                 }
             } else if (error != null) {
                 item {
-                    InfoCard(text = error ?: "Erro ao carregar torneios")
+                    InfoCard(text = error ?: stringResource(R.string.events_loading_error))
                 }
             } else {
                 if (isOrganizer || isAdmin) {
                     item {
                         EventsSectionTitle(
-                            title = "Os meus eventos",
+                            title = stringResource(R.string.events_my_events),
                             canCreateEvent = canCreateEvent,
                             onCreateEventClick = {
                                 navController.navigate(Screen.CreateEvent.route)
@@ -204,9 +205,9 @@ fun EventsScreen(
                         item {
                             InfoCard(
                                 text = if (searchText.isNotBlank()) {
-                                    "Nenhum resultado encontrado para \"$searchText\" nos teus eventos."
+                                    stringResource(R.string.events_no_results_my, searchText)
                                 } else {
-                                    "Ainda não criaste nenhum torneio."
+                                    stringResource(R.string.events_no_created)
                                 }
                             )
                         }
@@ -228,31 +229,30 @@ fun EventsScreen(
 
                         EventsSectionTitle(
                             title = if (isAdmin) {
-                                "Todos os eventos"
+                                stringResource(R.string.events_all_events)
                             } else {
-                                "Outros eventos"
+                                stringResource(R.string.events_other_events)
                             },
                             canCreateEvent = false,
                             onCreateEventClick = {}
                         )
                     }
 
-                    val tournamentsToShow =
-                        if (isAdmin) {
-                            filteredTournaments
-                        } else {
-                            otherTournaments
-                        }
+                    val tournamentsToShow = if (isAdmin) {
+                        filteredTournaments
+                    } else {
+                        otherTournaments
+                    }
 
                     if (tournamentsToShow.isEmpty()) {
                         item {
                             InfoCard(
                                 text = if (searchText.isNotBlank()) {
-                                    "Nenhum resultado encontrado para \"$searchText\"."
+                                    stringResource(R.string.events_no_results, searchText)
                                 } else if (isAdmin) {
-                                    "Ainda não existem torneios para mostrar."
+                                    stringResource(R.string.events_no_tournaments)
                                 } else {
-                                    "Não existem outros torneios para mostrar."
+                                    stringResource(R.string.events_no_other_tournaments)
                                 }
                             )
                         }
@@ -272,9 +272,9 @@ fun EventsScreen(
                     item {
                         EventsSectionTitle(
                             title = when (userRole) {
-                                AthloUserRole.ADMIN -> "Todos os eventos"
-                                AthloUserRole.PLAYER -> "Eventos disponíveis"
-                                else -> "Eventos"
+                                AthloUserRole.ADMIN -> stringResource(R.string.events_all_events)
+                                AthloUserRole.PLAYER -> stringResource(R.string.events_available)
+                                else -> stringResource(R.string.events_title)
                             },
                             canCreateEvent = canCreateEvent,
                             onCreateEventClick = {
@@ -287,11 +287,11 @@ fun EventsScreen(
                         item {
                             InfoCard(
                                 text = if (searchText.isNotBlank()) {
-                                    "Nenhum resultado encontrado para \"$searchText\"."
+                                    stringResource(R.string.events_no_results, searchText)
                                 } else if (isAdmin) {
-                                    "Ainda não existem torneios para mostrar."
+                                    stringResource(R.string.events_no_tournaments)
                                 } else {
-                                    "Não existem outros torneios para mostrar."
+                                    stringResource(R.string.events_no_other_tournaments)
                                 }
                             )
                         }
@@ -373,7 +373,7 @@ private fun EventsHeader(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "Eventos",
+                            text = stringResource(R.string.events_title),
                             color = Color.White,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold
@@ -383,9 +383,9 @@ private fun EventsHeader(
 
                         Text(
                             text = when {
-                                isAdmin -> "Vista Global - $total torneios na plataforma"
-                                isOrganizer -> "$total torneios criados por ti"
-                                else -> "Eventos disponíveis"
+                                isAdmin -> stringResource(R.string.events_global_view, total)
+                                isOrganizer -> stringResource(R.string.events_created_by_you, total)
+                                else -> stringResource(R.string.events_available)
                             },
                             color = Color(0xFF8DC5F0),
                             style = MaterialTheme.typography.titleMedium
@@ -396,7 +396,11 @@ private fun EventsHeader(
                         AdminBadge()
                     } else {
                         StatusPill(
-                            text = if (isOrganizer) "$total meus" else "$total torneios",
+                            text = if (isOrganizer) {
+                                stringResource(R.string.events_my_count, total)
+                            } else {
+                                stringResource(R.string.events_tournaments_count, total)
+                            },
                             background = AthloColors.SuccessBg,
                             textColor = Color(0xFF4D8B4A)
                         )
@@ -413,12 +417,12 @@ private fun EventsHeader(
                     value = searchText,
                     onValueChange = onSearchChange,
                     placeholder = {
-                        Text("Pesquisar eventos...")
+                        Text(stringResource(R.string.events_search))
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Pesquisar",
+                            contentDescription = stringResource(R.string.events_search_cd),
                             tint = AthloColors.TextMuted
                         )
                     },
@@ -428,9 +432,7 @@ private fun EventsHeader(
                         imeAction = ImeAction.Search
                     ),
                     keyboardActions = KeyboardActions(
-                        onSearch = {
-                            onSearchSubmit()
-                        }
+                        onSearch = { onSearchSubmit() }
                     ),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -447,6 +449,7 @@ private fun EventsHeader(
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
+
                 if (searchHistory.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -456,14 +459,14 @@ private fun EventsHeader(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Histórico de pesquisas",
+                            text = stringResource(R.string.events_search_history),
                             color = Color(0xFF8DC5F0),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
                         )
 
                         Text(
-                            text = "Limpar",
+                            text = stringResource(R.string.events_clear),
                             color = Color(0xFF8DC5F0),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
@@ -493,7 +496,7 @@ private fun EventsHeader(
                 }
 
                 Text(
-                    text = "Filtros",
+                    text = stringResource(R.string.events_filters),
                     color = Color(0xFF8DC5F0),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold
@@ -540,7 +543,7 @@ private fun EventsSectionTitle(
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "Criar Evento",
+                    text = stringResource(R.string.events_create),
                     color = Color.White,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
@@ -550,7 +553,7 @@ private fun EventsSectionTitle(
 
                 Icon(
                     imageVector = Icons.Default.AddCircle,
-                    contentDescription = "Criar evento",
+                    contentDescription = stringResource(R.string.events_create_cd),
                     tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
@@ -568,40 +571,40 @@ private fun FilterRows(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChipPill("Todos", selectedFilter == "Todos") {
-                onFilterClick("Todos")
+            FilterChipPill(stringResource(R.string.filter_all), selectedFilter == FILTER_ALL) {
+                onFilterClick(FILTER_ALL)
             }
 
-            FilterChipPill("Agendado", selectedFilter == "Agendado") {
-                onFilterClick("Agendado")
+            FilterChipPill(stringResource(R.string.filter_scheduled), selectedFilter == FILTER_SCHEDULED) {
+                onFilterClick(FILTER_SCHEDULED)
             }
 
-            FilterChipPill("A decorrer", selectedFilter == "A decorrer") {
-                onFilterClick("A decorrer")
-            }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChipPill("Em preparação", selectedFilter == "Em preparação") {
-                onFilterClick("Em preparação")
-            }
-
-            FilterChipPill("Futebol", selectedFilter == "Futebol") {
-                onFilterClick("Futebol")
+            FilterChipPill(stringResource(R.string.filter_live), selectedFilter == FILTER_LIVE) {
+                onFilterClick(FILTER_LIVE)
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChipPill("Basquetebol", selectedFilter == "Basquetebol") {
-                onFilterClick("Basquetebol")
+            FilterChipPill(stringResource(R.string.filter_preparing), selectedFilter == FILTER_PREPARING) {
+                onFilterClick(FILTER_PREPARING)
             }
 
-            FilterChipPill("Ténis", selectedFilter == "Ténis") {
-                onFilterClick("Ténis")
+            FilterChipPill(stringResource(R.string.sport_football), selectedFilter == SPORT_FOOTBALL) {
+                onFilterClick(SPORT_FOOTBALL)
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChipPill(stringResource(R.string.sport_basketball), selectedFilter == SPORT_BASKETBALL) {
+                onFilterClick(SPORT_BASKETBALL)
             }
 
-            FilterChipPill("Voleibol", selectedFilter == "Voleibol") {
-                onFilterClick("Voleibol")
+            FilterChipPill(stringResource(R.string.sport_tennis), selectedFilter == SPORT_TENNIS) {
+                onFilterClick(SPORT_TENNIS)
+            }
+
+            FilterChipPill(stringResource(R.string.sport_volleyball), selectedFilter == SPORT_VOLLEYBALL) {
+                onFilterClick(SPORT_VOLLEYBALL)
             }
         }
     }
@@ -683,7 +686,7 @@ private fun TournamentCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Abrir evento",
+                    contentDescription = stringResource(R.string.events_open),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(22.dp)
                 )
@@ -699,13 +702,13 @@ private fun TournamentTags(tournament: Tournament) {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusPill(
-                text = tournament.sport,
+                text = localizedSportName(tournament.sport),
                 background = sportColor(tournament.sport),
                 textColor = sportTextColor(tournament.sport)
             )
 
             StatusPill(
-                text = tournament.status,
+                text = localizedStatusName(tournament.status),
                 background = statusColor(tournament.status),
                 textColor = statusTextColor(tournament.status)
             )
@@ -713,7 +716,7 @@ private fun TournamentTags(tournament: Tournament) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusPill(
-                text = tournament.format,
+                text = localizedTournamentFormat(tournament.format),
                 background = AthloColors.NeutralBg,
                 textColor = AthloColors.TextSecondary
             )
@@ -753,7 +756,7 @@ private fun AdminBadge() {
     ) {
         Icon(
             imageVector = Icons.Default.Star,
-            contentDescription = "Admin",
+            contentDescription = stringResource(R.string.admin_badge),
             tint = AthloColors.DarkNavy,
             modifier = Modifier.size(14.dp)
         )
@@ -761,7 +764,7 @@ private fun AdminBadge() {
         Spacer(modifier = Modifier.size(4.dp))
 
         Text(
-            text = "ADMIN",
+            text = stringResource(R.string.admin_badge),
             color = AthloColors.DarkNavy,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold
@@ -769,13 +772,44 @@ private fun AdminBadge() {
     }
 }
 
+@Composable
+private fun localizedSportName(sport: String): String {
+    return when (sport) {
+        SPORT_FOOTBALL -> stringResource(R.string.sport_football)
+        SPORT_BASKETBALL -> stringResource(R.string.sport_basketball)
+        SPORT_TENNIS -> stringResource(R.string.sport_tennis)
+        SPORT_VOLLEYBALL -> stringResource(R.string.sport_volleyball)
+        else -> sport
+    }
+}
+
+@Composable
+private fun localizedStatusName(status: String): String {
+    return when (status) {
+        FILTER_SCHEDULED -> stringResource(R.string.filter_scheduled)
+        FILTER_LIVE -> stringResource(R.string.filter_live)
+        FILTER_PREPARING -> stringResource(R.string.filter_preparing)
+        else -> status
+    }
+}
+@Composable
+fun localizedTournamentFormat(format: String): String {
+    return when (format.lowercase()) {
+        "liga" -> stringResource(R.string.tournament_format_league)
+        "grupo" -> stringResource(R.string.tournament_format_group)
+        "eliminatórias" -> stringResource(R.string.tournament_format_knockout)
+        "eliminatorias" -> stringResource(R.string.tournament_format_knockout)
+        else -> format
+    }
+}
+
 private fun sportColor(sport: String): Color {
     return when (sport) {
         "Futsal" -> Color(0xFFD7EBFF)
-        "Futebol" -> AthloColors.SuccessBg
-        "Basquetebol" -> AthloColors.WarningBg
-        "Ténis" -> AthloColors.InfoBg
-        "Voleibol" -> AthloColors.SuccessBg
+        SPORT_FOOTBALL -> AthloColors.SuccessBg
+        SPORT_BASKETBALL -> AthloColors.WarningBg
+        SPORT_TENNIS -> AthloColors.InfoBg
+        SPORT_VOLLEYBALL -> AthloColors.SuccessBg
         else -> AthloColors.InfoBg
     }
 }
@@ -783,28 +817,28 @@ private fun sportColor(sport: String): Color {
 private fun sportTextColor(sport: String): Color {
     return when (sport) {
         "Futsal" -> AthloColors.Blue
-        "Futebol" -> Color(0xFF4D8B4A)
-        "Basquetebol" -> Color(0xFF9A6B22)
-        "Ténis" -> AthloColors.Blue
-        "Voleibol" -> Color(0xFF4D8B4A)
+        SPORT_FOOTBALL -> Color(0xFF4D8B4A)
+        SPORT_BASKETBALL -> Color(0xFF9A6B22)
+        SPORT_TENNIS -> AthloColors.Blue
+        SPORT_VOLLEYBALL -> Color(0xFF4D8B4A)
         else -> AthloColors.Blue
     }
 }
 
 private fun statusColor(status: String): Color {
     return when (status) {
-        "A decorrer" -> AthloColors.SuccessBg
-        "Em preparação" -> AthloColors.WarningBg
-        "Agendado" -> Color(0xFFD7EBFF)
+        FILTER_LIVE -> AthloColors.SuccessBg
+        FILTER_PREPARING -> AthloColors.WarningBg
+        FILTER_SCHEDULED -> Color(0xFFD7EBFF)
         else -> AthloColors.NeutralBg
     }
 }
 
 private fun statusTextColor(status: String): Color {
     return when (status) {
-        "A decorrer" -> Color(0xFF4D8B4A)
-        "Em preparação" -> Color(0xFF9A6B22)
-        "Agendado" -> AthloColors.Blue
+        FILTER_LIVE -> Color(0xFF4D8B4A)
+        FILTER_PREPARING -> Color(0xFF9A6B22)
+        FILTER_SCHEDULED -> AthloColors.Blue
         else -> AthloColors.TextSecondary
     }
 }
