@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">AthloDynamis</string>
+
+    <string name="login_welcome">Welcome back</string>
+    <string name="login_subtitle">Sign in to your account</string>
+
+    <string name="email_label">EMAIL</string>
+    <string name="email_hint">Enter your email</string>
+
+    <string name="password_label">PASSWORD</string>
+    <string name="password_hint">Enter your password</string>
+
+    <string name="forgot_password">Forgot your password?</string>
+
+    <string name="login_button">Login</string>
+
+    <string name="create_account">Don\'t have an account? Create account</string>
+
+    <string name="hero_subtitle">Smart tournament and team management</string>
+
+    <string name="register_title">Create account</string>
+    <string name="register_subtitle_player">Create your player account</string>
+    <string name="register_subtitle_organizer">Send a request to become an organizer</string>
+
+    <string name="account_type_label">ACCOUNT TYPE</string>
+
+    <string name="account_player">Player</string>
+    <string name="account_player_subtitle">Join a team</string>
+
+    <string name="account_organizer">Organizer</string>
+    <string name="account_organizer_subtitle">Create events</string>
+
+    <string name="name_label">NAME</string>
+    <string name="name_hint">Enter your name</string>
+
+    <string name="shirt_number_label">SHIRT NUMBER</string>
+    <string name="shirt_number_hint">Enter your shirt number</string>
+
+    <string name="position_label">POSITION</string>
+    <string name="position_hint">Choose your position</string>
+
+    <string name="request_description_label">REQUEST DESCRIPTION</string>
+    <string name="request_description_hint">Write a short description of your request if you wish</string>
+
+    <string name="request_approval_info">Your request will be sent for administrator approval.</string>
+
+    <string name="register_button_player">Create Account</string>
+    <string name="register_button_organizer">Send Request</string>
+
+    <string name="already_have_account">Already have an account? Sign in</string>
+
+    <string name="register_hero_subtitle">Create your account and join the game</string>
+
+</resources>

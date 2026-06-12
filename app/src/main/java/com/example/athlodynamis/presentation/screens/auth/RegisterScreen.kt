@@ -51,6 +51,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
+import androidx.compose.ui.res.stringResource
+import com.example.athlodynamis.R
+import com.example.athlodynamis.presentation.components.LanguageSwitcher
+import androidx.compose.ui.zIndex
 
 private const val ACCOUNT_PLAYER = "PLAYER"
 private const val ACCOUNT_ORGANIZER = "ORGANIZER"
@@ -146,6 +150,13 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(AthloColors.Background)
     ) {
+
+        LanguageSwitcher(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 36.dp, end = 36.dp)
+                .zIndex(10f)
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -169,7 +180,7 @@ fun RegisterScreen(
                     verticalArrangement = Arrangement.Top
                 ) {
                     Text(
-                        text = "Criar conta",
+                        text = stringResource(R.string.register_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = AthloColors.TextPrimary
@@ -179,9 +190,9 @@ fun RegisterScreen(
 
                     Text(
                         text = if (selectedAccountType == ACCOUNT_PLAYER) {
-                            "Cria a tua conta de jogador"
+                            stringResource(R.string.register_subtitle_player)
                         } else {
-                            "Envia um pedido para seres organizador"
+                            stringResource(R.string.register_subtitle_organizer)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = AthloColors.TextSecondary
@@ -189,15 +200,15 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    RegisterFieldLabel("TIPO DE CONTA")
+                    RegisterFieldLabel(stringResource(R.string.account_type_label))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AccountTypeCard(
-                            title = "Jogador",
-                            subtitle = "Entrar numa equipa",
+                            title = stringResource(R.string.account_player),
+                            subtitle = stringResource(R.string.account_player_subtitle),
                             selected = selectedAccountType == ACCOUNT_PLAYER,
                             modifier = Modifier.weight(1f),
                             onClick = {
@@ -208,8 +219,8 @@ fun RegisterScreen(
                         )
 
                         AccountTypeCard(
-                            title = "Organizador",
-                            subtitle = "Criar eventos",
+                            title = stringResource(R.string.account_organizer),
+                            subtitle = stringResource(R.string.account_organizer_subtitle),
                             selected = selectedAccountType == ACCOUNT_ORGANIZER,
                             modifier = Modifier.weight(1f),
                             onClick = {
@@ -222,14 +233,14 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    RegisterFieldLabel("NOME")
+                    RegisterFieldLabel(stringResource(R.string.name_label))
                     OutlinedTextField(
                         value = name,
                         onValueChange = {
                             name = it
                             nameError = null
                         },
-                        placeholder = { Text("Insira o seu nome") },
+                        placeholder = { Text(stringResource(R.string.name_hint)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Person,
@@ -251,14 +262,14 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    RegisterFieldLabel("EMAIL")
+                    RegisterFieldLabel(stringResource(R.string.email_label))
                     OutlinedTextField(
                         value = email,
                         onValueChange = {
                             email = it
                             emailError = null
                         },
-                        placeholder = { Text("Insira o seu email") },
+                        placeholder = { Text(stringResource(R.string.email_hint)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Mail,
@@ -280,14 +291,14 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    RegisterFieldLabel("PASSWORD")
+                    RegisterFieldLabel(stringResource(R.string.password_label))
                     OutlinedTextField(
                         value = password,
                         onValueChange = {
                             password = it
                             passwordError = null
                         },
-                        placeholder = { Text("Insira a sua palavra-passe") },
+                        placeholder = { Text(stringResource(R.string.password_hint)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,
@@ -311,14 +322,14 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (selectedAccountType == ACCOUNT_PLAYER) {
-                        RegisterFieldLabel("NÚMERO DA CAMISOLA")
+                        RegisterFieldLabel(stringResource(R.string.shirt_number_label))
                         OutlinedTextField(
                             value = shirtNumber,
                             onValueChange = { value ->
                                 shirtNumber = value.filter { it.isDigit() }
                                 shirtNumberError = null
                             },
-                            placeholder = { Text("Insira o número da camisola") },
+                            placeholder = { Text(stringResource(R.string.shirt_number_hint)) },
                             isError = shirtNumberError != null,
                             supportingText = {
                                 shirtNumberError?.let {
@@ -333,7 +344,7 @@ fun RegisterScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        RegisterFieldLabel("POSIÇÃO")
+                        RegisterFieldLabel(stringResource(R.string.position_label))
                         FootballPositionDropdown(
                             selectedPosition = position,
                             positions = footballPositions,
@@ -345,14 +356,14 @@ fun RegisterScreen(
                             }
                         )
                     } else {
-                        RegisterFieldLabel("DESCRIÇÃO DO PEDIDO")
+                        RegisterFieldLabel(stringResource(R.string.request_description_label))
                         OutlinedTextField(
                             value = organizerRequestMessage,
                             onValueChange = {
                                 organizerRequestMessage = it
                             },
                             placeholder = {
-                                Text("Escreve uma breve descrição do teu pedido, se quiseres")
+                                Text(stringResource(R.string.request_description_hint))
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -365,7 +376,7 @@ fun RegisterScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "O teu pedido será enviado para aprovação do administrador.",
+                            text = stringResource(R.string.request_approval_info),
                             color = AthloColors.TextMuted,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -430,9 +441,9 @@ fun RegisterScreen(
                         } else {
                             Text(
                                 text = if (selectedAccountType == ACCOUNT_PLAYER) {
-                                    "Criar Conta"
+                                    stringResource(R.string.register_button_player)
                                 } else {
-                                    "Enviar Pedido"
+                                    stringResource(R.string.register_button_organizer)
                                 },
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
@@ -447,7 +458,7 @@ fun RegisterScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = "Já tens conta? Iniciar sessão",
+                            text = stringResource(R.string.already_have_account),
                             color = AthloColors.Blue,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -552,7 +563,7 @@ private fun FootballPositionDropdown(
             value = selectedPosition,
             onValueChange = {},
             readOnly = true,
-            placeholder = { Text("Escolhe a tua posição") },
+            placeholder = { Text(stringResource(R.string.position_hint)) },
             isError = isError,
             supportingText = {
                 errorText?.let {
@@ -639,7 +650,7 @@ private fun RegisterHeroCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Cria a tua conta e entra no jogo",
+                text = stringResource(R.string.register_hero_subtitle),
                 color = Color(0xFFC8DCEF),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center

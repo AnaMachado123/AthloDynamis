@@ -43,7 +43,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
-
+import androidx.compose.ui.res.stringResource
+import com.example.athlodynamis.R
+import com.example.athlodynamis.presentation.components.LanguageSwitcher
+import androidx.compose.ui.zIndex
 @Composable
 fun LoginScreen(
     errorMessage: String? = null,
@@ -61,6 +64,13 @@ fun LoginScreen(
             .fillMaxSize()
             .background(AthloColors.Background)
     ) {
+        LanguageSwitcher(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 36.dp, end = 36.dp)
+                .zIndex(10f)
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,6 +79,7 @@ fun LoginScreen(
                 .padding(horizontal = 22.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             LoginHeroCard()
 
             Spacer(modifier = Modifier.height(26.dp))
@@ -84,7 +95,7 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.Top
                 ) {
                     Text(
-                        text = "Bem-vindo de volta",
+                        text = stringResource(R.string.login_welcome),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = AthloColors.TextPrimary
@@ -93,7 +104,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Inicia sessão na tua conta",
+                        text = stringResource(R.string.login_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = AthloColors.TextSecondary
                     )
@@ -101,7 +112,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(30.dp))
 
                     Text(
-                        text = "EMAIL",
+                        text = stringResource(R.string.email_label),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextSecondary
@@ -112,7 +123,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        placeholder = { Text("Insira o seu email") },
+                        placeholder = { Text(stringResource(R.string.email_hint)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Mail,
@@ -129,7 +140,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
-                        text = "PASSWORD",
+                        text = stringResource(R.string.password_label),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = AthloColors.TextSecondary
@@ -140,7 +151,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        placeholder = { Text("Insira a sua palavra-passe") },
+                        placeholder = { Text(stringResource(R.string.password_hint)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,
@@ -162,7 +173,7 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Text(
-                            text = "Esqueceu-se da palavra-passe?",
+                            text =  stringResource(R.string.forgot_password),
                             color = AthloColors.Blue,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
@@ -196,7 +207,7 @@ fun LoginScreen(
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                     ) {
                         Text(
-                            text = "Entrar",
+                            text = stringResource(R.string.login_button),
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -209,7 +220,7 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = "Não tens conta? Criar conta",
+                            text = stringResource(R.string.create_account),
                             color = AthloColors.Blue,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -263,7 +274,7 @@ private fun LoginHeroCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Gestão inteligente de torneios e equipas",
+                text = stringResource(R.string.hero_subtitle),
                 color = Color(0xFFC8DCEF),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center

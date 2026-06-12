@@ -1,3 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AthloDynamis</string>
+
+    <string name="login_welcome">Bem-vindo de volta</string>
+    <string name="login_subtitle">Inicia sessão na tua conta</string>
+
+    <string name="email_label">EMAIL</string>
+    <string name="email_hint">Insira o seu email</string>
+
+    <string name="password_label">PASSWORD</string>
+    <string name="password_hint">Insira a sua palavra-passe</string>
+
+    <string name="forgot_password">Esqueceu-se da palavra-passe?</string>
+    <string name="login_button">Entrar</string>
+    <string name="create_account">Não tens conta? Criar conta</string>
+    <string name="hero_subtitle">Gestão inteligente de torneios e equipas</string>
+
+    <string name="register_title">Criar conta</string>
+    <string name="register_subtitle_player">Cria a tua conta de jogador</string>
+    <string name="register_subtitle_organizer">Envia um pedido para seres organizador</string>
+    <string name="account_type_label">TIPO DE CONTA</string>
+    <string name="account_player">Jogador</string>
+    <string name="account_player_subtitle">Entrar numa equipa</string>
+    <string name="account_organizer">Organizador</string>
+    <string name="account_organizer_subtitle">Criar eventos</string>
+    <string name="name_label">NOME</string>
+    <string name="name_hint">Insira o seu nome</string>
+    <string name="shirt_number_label">NÚMERO DA CAMISOLA</string>
+    <string name="shirt_number_hint">Insira o número da camisola</string>
+    <string name="position_label">POSIÇÃO</string>
+    <string name="position_hint">Escolhe a tua posição</string>
+    <string name="request_description_label">DESCRIÇÃO DO PEDIDO</string>
+    <string name="request_description_hint">Escreve uma breve descrição do teu pedido, se quiseres</string>
+    <string name="request_approval_info">O teu pedido será enviado para aprovação do administrador.</string>
+    <string name="register_button_player">Criar Conta</string>
+    <string name="register_button_organizer">Enviar Pedido</string>
+    <string name="already_have_account">Já tens conta? Iniciar sessão</string>
+    <string name="register_hero_subtitle">Cria a tua conta e entra no jogo</string>
 </resources>
