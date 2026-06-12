@@ -6,6 +6,8 @@ import com.example.athlodynamis.data.remote.dto.UpdateUserApprovalDto
 import com.example.athlodynamis.data.remote.dto.UserDto
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 class UserRepository {
@@ -78,10 +80,10 @@ class UserRepository {
         client
             .from("users")
             .update(
-                mapOf(
-                    "name" to name,
-                    "email" to email,
-                    "password" to password
+                UpdateUserDto(
+                    name = name,
+                    email = email,
+                    password = password
                 )
             ) {
                 filter {
@@ -97,9 +99,9 @@ class UserRepository {
         client
             .from("users")
             .update(
-                {
-                    set("photo_url", photoUrl)
-                }
+                UpdateUserPhotoDto(
+                    photoUrl = photoUrl
+                )
             ) {
                 filter {
                     eq("id", userId)
@@ -127,3 +129,16 @@ class UserRepository {
             .publicUrl(fileName)
     }
 }
+
+@Serializable
+private data class UpdateUserDto(
+    val name: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
+private data class UpdateUserPhotoDto(
+    @SerialName("photo_url")
+    val photoUrl: String
+)

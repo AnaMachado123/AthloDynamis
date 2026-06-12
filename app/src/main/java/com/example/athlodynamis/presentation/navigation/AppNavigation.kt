@@ -28,6 +28,7 @@ import com.example.athlodynamis.presentation.screens.home.HomeScreen
 import com.example.athlodynamis.presentation.screens.management.AdminUsersScreen
 import com.example.athlodynamis.presentation.screens.management.ManagementScreen
 import com.example.athlodynamis.presentation.screens.management.PendingRequestsScreen
+import com.example.athlodynamis.presentation.screens.management.SuspendOrganizerScreen
 import com.example.athlodynamis.presentation.screens.matches.MatchDetailScreen
 import com.example.athlodynamis.presentation.screens.notifications.NotificationsScreen
 import com.example.athlodynamis.presentation.screens.offline.OfflineScreen
@@ -41,7 +42,6 @@ import com.example.athlodynamis.presentation.screens.teams.EditTeamScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamDetailScreen
 import com.example.athlodynamis.presentation.screens.teams.TeamsScreen
 import com.example.athlodynamis.presentation.viewmodel.AuthViewModel
-import com.example.athlodynamis.presentation.screens.management.SuspendOrganizerScreen
 
 @Composable
 fun AppNavigation() {
@@ -215,6 +215,7 @@ fun AppNavigation() {
         composable(Screen.PendingRequests.route) {
             PendingRequestsScreen(navController = navController)
         }
+
         composable(
             route = Screen.AdminUsers.route,
             arguments = listOf(
@@ -223,7 +224,6 @@ fun AppNavigation() {
                 }
             )
         ) { backStackEntry ->
-
             val filter =
                 backStackEntry.arguments?.getString("filter") ?: "all"
 
@@ -274,7 +274,8 @@ fun AppNavigation() {
                 }
             )
         ) { backStackEntry ->
-            val tournamentId = backStackEntry.arguments?.getString("tournamentId") ?: "1"
+            val tournamentId =
+                backStackEntry.arguments?.getString("tournamentId") ?: "1"
 
             TournamentDetailScreen(
                 tournamentId = tournamentId,
@@ -451,7 +452,20 @@ fun AppNavigation() {
                         password = password
                     )
 
+                    authViewModel.updateProfileLocally(
+                        name = name,
+                        email = email,
+                        password = password
+                    )
+
                     navController.popBackStack()
+                },
+                onOfflineSaveClick = { name, email, password ->
+                    authViewModel.updateProfileLocally(
+                        name = name,
+                        email = email,
+                        password = password
+                    )
                 },
                 onPhotoSelected = { userId, imageBytes ->
                     authViewModel.uploadProfilePhoto(
@@ -463,6 +477,7 @@ fun AppNavigation() {
                 }
             )
         }
+
         composable(Screen.SuspendOrganizer.route) {
             SuspendOrganizerScreen(
                 navController = navController
@@ -482,9 +497,8 @@ fun AppNavigation() {
             AddPlayersScreen(
                 navController = navController,
                 teamId = teamId,
-                userRole = currentUserRole,
+                userRole = currentUserRole
             )
         }
     }
-
 }

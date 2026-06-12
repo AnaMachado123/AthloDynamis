@@ -1,6 +1,5 @@
 package com.example.athlodynamis.presentation.screens.teams
 
-import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,14 +16,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,6 +40,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,60 +50,77 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.athlodynamis.R
+import com.example.athlodynamis.data.repository.PlayerRepository
 import com.example.athlodynamis.domain.model.Team
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.runtime.LaunchedEffect
-import com.example.athlodynamis.data.repository.PlayerRepository
 import com.example.athlodynamis.presentation.viewmodel.FavoriteTeamsViewModel
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
+import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 
 @Composable
 fun TeamsScreen(
     navController: NavController,
     userRole: AthloUserRole,
     currentUserId: String
-){
+) {
     val viewModel: TeamsViewModel = viewModel()
     val allTeams by viewModel.teams.collectAsState()
+
     val favoriteViewModel: FavoriteTeamsViewModel = viewModel()
     val favoriteTeamIds by favoriteViewModel.favoriteTeamIds.collectAsState()
+
+    val offlineViewModel: OfflineViewModel = viewModel()
+    val isOnline by offlineViewModel.isOnline.collectAsState()
 
     var playersCountByTeam by remember {
         mutableStateOf<Map<Int, Int>>(emptyMap())
     }
 
-    LaunchedEffect(Unit) {
-        val players = PlayerRepository().getAllPlayers()
+    LaunchedEffect(isOnline) {
+        if (!isOnline) {
+            playersCountByTeam = emptyMap()
+            return@LaunchedEffect
+        }
 
-        playersCountByTeam = players
-            .filter { it.teamId != null }
-            .groupingBy { it.teamId ?: 0 }
-            .eachCount()
+        runCatching {
+            PlayerRepository().getAllPlayers()
+        }.onSuccess { players ->
+            playersCountByTeam = players
+                .filter { it.teamId != null }
+                .groupingBy { it.teamId ?: 0 }
+                .eachCount()
+        }.onFailure {
+            playersCountByTeam = emptyMap()
+        }
     }
 
-    LaunchedEffect(currentUserId) {
+    LaunchedEffect(currentUserId, userRole, isOnline) {
+        if (!isOnline) {
+            return@LaunchedEffect
+        }
+
         if (userRole == AthloUserRole.PLAYER) {
-            favoriteViewModel.loadFavorites(currentUserId)
+            runCatching {
+                favoriteViewModel.loadFavorites(currentUserId)
+            }
         }
     }
 
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Todos") }
-
     var searchHistory by remember { mutableStateOf<List<String>>(emptyList()) }
 
     fun saveSearchHistory() {
@@ -163,10 +184,18 @@ fun TeamsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 TeamsHeader(
-                    totalTeams = allTeams.size,
-                    totalSports = sports.size,
+                    totalTeams = if (isOnline) allTeams.size else 0,
+                    totalSports = if (isOnline) sports.size else 0,
                     isAdmin = isAdmin
                 )
+            }
+
+            if (!isOnline) {
+                item {
+                    OfflineTeamsCard()
+                }
+
+                return@LazyColumn
             }
 
             item {
@@ -176,6 +205,7 @@ fun TeamsScreen(
                     onSearchSubmit = { saveSearchHistory() }
                 )
             }
+
             if (searchHistory.isNotEmpty()) {
                 item {
                     SearchHistorySection(
@@ -240,7 +270,6 @@ fun TeamsScreen(
             }
 
             if (isAdmin || userRole == AthloUserRole.ORGANIZER) {
-
                 item {
                     Text(
                         text = "As minhas equipas",
@@ -572,6 +601,7 @@ private fun SearchHistorySection(
         }
     }
 }
+
 @Composable
 private fun TeamFilterRows(
     sports: List<String>,
@@ -697,11 +727,9 @@ private fun TeamListCard(
                         .background(
                             if (isFavorite) Color(0xFFFFF3D6) else AthloColors.SoftBlue
                         )
-                        .clickable(
-                            onClick = {
-                                onFavoriteClick()
-                            }
-                        ),
+                        .clickable {
+                            onFavoriteClick()
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -746,9 +774,7 @@ private fun TeamLogoBox(
             ),
         contentAlignment = Alignment.Center
     ) {
-
         if (!logoUrl.isNullOrBlank()) {
-
             AsyncImage(
                 model = logoUrl,
                 contentDescription = "Escudo da equipa",
@@ -757,9 +783,7 @@ private fun TeamLogoBox(
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
-
         } else {
-
             Icon(
                 imageVector = Icons.Default.Groups,
                 contentDescription = "Equipa",
@@ -813,6 +837,47 @@ private fun EmptyTeamsCard() {
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall
             )
+        }
+    }
+}
+
+@Composable
+private fun OfflineTeamsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7CC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.SignalWifiOff,
+                contentDescription = stringResource(R.string.cd_offline),
+                tint = Color(0xFF7A5B00),
+                modifier = Modifier.size(30.dp)
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column {
+                Text(
+                    text = stringResource(R.string.home_offline),
+                    color = Color(0xFF7A5B00),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.home_offline_desc),
+                    color = Color(0xFF9A7800),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }

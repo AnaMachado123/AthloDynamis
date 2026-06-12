@@ -6,6 +6,7 @@ import com.example.athlodynamis.data.local.offline.OfflineOperation
 import com.example.athlodynamis.data.remote.dto.CreateMatchEventDto
 import com.example.athlodynamis.presentation.viewmodel.OfflineUpdateMatchScorePayload
 import com.example.athlodynamis.presentation.viewmodel.OfflineUpdateMatchStatusPayload
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -17,6 +18,7 @@ class OfflineSyncRepository(
 
     private val matchEventRepository = MatchEventRepository()
     private val matchRepository = MatchRepository()
+    private val userRepository = UserRepository()
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -84,6 +86,20 @@ class OfflineSyncRepository(
                             minute = payload.minute
                         )
                     }
+
+                    "UPDATE_USER_PROFILE" -> {
+                        val payload =
+                            json.decodeFromString<OfflineProfileUpdatePayload>(
+                                operation.payloadJson
+                            )
+
+                        userRepository.updateUser(
+                            userId = payload.userId,
+                            name = payload.name,
+                            email = payload.email,
+                            password = payload.password
+                        )
+                    }
                 }
 
                 markAsSynced(operation.id)
@@ -111,3 +127,11 @@ class OfflineSyncRepository(
         localDataSource.clearSyncedOperations()
     }
 }
+
+@Serializable
+data class OfflineProfileUpdatePayload(
+    val userId: String,
+    val name: String,
+    val email: String,
+    val password: String
+)

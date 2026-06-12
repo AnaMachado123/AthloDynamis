@@ -2,6 +2,7 @@ package com.example.athlodynamis.presentation.components
 
 import android.app.Activity
 import android.app.LocaleManager
+import android.os.Build
 import android.os.LocaleList
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -19,10 +20,11 @@ fun LanguageSwitcher(
     val context = LocalContext.current
 
     fun changeLanguage(languageTag: String) {
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        localeManager.applicationLocales = LocaleList.forLanguageTags(languageTag)
-
-        (context as? Activity)?.recreate()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val localeManager = context.getSystemService(LocaleManager::class.java)
+            localeManager.applicationLocales = LocaleList.forLanguageTags(languageTag)
+            (context as? Activity)?.recreate()
+        }
     }
 
     Row(modifier = modifier) {
@@ -35,7 +37,10 @@ fun LanguageSwitcher(
             }
         )
 
-        Text(" | ", color = Color.White.copy(alpha = 0.7f))
+        Text(
+            text = " | ",
+            color = Color.White.copy(alpha = 0.7f)
+        )
 
         Text(
             text = "EN",

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -34,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,25 +46,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.athlodynamis.presentation.components.AthloBottomBar
-import com.example.athlodynamis.presentation.components.AthloColors
-import com.example.athlodynamis.presentation.components.AthloRadius
-import com.example.athlodynamis.presentation.components.AthloUserRole
-import com.example.athlodynamis.presentation.navigation.Screen
-import androidx.compose.runtime.LaunchedEffect
+import com.example.athlodynamis.data.repository.MatchRepository
 import com.example.athlodynamis.data.repository.OrganizerStatsRepository
+import com.example.athlodynamis.data.repository.PlayerRepository
 import com.example.athlodynamis.data.repository.StatsRepository
 import com.example.athlodynamis.data.repository.TeamRepository
+import com.example.athlodynamis.data.repository.TournamentRepository
 import com.example.athlodynamis.domain.model.OrganizerStatsData
 import com.example.athlodynamis.domain.model.PlayerStatsData
 import com.example.athlodynamis.domain.model.Team
-import com.example.athlodynamis.data.repository.TournamentRepository
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBackButton
+import com.example.athlodynamis.presentation.components.AthloBottomBar
+import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloLogoutButton
-import com.example.athlodynamis.data.repository.MatchRepository
-import com.example.athlodynamis.data.repository.PlayerRepository
+import com.example.athlodynamis.presentation.components.AthloRadius
+import com.example.athlodynamis.presentation.components.AthloUserRole
+import com.example.athlodynamis.presentation.navigation.Screen
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
+
 @Composable
 fun ProfileScreen(
     navController: NavController,
@@ -72,6 +77,9 @@ fun ProfileScreen(
     userId: String,
     onLogoutClick: () -> Unit
 ) {
+    val offlineViewModel: OfflineViewModel = viewModel()
+    val isOnline by offlineViewModel.isOnline.collectAsState()
+
     var organizerTournaments by remember {
         mutableStateOf<List<Tournament>>(emptyList())
     }
@@ -87,38 +95,99 @@ fun ProfileScreen(
     var playerTeam by remember {
         mutableStateOf<Team?>(null)
     }
-    var adminTournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
-    var adminMatchesCount by remember { mutableStateOf(0) }
-    var adminPlayersCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(userId, playerTeamId, userRole) {
-        if (userRole == AthloUserRole.PLAYER && userId.isNotBlank()) {
-            playerStats = StatsRepository().getPlayerStatsByUserId(userId)
+    var adminTournaments by remember {
+        mutableStateOf<List<Tournament>>(emptyList())
+    }
 
-            if (playerTeamId != null) {
-                TeamRepository.fetchTeamsFromSupabase()
-                playerTeam = TeamRepository.getTeamById(playerTeamId)
+    var adminMatchesCount by remember {
+        mutableStateOf(0)
+    }
+
+    var adminPlayersCount by remember {
+        mutableStateOf(0)
+    }
+
+    LaunchedEffect(userId, playerTeamId, userRole, isOnline) {
+        organizerTournaments = emptyList()
+        organizerStats = null
+        playerStats = null
+        playerTeam = null
+        adminTournaments = emptyList()
+        adminMatchesCount = 0
+        adminPlayersCount = 0
+
+        if (!isOnline) {
+            return@LaunchedEffect
+        }
+
+        when (userRole) {
+            AthloUserRole.PLAYER -> {
+                if (userId.isNotBlank()) {
+                    runCatching {
+                        StatsRepository().getPlayerStatsByUserId(userId)
+                    }.onSuccess { stats ->
+                        playerStats = stats
+                    }.onFailure {
+                        playerStats = null
+                    }
+
+                    if (playerTeamId != null) {
+                        runCatching {
+                            TeamRepository.fetchTeamsFromSupabase()
+                            TeamRepository.getTeamById(playerTeamId)
+                        }.onSuccess { team ->
+                            playerTeam = team
+                        }.onFailure {
+                            playerTeam = null
+                        }
+                    }
+                }
             }
-        }
 
-        if (userRole == AthloUserRole.ORGANIZER) {
-            organizerStats = OrganizerStatsRepository().getOrganizerStats()
+            AthloUserRole.ORGANIZER -> {
+                runCatching {
+                    OrganizerStatsRepository().getOrganizerStats()
+                }.onSuccess { stats ->
+                    organizerStats = stats
+                }.onFailure {
+                    organizerStats = null
+                }
 
-            organizerTournaments = TournamentRepository()
-                .getTournaments()
-        }
+                runCatching {
+                    TournamentRepository().getTournaments()
+                }.onSuccess { tournaments ->
+                    organizerTournaments = tournaments
+                }.onFailure {
+                    organizerTournaments = emptyList()
+                }
+            }
 
-        if (userRole == AthloUserRole.ADMIN) {
-            adminTournaments = TournamentRepository()
-                .getTournaments()
+            AthloUserRole.ADMIN -> {
+                runCatching {
+                    TournamentRepository().getTournaments()
+                }.onSuccess { tournaments ->
+                    adminTournaments = tournaments
+                }.onFailure {
+                    adminTournaments = emptyList()
+                }
 
-            adminMatchesCount = MatchRepository()
-                .getAllMatches()
-                .size
+                runCatching {
+                    MatchRepository().getAllMatches().size
+                }.onSuccess { count ->
+                    adminMatchesCount = count
+                }.onFailure {
+                    adminMatchesCount = 0
+                }
 
-            adminPlayersCount = PlayerRepository()
-                .getAllPlayers()
-                .size
+                runCatching {
+                    PlayerRepository().getAllPlayers().size
+                }.onSuccess { count ->
+                    adminPlayersCount = count
+                }.onFailure {
+                    adminPlayersCount = 0
+                }
+            }
         }
     }
 
@@ -128,7 +197,7 @@ fun ProfileScreen(
             AthloBottomBar(
                 navController = navController,
                 currentRoute = Screen.Profile.route,
-                userRole = userRole,
+                userRole = userRole
             )
         }
     ) { innerPadding ->
@@ -153,12 +222,20 @@ fun ProfileScreen(
                     adminEventsCount = adminTournaments.size,
                     adminMatchesCount = adminMatchesCount,
                     adminPlayersCount = adminPlayersCount,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
                     onEditClick = {
                         navController.navigate(Screen.EditProfile.route)
                     },
                     onLogoutClick = onLogoutClick
                 )
+            }
+
+            if (!isOnline) {
+                item {
+                    OfflineProfileCard()
+                }
             }
 
             when (userRole) {
@@ -280,13 +357,14 @@ private fun ProfileHeader(
     onBackClick: () -> Unit,
     onEditClick: () -> Unit,
     onLogoutClick: () -> Unit
-){
+) {
     val isAdmin = userRole == AthloUserRole.ADMIN
     val initials = userName
         .split(" ")
         .filter { it.isNotBlank() }
         .take(2)
         .joinToString("") { it.first().uppercase() }
+        .ifBlank { "U" }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -394,7 +472,7 @@ private fun ProfileHeader(
                 organizerStats = organizerStats,
                 adminEventsCount = adminEventsCount,
                 adminMatchesCount = adminMatchesCount,
-                adminPlayersCount = adminPlayersCount,
+                adminPlayersCount = adminPlayersCount
             )
         }
     }
@@ -416,6 +494,7 @@ private fun ProfileStatsRow(
             (playerStats?.trophies ?: 0).toString() to "Troféus",
             (playerStats?.teams ?: if (playerTeamId != null) 1 else 0).toString() to "Equipas"
         )
+
         AthloUserRole.ORGANIZER -> listOf(
             (organizerStats?.tournaments ?: 0).toString() to "Eventos",
             (organizerStats?.matches ?: 0).toString() to "Jogos",
@@ -497,6 +576,7 @@ private fun PlayerProfileTabs(
     var selectedTab by remember { mutableStateOf("Estatísticas") }
     val hasTeam = playerTeamId != null
     val hasMatches = !playerStats?.recentGames.isNullOrEmpty()
+
     Column {
         Row(
             modifier = Modifier
@@ -523,7 +603,6 @@ private fun PlayerProfileTabs(
         Spacer(modifier = Modifier.height(18.dp))
 
         if (selectedTab == "Estatísticas") {
-
             if (!hasMatches) {
                 EmptyMatchesCard()
             } else {
@@ -531,9 +610,7 @@ private fun PlayerProfileTabs(
                     games = playerStats?.recentGames ?: emptyList()
                 )
             }
-
         } else {
-
             if (!hasTeam) {
                 EmptyTeamsCard()
             } else {
@@ -541,7 +618,6 @@ private fun PlayerProfileTabs(
                     team = playerTeam
                 )
             }
-
         }
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -897,6 +973,49 @@ private fun EmptyAssociatedEventsCard() {
 }
 
 @Composable
+private fun OfflineProfileCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFF7CC)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.SignalWifiOff,
+                contentDescription = "Sem internet",
+                tint = Color(0xFF7A5B00),
+                modifier = Modifier.size(28.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = "SEM LIGAÇÃO À INTERNET",
+                    color = Color(0xFF7A5B00),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Alguns dados do perfil podem não ser carregados. Ainda podes editar o perfil e guardar alterações offline.",
+                    color = Color(0xFF9A7800),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SmallBadge(
     text: String,
     background: Color
@@ -1024,9 +1143,9 @@ private fun AdminBadge(
         )
     }
 }
+
 @Composable
 private fun EmptyMatchesCard() {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -1040,7 +1159,6 @@ private fun EmptyMatchesCard() {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             SectionSmallTitle("ÚLTIMOS JOGOS")
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -1067,7 +1185,6 @@ private fun EmptyMatchesCard() {
 
 @Composable
 private fun EmptyTeamsCard() {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AthloRadius.Large),
@@ -1081,7 +1198,6 @@ private fun EmptyTeamsCard() {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             SectionSmallTitle("EQUIPAS INSCRITAS")
 
             Spacer(modifier = Modifier.height(40.dp))

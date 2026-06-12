@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="app_name">AthloDynamis</string>
 
+    <!-- LOGIN -->
     <string name="login_welcome">Bem-vindo de volta</string>
     <string name="login_subtitle">Inicia sessão na tua conta</string>
-
     <string name="email_label">EMAIL</string>
     <string name="email_hint">Insira o seu email</string>
-
     <string name="password_label">PASSWORD</string>
     <string name="password_hint">Insira a sua palavra-passe</string>
-
     <string name="forgot_password">Esqueceu-se da palavra-passe?</string>
     <string name="login_button">Entrar</string>
     <string name="create_account">Não tens conta? Criar conta</string>
     <string name="hero_subtitle">Gestão inteligente de torneios e equipas</string>
 
+    <!-- REGISTER -->
     <string name="register_title">Criar conta</string>
     <string name="register_subtitle_player">Cria a tua conta de jogador</string>
     <string name="register_subtitle_organizer">Envia um pedido para seres organizador</string>
@@ -37,4 +37,86 @@
     <string name="register_button_organizer">Enviar Pedido</string>
     <string name="already_have_account">Já tens conta? Iniciar sessão</string>
     <string name="register_hero_subtitle">Cria a tua conta e entra no jogo</string>
+
+    <!-- HOME - COMMON -->
+    <string name="home_good_morning">Bom dia</string>
+    <string name="home_events">Eventos</string>
+    <string name="home_users">Utilizadores</string>
+    <string name="home_organizers">Organizadores</string>
+    <string name="home_players">Jogadores</string>
+    <string name="home_admins">Administradores</string>
+    <string name="home_tournaments_events">Torneios/Eventos</string>
+    <string name="home_loading_users">A carregar utilizadores...</string>
+    <string name="home_no_users">Ainda não existem utilizadores registados.</string>
+    <string name="home_error_loading_data">Erro ao carregar dados.</string>
+    <string name="home_error_loading_admin">Erro ao carregar dados do administrador.</string>
+    <string name="home_default_user">Utilizador</string>
+    <string name="home_time_undefined">Hora por definir</string>
+    <string name="home_team_with_id">Equipa %1$d</string>
+
+    <!-- HOME - ADMIN -->
+    <string name="home_admin_default_name">Administrador</string>
+    <string name="home_pending_request_single">1 pedido pendente</string>
+    <string name="home_pending_request_multiple">%1$d pedidos pendentes</string>
+    <string name="home_organizer_approval">Aprovação de organizadores</string>
+    <string name="home_platform_summary">Resumo da plataforma</string>
+    <string name="home_recent_registrations">Últimos registos</string>
+
+    <!-- HOME - ORGANIZER -->
+    <string name="home_organizer_default_name">Organizador</string>
+    <string name="home_active_tournaments">Torneios ativos</string>
+    <string name="home_active_matches">Jogos ativos</string>
+    <string name="home_athletes">Atletas</string>
+    <string name="home_live">Ao vivo</string>
+    <string name="home_my_events">Os meus eventos</string>
+    <string name="home_other_events">Outros eventos</string>
+    <string name="home_no_live_matches">Sem jogos ao vivo</string>
+    <string name="home_no_live_matches_desc">Quando algum jogo estiver a decorrer, aparece aqui.</string>
+    <string name="home_no_created_events">Sem eventos criados</string>
+    <string name="home_no_created_events_desc">Quando criares torneios, eles aparecem aqui.</string>
+    <string name="home_no_other_events">Sem outros eventos</string>
+    <string name="home_no_other_events_desc">Quando existirem eventos criados por outros organizadores, eles aparecem aqui.</string>
+
+    <!-- HOME - PLAYER -->
+    <string name="home_next_games">Próximos jogos</string>
+    <string name="home_goals">Golos</string>
+    <string name="home_trophies">Troféus</string>
+    <string name="home_my_sport_profile">O meu perfil desportivo</string>
+    <string name="home_no_team">Sem equipa associada</string>
+    <string name="home_no_team_desc">Ainda não foste adicionado a nenhuma equipa. Quando fores associado, os teus jogos, estatísticas e equipas aparecem aqui.</string>
+    <string name="home_next_match">Próximo jogo</string>
+    <string name="home_no_scheduled_matches">Sem jogos agendados</string>
+    <string name="home_no_scheduled_matches_desc">Quando houver um jogo marcado para a tua equipa, ele aparece aqui.</string>
+    <string name="home_my_teams">As minhas equipas</string>
+    <string name="home_registered">Inscrito</string>
+    <string name="home_associated_team">Equipa associada</string>
+    <string name="home_offline">SEM LIGAÇÃO À INTERNET</string>
+
+    <!-- HOME - SYNC -->
+    <string name="home_pending_sync">%1$d operação(ões) pendente(s) de sincronização</string>
+
+    <!-- ACCESSIBILITY -->
+    <string name="cd_create_team">Criar equipa</string>
+    <string name="cd_profile">Perfil</string>
+    <string name="cd_pending_requests">Pedidos pendentes</string>
+    <string name="cd_open_event">Abrir evento</string>
+    <string name="cd_open_team">Abrir equipa</string>
+    <string name="cd_no_team">Sem equipa</string>
+    <string name="cd_no_next_match">Sem próximo jogo</string>
+    <string name="cd_no_live_matches">Sem jogos ao vivo</string>
+    <string name="cd_no_events">Sem eventos</string>
+    <string name="cd_no_other_events">Sem outros eventos</string>
+    <string name="cd_offline">Sem internet</string>
+
+    <!-- BOTTOM BAR -->
+    <string name="bottom_home">Início</string>
+    <string name="bottom_events">Eventos</string>
+    <string name="bottom_teams">Equipas</string>
+    <string name="bottom_stats">Estatísticas</string>
+    <string name="bottom_notifications">Notif.</string>
+    <string name="bottom_management">Gestão</string>
+
+    <!-- OFFLINE -->
+    <string name="home_offline_desc">Estás sem ligação à internet. Alguns dados podem não ser carregados até voltares a estar online.</string>
+
 </resources>

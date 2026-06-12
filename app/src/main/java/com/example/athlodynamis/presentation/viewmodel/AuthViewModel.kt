@@ -296,6 +296,11 @@ class AuthViewModel(
         val userId = _uiState.value.userId ?: return
 
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null
+            )
+
             try {
                 userRepository.updateUser(
                     userId = userId,
@@ -305,16 +310,32 @@ class AuthViewModel(
                 )
 
                 _uiState.value = _uiState.value.copy(
+                    isLoading = false,
                     userName = name,
                     userEmail = email,
-                    userPassword = password
+                    userPassword = password,
+                    error = null
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
+                    isLoading = false,
                     error = e.message ?: "Erro ao atualizar perfil."
                 )
             }
         }
+    }
+
+    fun updateProfileLocally(
+        name: String,
+        email: String,
+        password: String
+    ) {
+        _uiState.value = _uiState.value.copy(
+            userName = name,
+            userEmail = email,
+            userPassword = password,
+            error = null
+        )
     }
 
     fun uploadProfilePhoto(

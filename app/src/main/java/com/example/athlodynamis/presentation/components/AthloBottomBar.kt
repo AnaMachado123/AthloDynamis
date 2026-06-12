@@ -28,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 
@@ -74,10 +76,12 @@ fun AthloBottomBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Home,
-                    contentDescription = "Início"
+                    contentDescription = stringResource(R.string.bottom_home)
                 )
             },
-            label = { Text("Início") },
+            label = {
+                Text(stringResource(R.string.bottom_home))
+            },
             colors = athloBottomBarItemColors()
         )
 
@@ -92,10 +96,12 @@ fun AthloBottomBar(
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = "Gestão"
+                        contentDescription = stringResource(R.string.bottom_management)
                     )
                 },
-                label = { Text("Gestão") },
+                label = {
+                    Text(stringResource(R.string.bottom_management))
+                },
                 colors = athloBottomBarItemColors()
             )
         }
@@ -110,10 +116,12 @@ fun AthloBottomBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = "Eventos"
+                    contentDescription = stringResource(R.string.bottom_events)
                 )
             },
-            label = { Text("Eventos") },
+            label = {
+                Text(stringResource(R.string.bottom_events))
+            },
             colors = athloBottomBarItemColors()
         )
 
@@ -127,10 +135,12 @@ fun AthloBottomBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.Groups,
-                    contentDescription = "Equipas"
+                    contentDescription = stringResource(R.string.bottom_teams)
                 )
             },
-            label = { Text("Equipas") },
+            label = {
+                Text(stringResource(R.string.bottom_teams))
+            },
             colors = athloBottomBarItemColors()
         )
 
@@ -144,10 +154,12 @@ fun AthloBottomBar(
             icon = {
                 Icon(
                     imageVector = Icons.Default.BarChart,
-                    contentDescription = "Stats"
+                    contentDescription = stringResource(R.string.bottom_stats)
                 )
             },
-            label = { Text("Stats") },
+            label = {
+                Text(stringResource(R.string.bottom_stats))
+            },
             colors = athloBottomBarItemColors()
         )
 
@@ -164,7 +176,9 @@ fun AthloBottomBar(
                             currentRoute != Screen.Notifications.route
                 )
             },
-            label = { Text("Notif.") },
+            label = {
+                Text(stringResource(R.string.bottom_notifications))
+            },
             colors = athloBottomBarItemColors()
         )
     }
@@ -177,7 +191,7 @@ private fun NotificationIconWithBadge(
     Box {
         Icon(
             imageVector = Icons.Default.Notifications,
-            contentDescription = "Notif."
+            contentDescription = stringResource(R.string.bottom_notifications)
         )
 
         if (showBadge) {

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
@@ -33,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,10 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.remote.dto.UserDto
 import com.example.athlodynamis.data.repository.MatchRepository
 import com.example.athlodynamis.data.repository.PlayerRepository
@@ -59,12 +65,7 @@ import com.example.athlodynamis.presentation.components.AthloColors
 import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
-import androidx.compose.material.icons.filled.SignalWifiOff
-import androidx.compose.ui.platform.LocalContext
 
 data class DashboardStat(
     val value: String,
@@ -75,16 +76,19 @@ data class DashboardStat(
 fun HomeScreen(
     navController: NavController,
     userRole: AthloUserRole,
-    userName: String = "Utilizador",
+    userName: String = "",
     userId: String,
     playerTeamId: Int? = null
 ) {
     val offlineViewModel: OfflineViewModel = viewModel()
     val context = LocalContext.current
+
     val isOnline by offlineViewModel.isOnline.collectAsState()
-    //val isOnline = false
     val pendingOperationsCount by offlineViewModel.pendingOperationsCount.collectAsState()
-    val isSyncing by offlineViewModel.isSyncing.collectAsState()
+
+    val displayedUserName = userName.ifBlank {
+        stringResource(R.string.home_default_user)
+    }
 
     Scaffold(
         containerColor = AthloColors.Background,
@@ -100,7 +104,7 @@ fun HomeScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Criar equipa"
+                        contentDescription = stringResource(R.string.cd_create_team)
                     )
                 }
             }
@@ -127,37 +131,28 @@ fun HomeScreen(
 
                 if (pendingOperationsCount > 0) {
                     PendingSyncBanner(count = pendingOperationsCount)
-
-                    /*Button(
-                        onClick = {
-                            offlineViewModel.syncPendingOperations()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Sincronizar agora")
-                    }*/
-
                     Spacer(modifier = Modifier.height(12.dp))
                 }
-
 
                 when (userRole) {
                     AthloUserRole.ADMIN -> AdminHomeContent(
                         navController = navController,
-                        userName = userName,
-                        context = context
+                        userName = displayedUserName,
+                        context = context,
+                        isOnline = isOnline
                     )
 
                     AthloUserRole.ORGANIZER -> OrganizerHomeContent(
                         navController = navController,
-                        userName = userName,
+                        userName = displayedUserName,
                         userId = userId,
-                        context = context
+                        context = context,
+                        isOnline = isOnline
                     )
 
                     AthloUserRole.PLAYER -> PlayerHomeContent(
                         navController = navController,
-                        userName = userName,
+                        userName = displayedUserName,
                         userId = userId,
                         playerTeamId = playerTeamId,
                         isOnline = isOnline,
@@ -179,8 +174,12 @@ fun HomeScreen(
 private fun AdminHomeContent(
     navController: NavController,
     userName: String,
-    context: Context
+    context: Context,
+    isOnline: Boolean
 ) {
+    val errorLoadingAdmin = stringResource(R.string.home_error_loading_admin)
+    val errorLoadingData = stringResource(R.string.home_error_loading_data)
+
     var users by remember {
         mutableStateOf<List<UserDto>>(emptyList())
     }
@@ -197,15 +196,38 @@ private fun AdminHomeContent(
         mutableStateOf<String?>(null)
     }
 
-    LaunchedEffect(Unit) {
+    var showOfflineWarning by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(isOnline) {
         isLoading = true
         errorMessage = null
+
+        if (!isOnline) {
+            users = emptyList()
+            tournamentsCount = 0
+            showOfflineWarning = true
+            isLoading = false
+            return@LaunchedEffect
+        }
+
+        showOfflineWarning = false
 
         try {
             users = UserRepository().getAllUsers()
             tournamentsCount = TournamentRepository(context).getTournaments().size
         } catch (e: Exception) {
-            errorMessage = e.message ?: "Erro ao carregar dados do administrador."
+            users = emptyList()
+            tournamentsCount = 0
+            errorMessage = e.message ?: errorLoadingAdmin
+
+            val message = errorMessage.orEmpty()
+            showOfflineWarning =
+                message.contains("Unable to resolve host", ignoreCase = true) ||
+                        message.contains("No address associated with hostname", ignoreCase = true) ||
+                        message.contains("failed to connect", ignoreCase = true) ||
+                        message.contains("timeout", ignoreCase = true)
         } finally {
             isLoading = false
         }
@@ -235,20 +257,20 @@ private fun AdminHomeContent(
     val adminInitials = userName.initials().ifBlank { "AD" }
 
     DashboardHeader(
-        name = userName.ifBlank { "Administrador" },
+        name = userName.ifBlank { stringResource(R.string.home_admin_default_name) },
         initials = adminInitials,
         stats = listOf(
             DashboardStat(
                 value = if (isLoading) "..." else tournamentsCount.toString(),
-                label = "Eventos"
+                label = stringResource(R.string.home_events)
             ),
             DashboardStat(
                 value = if (isLoading) "..." else users.size.toString(),
-                label = "Utilizadores"
+                label = stringResource(R.string.home_users)
             ),
             DashboardStat(
                 value = if (isLoading) "..." else organizersCount.toString(),
-                label = "Organizadores"
+                label = stringResource(R.string.home_organizers)
             )
         ),
         showAdminBadge = true,
@@ -259,9 +281,12 @@ private fun AdminHomeContent(
 
     Spacer(modifier = Modifier.height(28.dp))
 
-    if (errorMessage != null) {
+    if (showOfflineWarning) {
+        OfflineWarningCard()
+        Spacer(modifier = Modifier.height(22.dp))
+    } else if (errorMessage != null) {
         AdminErrorCard(
-            text = errorMessage ?: "Erro ao carregar dados."
+            text = errorMessage ?: errorLoadingData
         )
 
         Spacer(modifier = Modifier.height(22.dp))
@@ -276,7 +301,7 @@ private fun AdminHomeContent(
 
     Spacer(modifier = Modifier.height(26.dp))
 
-    SectionTitle(title = "Resumo da plataforma")
+    SectionTitle(title = stringResource(R.string.home_platform_summary))
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -290,7 +315,7 @@ private fun AdminHomeContent(
 
     Spacer(modifier = Modifier.height(26.dp))
 
-    SectionTitle(title = "Últimos registos")
+    SectionTitle(title = stringResource(R.string.home_recent_registrations))
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -305,6 +330,12 @@ private fun PendingRequestsCard(
     pendingCount: Int,
     onClick: () -> Unit
 ) {
+    val pendingText = if (pendingCount == 1) {
+        stringResource(R.string.home_pending_request_single)
+    } else {
+        stringResource(R.string.home_pending_request_multiple, pendingCount)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -325,7 +356,7 @@ private fun PendingRequestsCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.WarningAmber,
-                    contentDescription = "Pedidos pendentes",
+                    contentDescription = stringResource(R.string.cd_pending_requests),
                     tint = Color(0xFF6B5A00),
                     modifier = Modifier.size(24.dp)
                 )
@@ -337,11 +368,7 @@ private fun PendingRequestsCard(
                     .padding(start = 16.dp)
             ) {
                 Text(
-                    text = if (pendingCount == 1) {
-                        "1 pedido pendente"
-                    } else {
-                        "$pendingCount pedidos pendentes"
-                    },
+                    text = pendingText,
                     color = Color(0xFF7A5B00),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
@@ -350,7 +377,7 @@ private fun PendingRequestsCard(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "Aprovação de organizadores",
+                    text = stringResource(R.string.home_organizer_approval),
                     color = Color(0xFFB48A00),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -358,7 +385,7 @@ private fun PendingRequestsCard(
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Abrir pedidos pendentes",
+                contentDescription = stringResource(R.string.cd_pending_requests),
                 tint = Color(0xFFB48A00),
                 modifier = Modifier.size(26.dp)
             )
@@ -385,25 +412,25 @@ private fun AdminPlatformSummaryCard(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             AdminSummaryRow(
-                label = "Jogadores",
+                label = stringResource(R.string.home_players),
                 value = if (isLoading) "..." else playersCount.toString(),
                 color = Color(0xFFD7EBFF)
             )
 
             AdminSummaryRow(
-                label = "Organizadores",
+                label = stringResource(R.string.home_organizers),
                 value = if (isLoading) "..." else organizersCount.toString(),
                 color = Color(0xFFDFF3D8)
             )
 
             AdminSummaryRow(
-                label = "Administradores",
+                label = stringResource(R.string.home_admins),
                 value = if (isLoading) "..." else adminsCount.toString(),
                 color = Color(0xFFFFF7CC)
             )
 
             AdminSummaryRow(
-                label = "Torneios/Eventos",
+                label = stringResource(R.string.home_tournaments_events),
                 value = if (isLoading) "..." else tournamentsCount.toString(),
                 color = Color(0xFFE3D7FF)
             )
@@ -480,7 +507,7 @@ private fun RecentRegistrationsCard(
             when {
                 isLoading -> {
                     Text(
-                        text = "A carregar utilizadores...",
+                        text = stringResource(R.string.home_loading_users),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -488,7 +515,7 @@ private fun RecentRegistrationsCard(
 
                 users.isEmpty() -> {
                     Text(
-                        text = "Ainda não existem utilizadores registados.",
+                        text = stringResource(R.string.home_no_users),
                         color = AthloColors.TextMuted,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -594,16 +621,41 @@ private fun OrganizerHomeContent(
     navController: NavController,
     userName: String,
     userId: String,
-    context: Context
+    context: Context,
+    isOnline: Boolean
 ) {
     var tournaments by remember { mutableStateOf<List<Tournament>>(emptyList()) }
     var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
     var athletesCount by remember { mutableStateOf(0) }
+    var showOfflineWarning by remember { mutableStateOf(false) }
 
-    LaunchedEffect(userId) {
-        tournaments = TournamentRepository(context).getTournaments()
-        matches = MatchRepository(context).getAllMatches()
-        athletesCount = PlayerRepository().getAllPlayers().size
+    LaunchedEffect(userId, isOnline) {
+        if (!isOnline) {
+            tournaments = emptyList()
+            matches = emptyList()
+            athletesCount = 0
+            showOfflineWarning = true
+            return@LaunchedEffect
+        }
+
+        showOfflineWarning = false
+
+        try {
+            tournaments = TournamentRepository(context).getTournaments()
+            matches = MatchRepository(context).getAllMatches()
+            athletesCount = PlayerRepository().getAllPlayers().size
+        } catch (e: Exception) {
+            tournaments = emptyList()
+            matches = emptyList()
+            athletesCount = 0
+
+            val message = e.message.orEmpty()
+            showOfflineWarning =
+                message.contains("Unable to resolve host", ignoreCase = true) ||
+                        message.contains("No address associated with hostname", ignoreCase = true) ||
+                        message.contains("failed to connect", ignoreCase = true) ||
+                        message.contains("timeout", ignoreCase = true)
+        }
     }
 
     val myEvents = tournaments.filter { tournament ->
@@ -636,12 +688,21 @@ private fun OrganizerHomeContent(
     val organizerInitials = userName.initials().ifBlank { "ORG" }
 
     DashboardHeader(
-        name = userName.ifBlank { "Organizador" },
+        name = userName.ifBlank { stringResource(R.string.home_organizer_default_name) },
         initials = organizerInitials,
         stats = listOf(
-            DashboardStat(activeTournaments.toString(), "Torneios ativos"),
-            DashboardStat(activeMatches.toString(), "Jogos ativos"),
-            DashboardStat(athletesCount.toString(), "Atletas")
+            DashboardStat(
+                activeTournaments.toString(),
+                stringResource(R.string.home_active_tournaments)
+            ),
+            DashboardStat(
+                activeMatches.toString(),
+                stringResource(R.string.home_active_matches)
+            ),
+            DashboardStat(
+                athletesCount.toString(),
+                stringResource(R.string.home_athletes)
+            )
         ),
         showAdminBadge = false,
         onProfileClick = {
@@ -649,9 +710,14 @@ private fun OrganizerHomeContent(
         }
     )
 
+    if (showOfflineWarning) {
+        Spacer(modifier = Modifier.height(22.dp))
+        OfflineWarningCard()
+    }
+
     Spacer(modifier = Modifier.height(22.dp))
 
-    SectionTitle(title = "Ao vivo")
+    SectionTitle(title = stringResource(R.string.home_live))
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -659,7 +725,7 @@ private fun OrganizerHomeContent(
         EmptyLiveMatchCard()
     } else {
         LiveMatchCard(
-            time = liveMatch.matchTime ?: "Hora por definir",
+            time = liveMatch.matchTime ?: stringResource(R.string.home_time_undefined),
             teamA = liveMatch.teamAName,
             teamB = liveMatch.teamBName,
             scoreA = liveMatch.scoreA.toString(),
@@ -676,7 +742,7 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(22.dp))
 
-    SectionTitle(title = "Os meus eventos")
+    SectionTitle(title = stringResource(R.string.home_my_events))
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -705,7 +771,7 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(10.dp))
 
-    SectionTitle(title = "Outros eventos")
+    SectionTitle(title = stringResource(R.string.home_other_events))
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -764,7 +830,15 @@ private fun PlayerHomeContent(
         mutableStateOf(0)
     }
 
-    LaunchedEffect(playerTeamId) {
+    LaunchedEffect(playerTeamId, isOnline) {
+        if (!isOnline) {
+            playerTeam = null
+            playerMatches = emptyList()
+            nextMatch = null
+            playerGoals = 0
+            return@LaunchedEffect
+        }
+
         if (playerTeamId != null) {
             TeamRepository.fetchTeamsFromSupabase()
             playerTeam = TeamRepository.getTeamById(playerTeamId)
@@ -787,8 +861,13 @@ private fun PlayerHomeContent(
         }
 
         if (userId.isNotBlank()) {
-            val stats = StatsRepository().getPlayerStatsByUserId(userId)
-            playerGoals = stats.goals
+            runCatching {
+                StatsRepository().getPlayerStatsByUserId(userId)
+            }.onSuccess { stats ->
+                playerGoals = stats.goals
+            }.onFailure {
+                playerGoals = 0
+            }
         }
     }
 
@@ -801,10 +880,16 @@ private fun PlayerHomeContent(
                     it.status.equals("Agendado", ignoreCase = true) ||
                             it.status.equals("A decorrer", ignoreCase = true)
                 }.toString(),
-                "Próximos jogos"
+                stringResource(R.string.home_next_games)
             ),
-            DashboardStat(playerGoals.toString(), "Golos"),
-            DashboardStat(playerTeam?.wins?.toString() ?: "0", "Troféus")
+            DashboardStat(
+                playerGoals.toString(),
+                stringResource(R.string.home_goals)
+            ),
+            DashboardStat(
+                playerTeam?.wins?.toString() ?: "0",
+                stringResource(R.string.home_trophies)
+            )
         ),
         showAdminBadge = false,
         onProfileClick = {
@@ -817,7 +902,7 @@ private fun PlayerHomeContent(
     if (playerTeamId == null) {
         EmptyPlayerHomeCard()
     } else {
-        SectionTitle(title = "Próximo jogo")
+        SectionTitle(title = stringResource(R.string.home_next_match))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -838,21 +923,19 @@ private fun PlayerHomeContent(
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        SectionTitle(title = "As minhas equipas")
+        SectionTitle(title = stringResource(R.string.home_my_teams))
 
         Spacer(modifier = Modifier.height(8.dp))
 
         TeamCard(
             acronym = playerTeam?.acronym ?: "EQP",
-            name = playerTeam?.name ?: "Equipa $playerTeamId",
-            sport = playerTeam?.sport ?: "Equipa associada",
-            status = "Inscrito",
+            name = playerTeam?.name ?: stringResource(R.string.home_team_with_id, playerTeamId),
+            sport = playerTeam?.sport ?: stringResource(R.string.home_associated_team),
+            status = stringResource(R.string.home_registered),
             statusColor = AthloColors.SoftBlue,
             acronymColor = AthloColors.InfoBg,
             onClick = {
-                playerTeamId?.let {
-                    navController.navigate(Screen.TeamDetail.createRoute(it))
-                }
+                navController.navigate(Screen.TeamDetail.createRoute(playerTeamId))
             }
         )
     }
@@ -863,7 +946,8 @@ private fun PlayerNextMatchCard(
     match: Match,
     onClick: () -> Unit
 ) {
-    val timeText = match.matchTime?.ifBlank { null } ?: "Hora por definir"
+    val timeText = match.matchTime?.ifBlank { null }
+        ?: stringResource(R.string.home_time_undefined)
 
     Card(
         modifier = Modifier
@@ -952,7 +1036,7 @@ private fun EmptyPlayerHomeCard() {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        SectionTitle(title = "O meu perfil desportivo")
+        SectionTitle(title = stringResource(R.string.home_my_sport_profile))
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -970,7 +1054,7 @@ private fun EmptyPlayerHomeCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.WarningAmber,
-                    contentDescription = "Sem equipa",
+                    contentDescription = stringResource(R.string.cd_no_team),
                     tint = AthloColors.TextMuted,
                     modifier = Modifier.size(58.dp)
                 )
@@ -978,7 +1062,7 @@ private fun EmptyPlayerHomeCard() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Sem equipa associada",
+                    text = stringResource(R.string.home_no_team),
                     color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
@@ -988,7 +1072,7 @@ private fun EmptyPlayerHomeCard() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Ainda não foste adicionado a nenhuma equipa. Quando fores associado, os teus jogos, estatísticas e equipas aparecem aqui.",
+                    text = stringResource(R.string.home_no_team_desc),
                     color = AthloColors.TextSecondary,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
@@ -1014,7 +1098,7 @@ private fun EmptyNextMatchCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.WarningAmber,
-                contentDescription = "Sem próximo jogo",
+                contentDescription = stringResource(R.string.cd_no_next_match),
                 tint = AthloColors.TextMuted,
                 modifier = Modifier.size(48.dp)
             )
@@ -1022,7 +1106,7 @@ private fun EmptyNextMatchCard() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Sem jogos agendados",
+                text = stringResource(R.string.home_no_scheduled_matches),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -1032,7 +1116,7 @@ private fun EmptyNextMatchCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando houver um jogo marcado para a tua equipa, ele aparece aqui.",
+                text = stringResource(R.string.home_no_scheduled_matches_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
@@ -1069,7 +1153,7 @@ private fun DashboardHeader(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Bom dia",
+                        text = stringResource(R.string.home_good_morning),
                         color = Color(0xFFBBD7EF),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -1088,7 +1172,6 @@ private fun DashboardHeader(
 
                         if (showAdminBadge) {
                             Spacer(modifier = Modifier.width(8.dp))
-
                             AdminBadge()
                         }
                     }
@@ -1279,12 +1362,12 @@ private fun LiveMatchCard(
             ) {
                 StatusPill(
                     text = status,
-                    background = if (status == "A decorrer") {
+                    background = if (status.equals("A decorrer", ignoreCase = true)) {
                         AthloColors.DangerBg
                     } else {
                         AthloColors.NeutralBg
                     },
-                    textColor = if (status == "A decorrer") {
+                    textColor = if (status.equals("A decorrer", ignoreCase = true)) {
                         Color(0xFFC83755)
                     } else {
                         AthloColors.TextSecondary
@@ -1372,7 +1455,7 @@ private fun EventCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Abrir evento",
+                    contentDescription = stringResource(R.string.cd_open_event),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1442,7 +1525,7 @@ private fun TeamCard(
             StatusPill(
                 text = status,
                 background = statusColor,
-                textColor = if (status == "A decorrer") {
+                textColor = if (status.equals("A decorrer", ignoreCase = true)) {
                     Color(0xFFC83755)
                 } else {
                     AthloColors.Blue
@@ -1459,7 +1542,7 @@ private fun TeamCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Abrir equipa",
+                    contentDescription = stringResource(R.string.cd_open_team),
                     tint = AthloColors.Blue,
                     modifier = Modifier.size(18.dp)
                 )
@@ -1541,7 +1624,7 @@ private fun EmptyLiveMatchCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.WarningAmber,
-                contentDescription = "Sem jogos ao vivo",
+                contentDescription = stringResource(R.string.cd_no_live_matches),
                 tint = AthloColors.TextMuted,
                 modifier = Modifier.size(42.dp)
             )
@@ -1549,7 +1632,7 @@ private fun EmptyLiveMatchCard() {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Sem jogos ao vivo",
+                text = stringResource(R.string.home_no_live_matches),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -1559,7 +1642,7 @@ private fun EmptyLiveMatchCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando algum jogo estiver a decorrer, aparece aqui.",
+                text = stringResource(R.string.home_no_live_matches_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
@@ -1584,7 +1667,7 @@ private fun EmptyOrganizerEventsCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.WarningAmber,
-                contentDescription = "Sem eventos",
+                contentDescription = stringResource(R.string.cd_no_events),
                 tint = AthloColors.TextMuted,
                 modifier = Modifier.size(42.dp)
             )
@@ -1592,7 +1675,7 @@ private fun EmptyOrganizerEventsCard() {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Sem eventos criados",
+                text = stringResource(R.string.home_no_created_events),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -1602,7 +1685,7 @@ private fun EmptyOrganizerEventsCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando criares torneios, eles aparecem aqui.",
+                text = stringResource(R.string.home_no_created_events_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
@@ -1610,6 +1693,7 @@ private fun EmptyOrganizerEventsCard() {
         }
     }
 }
+
 @Composable
 private fun EmptyOtherEventsCard() {
     Card(
@@ -1626,7 +1710,7 @@ private fun EmptyOtherEventsCard() {
         ) {
             Icon(
                 imageVector = Icons.Default.WarningAmber,
-                contentDescription = "Sem outros eventos",
+                contentDescription = stringResource(R.string.cd_no_other_events),
                 tint = AthloColors.TextMuted,
                 modifier = Modifier.size(42.dp)
             )
@@ -1634,7 +1718,7 @@ private fun EmptyOtherEventsCard() {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Sem outros eventos",
+                text = stringResource(R.string.home_no_other_events),
                 color = AthloColors.TextPrimary,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -1644,7 +1728,7 @@ private fun EmptyOtherEventsCard() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Quando existirem eventos criados por outros organizadores, eles aparecem aqui.",
+                text = stringResource(R.string.home_no_other_events_desc),
                 color = AthloColors.TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
@@ -1652,6 +1736,50 @@ private fun EmptyOtherEventsCard() {
         }
     }
 }
+
+@Composable
+private fun OfflineWarningCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AthloRadius.Large),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFF7CC)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.SignalWifiOff,
+                contentDescription = stringResource(R.string.cd_offline),
+                tint = Color(0xFF7A5B00),
+                modifier = Modifier.size(30.dp)
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column {
+                Text(
+                    text = stringResource(R.string.home_offline),
+                    color = Color(0xFF7A5B00),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.home_offline_desc),
+                    color = Color(0xFF9A7800),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
 private fun String.toAcronym(): String {
     val parts = trim()
         .split(" ")
@@ -1696,7 +1824,7 @@ private fun PendingSyncBanner(count: Int) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Text(
-            text = "$count operação(ões) pendente(s) de sincronização",
+            text = stringResource(R.string.home_pending_sync, count),
             modifier = Modifier.padding(14.dp),
             color = Color(0xFF7A5B00),
             style = MaterialTheme.typography.labelMedium,
@@ -1726,7 +1854,7 @@ private fun PlayerOfflineNextMatchCard() {
             ) {
                 Icon(
                     imageVector = Icons.Default.SignalWifiOff,
-                    contentDescription = "Sem internet",
+                    contentDescription = stringResource(R.string.cd_offline),
                     tint = AthloColors.Navy,
                     modifier = Modifier.size(34.dp)
                 )
@@ -1734,7 +1862,7 @@ private fun PlayerOfflineNextMatchCard() {
                 Spacer(modifier = Modifier.width(14.dp))
 
                 Text(
-                    text = "SEM LIGAÇÃO À INTERNET",
+                    text = stringResource(R.string.home_offline),
                     color = AthloColors.Navy,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold

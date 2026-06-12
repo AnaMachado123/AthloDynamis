@@ -3,54 +3,120 @@
 
     <string name="app_name">AthloDynamis</string>
 
+    <!-- LOGIN -->
     <string name="login_welcome">Welcome back</string>
     <string name="login_subtitle">Sign in to your account</string>
-
     <string name="email_label">EMAIL</string>
     <string name="email_hint">Enter your email</string>
-
     <string name="password_label">PASSWORD</string>
     <string name="password_hint">Enter your password</string>
-
     <string name="forgot_password">Forgot your password?</string>
-
     <string name="login_button">Login</string>
-
     <string name="create_account">Don\'t have an account? Create account</string>
-
     <string name="hero_subtitle">Smart tournament and team management</string>
 
+    <!-- REGISTER -->
     <string name="register_title">Create account</string>
     <string name="register_subtitle_player">Create your player account</string>
     <string name="register_subtitle_organizer">Send a request to become an organizer</string>
-
     <string name="account_type_label">ACCOUNT TYPE</string>
-
     <string name="account_player">Player</string>
     <string name="account_player_subtitle">Join a team</string>
-
     <string name="account_organizer">Organizer</string>
     <string name="account_organizer_subtitle">Create events</string>
-
     <string name="name_label">NAME</string>
     <string name="name_hint">Enter your name</string>
-
     <string name="shirt_number_label">SHIRT NUMBER</string>
     <string name="shirt_number_hint">Enter your shirt number</string>
-
     <string name="position_label">POSITION</string>
     <string name="position_hint">Choose your position</string>
-
     <string name="request_description_label">REQUEST DESCRIPTION</string>
     <string name="request_description_hint">Write a short description of your request if you wish</string>
-
     <string name="request_approval_info">Your request will be sent for administrator approval.</string>
-
     <string name="register_button_player">Create Account</string>
     <string name="register_button_organizer">Send Request</string>
-
     <string name="already_have_account">Already have an account? Sign in</string>
-
     <string name="register_hero_subtitle">Create your account and join the game</string>
+
+    <!-- HOME - COMMON -->
+    <string name="home_good_morning">Good morning</string>
+    <string name="home_events">Events</string>
+    <string name="home_users">Users</string>
+    <string name="home_organizers">Organizers</string>
+    <string name="home_players">Players</string>
+    <string name="home_admins">Administrators</string>
+    <string name="home_tournaments_events">Tournaments/Events</string>
+    <string name="home_loading_users">Loading users...</string>
+    <string name="home_no_users">There are no registered users yet.</string>
+    <string name="home_error_loading_data">Error loading data.</string>
+    <string name="home_error_loading_admin">Error loading administrator data.</string>
+    <string name="home_default_user">User</string>
+    <string name="home_time_undefined">Time not set</string>
+    <string name="home_team_with_id">Team %1$d</string>
+
+    <!-- HOME - ADMIN -->
+    <string name="home_admin_default_name">Administrator</string>
+    <string name="home_pending_request_single">1 pending request</string>
+    <string name="home_pending_request_multiple">%1$d pending requests</string>
+    <string name="home_organizer_approval">Organizer approval</string>
+    <string name="home_platform_summary">Platform summary</string>
+    <string name="home_recent_registrations">Latest registrations</string>
+
+    <!-- HOME - ORGANIZER -->
+    <string name="home_organizer_default_name">Organizer</string>
+    <string name="home_active_tournaments">Active tournaments</string>
+    <string name="home_active_matches">Active matches</string>
+    <string name="home_athletes">Athletes</string>
+    <string name="home_live">Live</string>
+    <string name="home_my_events">My events</string>
+    <string name="home_other_events">Other events</string>
+    <string name="home_no_live_matches">No live matches</string>
+    <string name="home_no_live_matches_desc">When a match is live, it will appear here.</string>
+    <string name="home_no_created_events">No created events</string>
+    <string name="home_no_created_events_desc">When you create tournaments, they will appear here.</string>
+    <string name="home_no_other_events">No other events</string>
+    <string name="home_no_other_events_desc">When events created by other organizers exist, they will appear here.</string>
+
+    <!-- HOME - PLAYER -->
+    <string name="home_next_games">Matches</string>
+    <string name="home_goals">Goals</string>
+    <string name="home_trophies">Trophies</string>
+    <string name="home_my_sport_profile">My sports profile</string>
+    <string name="home_no_team">No team associated</string>
+    <string name="home_no_team_desc">You have not been added to a team yet. Once you are associated with one, your matches, stats and teams will appear here.</string>
+    <string name="home_next_match">Next match</string>
+    <string name="home_no_scheduled_matches">No scheduled matches</string>
+    <string name="home_no_scheduled_matches_desc">When a match is scheduled for your team, it will appear here.</string>
+    <string name="home_my_teams">My teams</string>
+    <string name="home_registered">Registered</string>
+    <string name="home_associated_team">Associated team</string>
+    <string name="home_offline">NO INTERNET CONNECTION</string>
+
+    <!-- HOME - SYNC -->
+    <string name="home_pending_sync">%1$d pending sync operation(s)</string>
+
+    <!-- ACCESSIBILITY -->
+    <string name="cd_create_team">Create team</string>
+    <string name="cd_profile">Profile</string>
+    <string name="cd_pending_requests">Pending requests</string>
+    <string name="cd_open_event">Open event</string>
+    <string name="cd_open_team">Open team</string>
+    <string name="cd_no_team">No team</string>
+    <string name="cd_no_next_match">No next match</string>
+    <string name="cd_no_live_matches">No live matches</string>
+    <string name="cd_no_events">No events</string>
+    <string name="cd_no_other_events">No other events</string>
+    <string name="cd_offline">No internet</string>
+
+    <!-- BOTTOM BAR -->
+    <string name="bottom_home">Home</string>
+    <string name="bottom_events">Events</string>
+    <string name="bottom_teams">Teams</string>
+    <string name="bottom_stats">Stats</string>
+    <string name="bottom_notifications">Notif.</string>
+    <string name="bottom_management">Manage</string>
+
+    <!-- OFFLINE -->
+    <string name="home_offline_desc">You are offline. Some data may not load until you are back online.</string>
 
 </resources>
