@@ -49,6 +49,9 @@ import com.example.athlodynamis.R
 import com.example.athlodynamis.presentation.components.LanguageSwitcher
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.ContentScale
+
 @Composable
 fun LoginScreen(
     errorMessage: String? = null,
@@ -252,11 +255,17 @@ private fun LoginHeroCard() {
         ) {
             Box(
                 modifier = Modifier
-                    .size(62.dp)
-                    .background(AthloColors.Blue, CircleShape),
+                    .size(70.dp)
+                    .background(Color.White, CircleShape)
+                    .padding(5.dp),
                 contentAlignment = Alignment.Center
             ) {
-
+                Image(
+                    painter = painterResource(id = R.drawable.athlodynamis_logo2),
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -198,15 +198,16 @@ private fun AccountPendingHeroCard() {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
-                            .background(AthloColors.Blue, CircleShape),
+                            .size(70.dp)
+                            .background(Color.White, CircleShape)
+                            .padding(5.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Language,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(42.dp)
+                        Image(
+                            painter = painterResource(id = R.drawable.athlodynamis_logo2),
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
                         )
                     }
                 }

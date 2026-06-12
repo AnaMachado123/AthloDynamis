@@ -633,7 +633,7 @@ private fun RegisterHeroCard() {
                     .background(AthloColors.Blue, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
+                /*Box(
                     modifier = Modifier
                         .size(90.dp)
                         .background(AthloColors.Blue, CircleShape),
@@ -644,6 +644,20 @@ private fun RegisterHeroCard() {
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(42.dp)
+                    )
+                }*/
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.athlodynamis_logo2),
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
                     )
                 }
             }
