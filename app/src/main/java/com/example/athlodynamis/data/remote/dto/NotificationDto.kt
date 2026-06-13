@@ -15,6 +15,11 @@ data class NotificationDto(
 
     val message: String,
 
+    @SerialName("notification_type")
+    val notificationType: String? = null,
+
+    val data: Map<String, String>? = null,
+
     @SerialName("is_read")
     val isRead: Boolean = false,
 
@@ -30,6 +35,11 @@ data class CreateNotificationDto(
     val title: String,
 
     val message: String,
+
+    @SerialName("notification_type")
+    val notificationType: String? = null,
+
+    val data: Map<String, String>? = null,
 
     @SerialName("is_read")
     val isRead: Boolean = false
@@ -47,6 +57,8 @@ fun NotificationDto.toNotification(): Notification {
         userId = userId,
         title = title,
         message = message,
+        notificationType = notificationType,
+        data = data,
         isRead = isRead,
         createdAt = createdAt
     )
