@@ -33,6 +33,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,6 +67,7 @@ import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
+
 
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
@@ -140,6 +143,9 @@ fun ManageLiveMatchScreen(
 
     var showPlayerPicker by remember { mutableStateOf(false) }
     var showEventSuccess by remember { mutableStateOf(false) }
+    var showFinishOfflineDialog by remember {
+        mutableStateOf(false)
+    }
 
     var lastEventConfirmation by remember {
         mutableStateOf<LiveEventConfirmation?>(null)
@@ -270,6 +276,8 @@ fun ManageLiveMatchScreen(
                 )
             }
 
+
+
             EventTypeSelector(
                 selectedEventType = selectedEventType,
                 options = eventOptions,
@@ -336,9 +344,51 @@ fun ManageLiveMatchScreen(
                 playerNamesById = playerNamesById
             )
 
+            if (matchStatus.equals("A decorrer", ignoreCase = true)) {
+                FinishLiveMatchButton(
+                    isOnline = isOnline,
+                    onClick = {
+                        matchesViewModel.updateMatchStatus(
+                            context = context,
+                            isOnline = isOnline,
+                            matchId = currentMatchId,
+                            status = "Terminado",
+                            minute = liveMinute,
+                            onSuccess = {
+                                offlineViewModel.refreshPendingOperationsCount()
+
+                                if (!isOnline) {
+                                    showFinishOfflineDialog = true
+                                }
+
+                                reloadLiveMatchData(
+                                    currentMatchId = currentMatchId,
+                                    matchesViewModel = matchesViewModel,
+                                    matchEventsViewModel = matchEventsViewModel,
+                                    eventPlayersViewModel = eventPlayersViewModel,
+                                    teamAId = teamAId,
+                                    teamBId = teamBId,
+                                    context = context
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+    if (showFinishOfflineDialog) {
+        FinishOfflineDialog(
+            onOkClick = {
+                showFinishOfflineDialog = false
+                navController.popBackStack()
+            }
+        )
+    }
+
 
     if (showPlayerPicker) {
         EventPlayerPickerSheet(
@@ -1735,4 +1785,71 @@ private fun notificationMessageForEvent(
             "$playerName registou um evento por $teamName aos $minute'."
         }
     }
+}
+
+@Composable
+private fun FinishLiveMatchButton(
+    isOnline: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFC83755)
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = if (isOnline) {
+                "Terminar jogo"
+            } else {
+                "Terminar jogo offline"
+            },
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
+@Composable
+private fun FinishOfflineDialog(
+    onOkClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {
+            onOkClick()
+        },
+        title = {
+            Text(
+                text = "Jogo terminado offline",
+                color = AthloColors.TextPrimary,
+                fontWeight = FontWeight.ExtraBold
+            )
+        },
+        text = {
+            Text(
+                text = "O jogo foi terminado e guardado offline. Quando voltares a ter internet, esta alteração será sincronizada com o Supabase.",
+                color = AthloColors.TextSecondary
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onOkClick()
+                }
+            ) {
+                Text(
+                    text = "OK",
+                    color = AthloColors.Blue,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(22.dp)
+    )
 }
