@@ -359,6 +359,14 @@ fun ManageLiveMatchScreen(
 
                                 if (!isOnline) {
                                     showFinishOfflineDialog = true
+                                } else {
+                                    createFinishedMatchNotification(
+                                        notificationsViewModel = notificationsViewModel,
+                                        teamAName = teamAName,
+                                        teamBName = teamBName,
+                                        scoreA = scoreA,
+                                        scoreB = scoreB
+                                    )
                                 }
 
                                 reloadLiveMatchData(
@@ -1728,6 +1736,57 @@ private fun String.toAcronym(): String {
         .joinToString("") {
             it.first().uppercase()
         }
+}
+
+private fun createFinishedMatchNotification(
+    notificationsViewModel: NotificationsViewModel,
+    teamAName: String,
+    teamBName: String,
+    scoreA: Int,
+    scoreB: Int
+) {
+    if (scoreA == scoreB) {
+        notificationsViewModel.createNotification(
+            title = "",
+            message = "",
+            notificationType = "MATCH_DRAW",
+            data = mapOf(
+                "teamAName" to teamAName,
+                "teamBName" to teamBName,
+                "scoreA" to scoreA.toString(),
+                "scoreB" to scoreB.toString()
+            )
+        )
+    } else {
+        val winnerName: String
+        val loserName: String
+        val winnerScore: Int
+        val loserScore: Int
+
+        if (scoreA > scoreB) {
+            winnerName = teamAName
+            loserName = teamBName
+            winnerScore = scoreA
+            loserScore = scoreB
+        } else {
+            winnerName = teamBName
+            loserName = teamAName
+            winnerScore = scoreB
+            loserScore = scoreA
+        }
+
+        notificationsViewModel.createNotification(
+            title = "",
+            message = "",
+            notificationType = "MATCH_WIN",
+            data = mapOf(
+                "winnerName" to winnerName,
+                "loserName" to loserName,
+                "winnerScore" to winnerScore.toString(),
+                "loserScore" to loserScore.toString()
+            )
+        )
+    }
 }
 
 
