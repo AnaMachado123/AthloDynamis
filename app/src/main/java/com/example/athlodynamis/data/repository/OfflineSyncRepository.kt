@@ -10,6 +10,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+private object OfflineSyncLock {
+    var isSyncing: Boolean = false
+}
 class OfflineSyncRepository(
     context: Context
 ) {
@@ -46,73 +49,84 @@ class OfflineSyncRepository(
     }
 
     suspend fun syncPendingOperations() {
-        val pendingOperations = getPendingOperations()
-
-        pendingOperations.forEach { operation ->
-            try {
-                when (operation.operationType) {
-                    "CREATE_MATCH_EVENT" -> {
-                        val payload =
-                            json.decodeFromString<CreateMatchEventDto>(
-                                operation.payloadJson
-                            )
-
-                        matchEventRepository.createMatchEvent(payload)
-                    }
-
-                    "UPDATE_MATCH_SCORE" -> {
-                        val payload =
-                            json.decodeFromString<OfflineUpdateMatchScorePayload>(
-                                operation.payloadJson
-                            )
-
-                        matchRepository.updateMatchScore(
-                            matchId = payload.matchId,
-                            scoreA = payload.scoreA,
-                            scoreB = payload.scoreB,
-                            minute = payload.minute
-                        )
-                    }
-
-                    "UPDATE_MATCH_STATUS" -> {
-                        val payload =
-                            json.decodeFromString<OfflineUpdateMatchStatusPayload>(
-                                operation.payloadJson
-                            )
-
-                        matchRepository.updateMatchStatus(
-                            matchId = payload.matchId,
-                            status = payload.status,
-                            minute = payload.minute
-                        )
-                    }
-
-                    "UPDATE_USER_PROFILE" -> {
-                        val payload =
-                            json.decodeFromString<OfflineProfileUpdatePayload>(
-                                operation.payloadJson
-                            )
-
-                        userRepository.updateUser(
-                            userId = payload.userId,
-                            name = payload.name,
-                            email = payload.email,
-                            password = payload.password
-                        )
-                    }
-                }
-
-                markAsSynced(operation.id)
-
-            } catch (e: Exception) {
-                markAsError(
-                    id = operation.id,
-                    message = e.message ?: "Erro ao sincronizar operação offline"
-                )
-            }
+        if (OfflineSyncLock.isSyncing) {
+            return
         }
 
-        clearSyncedOperations()
+        OfflineSyncLock.isSyncing = true
+
+        try {
+            val pendingOperations = getPendingOperations()
+
+            pendingOperations.forEach { operation ->
+                try {
+                    when (operation.operationType) {
+                        "CREATE_MATCH_EVENT" -> {
+                            val payload =
+                                json.decodeFromString<CreateMatchEventDto>(
+                                    operation.payloadJson
+                                )
+
+                            matchEventRepository.createMatchEvent(payload)
+                        }
+
+                        "UPDATE_MATCH_SCORE" -> {
+                            val payload =
+                                json.decodeFromString<OfflineUpdateMatchScorePayload>(
+                                    operation.payloadJson
+                                )
+
+                            matchRepository.updateMatchScore(
+                                matchId = payload.matchId,
+                                scoreA = payload.scoreA,
+                                scoreB = payload.scoreB,
+                                minute = payload.minute
+                            )
+                        }
+
+                        "UPDATE_MATCH_STATUS" -> {
+                            val payload =
+                                json.decodeFromString<OfflineUpdateMatchStatusPayload>(
+                                    operation.payloadJson
+                                )
+
+                            matchRepository.updateMatchStatus(
+                                matchId = payload.matchId,
+                                status = payload.status,
+                                minute = payload.minute
+                            )
+                        }
+
+                        "UPDATE_USER_PROFILE" -> {
+                            val payload =
+                                json.decodeFromString<OfflineProfileUpdatePayload>(
+                                    operation.payloadJson
+                                )
+
+                            userRepository.updateUser(
+                                userId = payload.userId,
+                                name = payload.name,
+                                email = payload.email,
+                                password = payload.password
+                            )
+                        }
+                    }
+
+                    markAsSynced(operation.id)
+
+                } catch (e: Exception) {
+                    markAsError(
+                        id = operation.id,
+                        message = e.message ?: "Erro ao sincronizar operação offline"
+                    )
+                }
+            }
+
+            clearSyncedOperations()
+
+        } finally {
+            OfflineSyncLock.isSyncing = false
+        }
     }
 
     suspend fun markAsSynced(id: String) {

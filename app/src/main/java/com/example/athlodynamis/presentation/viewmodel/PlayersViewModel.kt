@@ -1,5 +1,6 @@
 package com.example.athlodynamis.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.athlodynamis.data.remote.dto.CreatePlayerDto
@@ -11,7 +12,9 @@ import kotlinx.coroutines.launch
 
 class PlayersViewModel : ViewModel() {
 
-    private val repository = PlayerRepository()
+    private fun repository(context: Context? = null): PlayerRepository {
+        return PlayerRepository(context)
+    }
 
     private val _players = MutableStateFlow<List<Player>>(emptyList())
     val players: StateFlow<List<Player>> = _players
@@ -25,13 +28,31 @@ class PlayersViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    fun loadPlayersByTeam(teamId: Int) {
+    /*fun loadPlayersByTeam(teamId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
             try {
                 _players.value = repository.getPlayersByTeam(teamId)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Erro ao carregar jogadores"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }*/
+
+    fun loadPlayersByTeam(
+        teamId: Int,
+        context: Context? = null
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                _players.value = repository(context).getPlayersByTeam(teamId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao carregar jogadores"
             } finally {
@@ -46,7 +67,7 @@ class PlayersViewModel : ViewModel() {
             _error.value = null
 
             try {
-                _availablePlayers.value = repository.getAvailablePlayers()
+                _availablePlayers.value = repository().getAvailablePlayers()
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao carregar jogadores disponíveis"
             } finally {
@@ -66,7 +87,7 @@ class PlayersViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.createPlayer(
+                repository().createPlayer(
                     CreatePlayerDto(
                         teamId = teamId,
                         name = name,
@@ -94,7 +115,7 @@ class PlayersViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.assignPlayerToTeam(
+                repository().assignPlayerToTeam(
                     playerId = playerId,
                     teamId = teamId
                 )
@@ -120,7 +141,7 @@ class PlayersViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.removePlayerFromTeam(playerId)
+                repository().removePlayerFromTeam(playerId)
                 loadPlayersByTeam(teamId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao remover jogador da equipa"
@@ -139,7 +160,7 @@ class PlayersViewModel : ViewModel() {
             _error.value = null
 
             try {
-                repository.deletePlayer(playerId)
+                repository().deletePlayer(playerId)
                 loadPlayersByTeam(teamId)
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao apagar jogador"
@@ -149,7 +170,7 @@ class PlayersViewModel : ViewModel() {
         }
     }
 
-    fun loadPlayersByTeams(
+    /*fun loadPlayersByTeams(
         teamAId: Int?,
         teamBId: Int?
     ) {
@@ -166,6 +187,39 @@ class PlayersViewModel : ViewModel() {
 
                 val teamBPlayers = if (teamBId != null) {
                     repository.getPlayersByTeam(teamBId)
+                } else {
+                    emptyList()
+                }
+
+                _players.value = (teamAPlayers + teamBPlayers)
+                    .distinctBy { it.id }
+
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Erro ao carregar jogadores das equipas"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }*/
+
+    fun loadPlayersByTeams(
+        teamAId: Int?,
+        teamBId: Int?,
+        context: Context? = null
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                val teamAPlayers = if (teamAId != null) {
+                    repository(context).getPlayersByTeam(teamAId)
+                } else {
+                    emptyList()
+                }
+
+                val teamBPlayers = if (teamBId != null) {
+                    repository(context).getPlayersByTeam(teamBId)
                 } else {
                     emptyList()
                 }

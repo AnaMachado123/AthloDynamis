@@ -44,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,11 +62,9 @@ import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.MatchEventsViewModel
 import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
+import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 import com.example.athlodynamis.presentation.viewmodel.PlayersViewModel
 import kotlinx.coroutines.delay
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import com.example.athlodynamis.presentation.viewmodel.OfflineViewModel
 
 private const val EVENT_GOAL = "Golo"
 private const val EVENT_ASSIST = "Assistência"
@@ -165,7 +165,10 @@ fun ManageLiveMatchScreen(
                 matchId = currentMatchId,
                 context = context
             )
-            matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
+            matchEventsViewModel.loadEventsByMatch(
+                matchId = currentMatchId.toInt(),
+                context = context
+            )
         }
     }
 
@@ -183,7 +186,8 @@ fun ManageLiveMatchScreen(
         if (currentTeamAId != null || currentTeamBId != null) {
             eventPlayersViewModel.loadPlayersByTeams(
                 teamAId = currentTeamAId,
-                teamBId = currentTeamBId
+                teamBId = currentTeamBId,
+                context = context
             )
         }
     }
@@ -292,7 +296,10 @@ fun ManageLiveMatchScreen(
                         selectedEventMinute = liveMinute
 
                         teamAId?.let {
-                            goalPlayersViewModel.loadPlayersByTeam(it.toInt())
+                            goalPlayersViewModel.loadPlayersByTeam(
+                                teamId = it.toInt(),
+                                context = context
+                            )
                             showPlayerPicker = true
                         }
                     }
@@ -310,7 +317,10 @@ fun ManageLiveMatchScreen(
                         selectedEventMinute = liveMinute
 
                         teamBId?.let {
-                            goalPlayersViewModel.loadPlayersByTeam(it.toInt())
+                            goalPlayersViewModel.loadPlayersByTeam(
+                                teamId = it.toInt(),
+                                context = context
+                            )
                             showPlayerPicker = true
                         }
                     }
@@ -442,7 +452,8 @@ fun ManageLiveMatchScreen(
                                         matchEventsViewModel = matchEventsViewModel,
                                         eventPlayersViewModel = eventPlayersViewModel,
                                         teamAId = teamAId,
-                                        teamBId = teamBId
+                                        teamBId = teamBId,
+                                        context = context
                                     )
 
                                     showEventSuccess = true
@@ -473,7 +484,8 @@ fun ManageLiveMatchScreen(
                                 matchEventsViewModel = matchEventsViewModel,
                                 eventPlayersViewModel = eventPlayersViewModel,
                                 teamAId = teamAId,
-                                teamBId = teamBId
+                                teamBId = teamBId,
+                                context = context
                             )
 
                             showEventSuccess = true
@@ -508,14 +520,22 @@ private fun reloadLiveMatchData(
     matchEventsViewModel: MatchEventsViewModel,
     eventPlayersViewModel: PlayersViewModel,
     teamAId: Long?,
-    teamBId: Long?
+    teamBId: Long?,
+    context: android.content.Context
 ) {
-    matchesViewModel.loadMatchById(currentMatchId)
-    matchEventsViewModel.loadEventsByMatch(currentMatchId.toInt())
+    matchesViewModel.loadMatchById(
+        matchId = currentMatchId,
+        context = context
+    )
+    matchEventsViewModel.loadEventsByMatch(
+        matchId = currentMatchId.toInt(),
+        context = context
+    )
 
     eventPlayersViewModel.loadPlayersByTeams(
         teamAId = teamAId?.toInt(),
-        teamBId = teamBId?.toInt()
+        teamBId = teamBId?.toInt(),
+        context = context
     )
 }
 
