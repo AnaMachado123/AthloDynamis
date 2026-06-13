@@ -630,20 +630,17 @@ private fun OrganizerHomeContent(
     var showOfflineWarning by remember { mutableStateOf(false) }
 
     LaunchedEffect(userId, isOnline) {
-        if (!isOnline) {
-            tournaments = emptyList()
-            matches = emptyList()
-            athletesCount = 0
-            showOfflineWarning = true
-            return@LaunchedEffect
-        }
-
-        showOfflineWarning = false
+        showOfflineWarning = !isOnline
 
         try {
             tournaments = TournamentRepository(context).getTournaments()
             matches = MatchRepository(context).getAllMatches()
-            athletesCount = PlayerRepository().getAllPlayers().size
+
+            athletesCount = if (isOnline) {
+                PlayerRepository().getAllPlayers().size
+            } else {
+                0
+            }
         } catch (e: Exception) {
             tournaments = emptyList()
             matches = emptyList()
@@ -651,7 +648,8 @@ private fun OrganizerHomeContent(
 
             val message = e.message.orEmpty()
             showOfflineWarning =
-                message.contains("Unable to resolve host", ignoreCase = true) ||
+                !isOnline ||
+                        message.contains("Unable to resolve host", ignoreCase = true) ||
                         message.contains("No address associated with hostname", ignoreCase = true) ||
                         message.contains("failed to connect", ignoreCase = true) ||
                         message.contains("timeout", ignoreCase = true)
@@ -672,17 +670,19 @@ private fun OrganizerHomeContent(
         match.tournamentId.toString() in myEventIds
     }
 
+    val liveMatches = matches.filter {
+        it.status.equals("A decorrer", ignoreCase = true) ||
+                it.status.equals("Live", ignoreCase = true)
+    }
+
     val activeTournaments = myEvents.count {
         !it.status.equals("Terminado", ignoreCase = true)
     }
 
-    val activeMatches = myMatches.count {
+    val activeMatches = matches.count {
         it.status.equals("Agendado", ignoreCase = true) ||
-                it.status.equals("A decorrer", ignoreCase = true)
-    }
-
-    val liveMatch = myMatches.firstOrNull {
-        it.status.equals("A decorrer", ignoreCase = true)
+                it.status.equals("A decorrer", ignoreCase = true) ||
+                it.status.equals("Live", ignoreCase = true)
     }
 
     val organizerInitials = userName.initials().ifBlank { "ORG" }
@@ -721,23 +721,27 @@ private fun OrganizerHomeContent(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    if (liveMatch == null) {
+    if (liveMatches.isEmpty()) {
         EmptyLiveMatchCard()
     } else {
-        LiveMatchCard(
-            time = liveMatch.matchTime ?: stringResource(R.string.home_time_undefined),
-            teamA = liveMatch.teamAName,
-            teamB = liveMatch.teamBName,
-            scoreA = liveMatch.scoreA.toString(),
-            scoreB = liveMatch.scoreB.toString(),
-            status = liveMatch.status,
-            minute = "${liveMatch.minute ?: 0}'",
-            onClick = {
-                navController.navigate(
-                    Screen.MatchDetail.createRoute(liveMatch.id.toString())
-                )
-            }
-        )
+        liveMatches.forEach { liveMatch ->
+            LiveMatchCard(
+                time = liveMatch.matchTime ?: stringResource(R.string.home_time_undefined),
+                teamA = liveMatch.teamAName,
+                teamB = liveMatch.teamBName,
+                scoreA = liveMatch.scoreA.toString(),
+                scoreB = liveMatch.scoreB.toString(),
+                status = liveMatch.status,
+                minute = "${liveMatch.minute ?: 0}'",
+                onClick = {
+                    navController.navigate(
+                        Screen.ManageLiveMatch.createRoute(liveMatch.id.toString())
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 
     Spacer(modifier = Modifier.height(22.dp))
