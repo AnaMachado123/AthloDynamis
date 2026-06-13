@@ -713,4 +713,53 @@
     <string name="pending_request_message_title">Submitted description</string>
     <string name="pending_cd_account_review">Account under review</string>
     <string name="pending_cd_logo">Logo</string>
+
+    <!-- OFFLINE SYNC NOTIFICATIONS -->
+    <string name="offline_sync_goal_title">Goal synced</string>
+    <string name="offline_sync_assist_title">Assist synced</string>
+    <string name="offline_sync_yellow_card_title">Yellow card synced</string>
+    <string name="offline_sync_red_card_title">Red card synced</string>
+    <string name="offline_sync_substitution_title">Substitution synced</string>
+    <string name="offline_sync_event_title">Event synced</string>
+
+    <string name="offline_sync_unknown_team">unknown team</string>
+    <string name="offline_sync_team_a">team A</string>
+    <string name="offline_sync_team_b">team B</string>
+
+    <string name="offline_sync_goal_message">A goal by %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_assist_message">An assist by %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_yellow_card_message">A yellow card for %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_red_card_message">A red card for %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_substitution_message">A substitution for %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_event_message">A match event for %1$s%2$s that was recorded offline has been synced.</string>
+    <string name="offline_sync_minute_text"> at minute %1$d</string>
+
+    <string name="offline_sync_win_title">%1$s win</string>
+    <string name="offline_sync_draw_title">Match draw</string>
+    <string name="offline_sync_win_message">%1$s beat %2$s %3$d - %4$d. Offline match finish synced.</string>
+    <string name="offline_sync_draw_message">%1$s and %2$s drew %3$d - %4$d. Offline match finish synced.</string>
+
+    <string name="offline_sync_error">Error syncing offline operation</string>
+
+    <string name="live_match_finish_button">Finish match</string>
+    <string name="live_match_finish_offline_button">Finish match offline</string>
+    <string name="live_match_finish_offline_title">Match finished offline</string>
+    <string name="live_match_finish_offline_message">The match was finished and saved offline. When you are back online, this change will be synced with Supabase.</string>
+    <string name="common_ok">OK</string>
+
+    <!-- LIVE MATCH NOTIFICATIONS -->
+    <string name="live_notification_goal_title">Goal for %1$s</string>
+    <string name="live_notification_assist_title">Assist recorded</string>
+    <string name="live_notification_yellow_card_title">Yellow card</string>
+    <string name="live_notification_red_card_title">Red card</string>
+    <string name="live_notification_substitution_title">Substitution for %1$s</string>
+    <string name="live_notification_generic_title">New match event</string>
+
+    <string name="live_notification_goal_message">%1$s scored for %2$s at minute %3$d. Current score: %4$s %5$d - %6$d %7$s.</string>
+    <string name="live_notification_assist_message">%1$s made an assist for %2$s at minute %3$d.</string>
+    <string name="live_notification_yellow_card_message">%1$s received a yellow card for %2$s at minute %3$d.</string>
+    <string name="live_notification_red_card_message">%1$s received a red card for %2$s at minute %3$d.</string>
+    <string name="live_notification_substitution_message">Substitution for %1$s at minute %2$d: %3$s came in and %4$s went out.</string>
+    <string name="live_notification_generic_message">%1$s recorded a match event for %2$s at minute %3$d.</string>
+    <string name="live_notification_unknown_player">unknown player</string>
 </resources>

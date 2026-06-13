@@ -711,4 +711,55 @@
     <string name="tournament_format_league">Liga</string>
     <string name="tournament_format_group">Grupo</string>
     <string name="tournament_format_knockout">Eliminatórias</string>
+
+    <!-- OFFLINE SYNC NOTIFICATIONS -->
+    <string name="offline_sync_goal_title">Golo sincronizado</string>
+    <string name="offline_sync_assist_title">Assistência sincronizada</string>
+    <string name="offline_sync_yellow_card_title">Cartão amarelo sincronizado</string>
+    <string name="offline_sync_red_card_title">Cartão vermelho sincronizado</string>
+    <string name="offline_sync_substitution_title">Substituição sincronizada</string>
+    <string name="offline_sync_event_title">Evento sincronizado</string>
+
+    <string name="offline_sync_unknown_team">equipa desconhecida</string>
+    <string name="offline_sync_team_a">equipa A</string>
+    <string name="offline_sync_team_b">equipa B</string>
+
+    <string name="offline_sync_goal_message">Foi sincronizado um golo do(a) %1$s%2$s que tinha sido registado offline.</string>
+    <string name="offline_sync_assist_message">Foi sincronizada uma assistência do(a) %1$s%2$s que tinha sido registada offline.</string>
+    <string name="offline_sync_yellow_card_message">Foi sincronizado um cartão amarelo do(a) %1$s%2$s que tinha sido registado offline.</string>
+    <string name="offline_sync_red_card_message">Foi sincronizado um cartão vermelho do(a) %1$s%2$s que tinha sido registado offline.</string>
+    <string name="offline_sync_substitution_message">Foi sincronizada uma substituição do(a) %1$s%2$s que tinha sido registada offline.</string>
+    <string name="offline_sync_event_message">Foi sincronizado um evento de jogo do(a) %1$s%2$s que tinha sido registado offline.</string>
+    <string name="offline_sync_minute_text"> ao minuto %1$d</string>
+
+    <string name="offline_sync_win_title">Vitória de %1$s</string>
+    <string name="offline_sync_draw_title">Empate no jogo</string>
+    <string name="offline_sync_win_message">%1$s venceu %2$s por %3$d - %4$d. Jogo terminado offline e sincronizado.</string>
+    <string name="offline_sync_draw_message">%1$s e %2$s empataram %3$d - %4$d. Jogo terminado offline e sincronizado.</string>
+
+    <string name="offline_sync_error">Erro ao sincronizar operação offline</string>
+
+    <string name="live_match_finish_button">Terminar jogo</string>
+    <string name="live_match_finish_offline_button">Terminar jogo offline</string>
+    <string name="live_match_finish_offline_title">Jogo terminado offline</string>
+    <string name="live_match_finish_offline_message">O jogo foi terminado e guardado offline. Quando voltares a ter internet, esta alteração será sincronizada com o Supabase.</string>
+    <string name="common_ok">OK</string>
+
+    <!-- LIVE MATCH NOTIFICATIONS -->
+    <string name="live_notification_goal_title">Golo de %1$s</string>
+    <string name="live_notification_assist_title">Assistência registada</string>
+    <string name="live_notification_yellow_card_title">Cartão amarelo</string>
+    <string name="live_notification_red_card_title">Cartão vermelho</string>
+    <string name="live_notification_substitution_title">Substituição em %1$s</string>
+    <string name="live_notification_generic_title">Novo evento de jogo</string>
+
+    <string name="live_notification_goal_message">%1$s marcou por %2$s aos %3$d\'. Resultado atual: %4$s %5$d - %6$d %7$s.</string>
+    <string name="live_notification_assist_message">%1$s fez uma assistência por %2$s aos %3$d\'.</string>
+    <string name="live_notification_yellow_card_message">%1$s recebeu cartão amarelo por %2$s aos %3$d\'.</string>
+    <string name="live_notification_red_card_message">%1$s recebeu cartão vermelho por %2$s aos %3$d\'.</string>
+    <string name="live_notification_substitution_message">Substituição em %1$s aos %2$d\': entrou %3$s e saiu %4$s.</string>
+    <string name="live_notification_generic_message">%1$s registou um evento por %2$s aos %3$d\'.</string>
+    <string name="live_notification_unknown_player">jogador não indicado</string>
+
+
 </resources>
