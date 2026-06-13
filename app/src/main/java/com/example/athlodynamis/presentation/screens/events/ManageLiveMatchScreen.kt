@@ -479,20 +479,18 @@ fun ManageLiveMatchScreen(
                                 onSuccess = {
                                     offlineViewModel.refreshPendingOperationsCount()
                                     notificationsViewModel.createNotification(
-                                        title = notificationTitleForEvent(
-                                            eventType = selectedEventType,
-                                            teamName = selectedEventTeam
-                                        ),
-                                        message = notificationMessageForEvent(
-                                            eventType = selectedEventType,
-                                            playerName = player.name,
-                                            secondaryPlayerName = secondaryPlayer?.name,
-                                            teamName = selectedEventTeam,
-                                            minute = confirmation.minute,
-                                            teamAName = teamAName,
-                                            teamBName = teamBName,
-                                            scoreA = newScoreA,
-                                            scoreB = newScoreB
+                                        title = "",
+                                        message = "",
+                                        notificationType = notificationTypeForLiveEvent(selectedEventType),
+                                        data = mapOf(
+                                            "playerName" to player.name,
+                                            "secondaryPlayerName" to (secondaryPlayer?.name ?: ""),
+                                            "teamName" to selectedEventTeam,
+                                            "minute" to confirmation.minute.toString(),
+                                            "teamAName" to teamAName,
+                                            "teamBName" to teamBName,
+                                            "scoreA" to newScoreA.toString(),
+                                            "scoreB" to newScoreB.toString()
                                         )
                                     )
 
@@ -511,23 +509,20 @@ fun ManageLiveMatchScreen(
                             )
                         } else {
                             notificationsViewModel.createNotification(
-                                title = notificationTitleForEvent(
-                                    eventType = selectedEventType,
-                                    teamName = selectedEventTeam
-                                ),
-                                message = notificationMessageForEvent(
-                                    eventType = selectedEventType,
-                                    playerName = player.name,
-                                    secondaryPlayerName = secondaryPlayer?.name,
-                                    teamName = selectedEventTeam,
-                                    minute = confirmation.minute,
-                                    teamAName = teamAName,
-                                    teamBName = teamBName,
-                                    scoreA = scoreA,
-                                    scoreB = scoreB
+                                title = "",
+                                message = "",
+                                notificationType = notificationTypeForLiveEvent(selectedEventType),
+                                data = mapOf(
+                                    "playerName" to player.name,
+                                    "secondaryPlayerName" to (secondaryPlayer?.name ?: ""),
+                                    "teamName" to selectedEventTeam,
+                                    "minute" to confirmation.minute.toString(),
+                                    "teamAName" to teamAName,
+                                    "teamBName" to teamBName,
+                                    "scoreA" to scoreA.toString(),
+                                    "scoreB" to scoreB.toString()
                                 )
                             )
-
                             reloadLiveMatchData(
                                 currentMatchId = currentMatchId,
                                 matchesViewModel = matchesViewModel,
@@ -1735,57 +1730,7 @@ private fun String.toAcronym(): String {
         }
 }
 
-private fun notificationTitleForEvent(
-    eventType: String,
-    teamName: String
-): String {
-    return when (eventType) {
-        EVENT_GOAL -> "Golo de $teamName"
-        EVENT_ASSIST -> "Assistência registada"
-        EVENT_YELLOW_CARD -> "Cartão amarelo"
-        EVENT_RED_CARD -> "Cartão vermelho"
-        EVENT_SUBSTITUTION -> "Substituição em $teamName"
-        else -> "Novo evento de jogo"
-    }
-}
 
-private fun notificationMessageForEvent(
-    eventType: String,
-    playerName: String,
-    secondaryPlayerName: String?,
-    teamName: String,
-    minute: Int,
-    teamAName: String,
-    teamBName: String,
-    scoreA: Int,
-    scoreB: Int
-): String {
-    return when (eventType) {
-        EVENT_GOAL -> {
-            "$playerName marcou por $teamName aos $minute'. Resultado atual: $teamAName $scoreA - $scoreB $teamBName."
-        }
-
-        EVENT_ASSIST -> {
-            "$playerName fez uma assistência por $teamName aos $minute'."
-        }
-
-        EVENT_YELLOW_CARD -> {
-            "$playerName recebeu cartão amarelo por $teamName aos $minute'."
-        }
-
-        EVENT_RED_CARD -> {
-            "$playerName recebeu cartão vermelho por $teamName aos $minute'."
-        }
-
-        EVENT_SUBSTITUTION -> {
-            "Substituição em $teamName aos $minute': entrou $playerName e saiu ${secondaryPlayerName ?: "jogador não indicado"}."
-        }
-
-        else -> {
-            "$playerName registou um evento por $teamName aos $minute'."
-        }
-    }
-}
 
 @Composable
 private fun FinishLiveMatchButton(
@@ -1805,9 +1750,9 @@ private fun FinishLiveMatchButton(
     ) {
         Text(
             text = if (isOnline) {
-                "Terminar jogo"
+                stringResource(R.string.live_match_finish_button)
             } else {
-                "Terminar jogo offline"
+                stringResource(R.string.live_match_finish_offline_button)
             },
             color = Color.White,
             fontWeight = FontWeight.ExtraBold
@@ -1825,14 +1770,14 @@ private fun FinishOfflineDialog(
         },
         title = {
             Text(
-                text = "Jogo terminado offline",
+                text = stringResource(R.string.live_match_finish_offline_title),
                 color = AthloColors.TextPrimary,
                 fontWeight = FontWeight.ExtraBold
             )
         },
         text = {
             Text(
-                text = "O jogo foi terminado e guardado offline. Quando voltares a ter internet, esta alteração será sincronizada com o Supabase.",
+                text = stringResource(R.string.live_match_finish_offline_message),
                 color = AthloColors.TextSecondary
             )
         },
@@ -1843,7 +1788,7 @@ private fun FinishOfflineDialog(
                 }
             ) {
                 Text(
-                    text = "OK",
+                    text = stringResource(R.string.common_ok),
                     color = AthloColors.Blue,
                     fontWeight = FontWeight.Bold
                 )
@@ -1852,4 +1797,17 @@ private fun FinishOfflineDialog(
         containerColor = Color.White,
         shape = RoundedCornerShape(22.dp)
     )
+}
+
+private fun notificationTypeForLiveEvent(
+    eventType: String
+): String {
+    return when (eventType) {
+        EVENT_GOAL -> "LIVE_GOAL"
+        EVENT_ASSIST -> "LIVE_ASSIST"
+        EVENT_YELLOW_CARD -> "LIVE_YELLOW_CARD"
+        EVENT_RED_CARD -> "LIVE_RED_CARD"
+        EVENT_SUBSTITUTION -> "LIVE_SUBSTITUTION"
+        else -> "LIVE_EVENT"
+    }
 }
