@@ -49,7 +49,9 @@ class NotificationRepository {
     suspend fun createNotification(
         title: String,
         message: String,
-        userId: String? = null
+        userId: String? = null,
+        notificationType: String? = null,
+        data: Map<String, String>? = null
     ) {
         client
             .from("notifications")
@@ -58,6 +60,8 @@ class NotificationRepository {
                     userId = userId,
                     title = title,
                     message = message,
+                    notificationType = notificationType,
+                    data = data,
                     isRead = false
                 )
             )
