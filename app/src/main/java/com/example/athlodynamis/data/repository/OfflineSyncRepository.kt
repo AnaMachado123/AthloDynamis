@@ -1,6 +1,7 @@
 package com.example.athlodynamis.data.repository
 
 import android.content.Context
+import com.example.athlodynamis.R
 import com.example.athlodynamis.data.local.offline.DataStoreOfflineSyncLocalDataSource
 import com.example.athlodynamis.data.local.offline.OfflineOperation
 import com.example.athlodynamis.data.remote.dto.CreateMatchEventDto
@@ -18,8 +19,10 @@ private object OfflineSyncLock {
 class OfflineSyncRepository(
     context: Context
 ) {
+    private val appContext = context.applicationContext
+
     private val localDataSource =
-        DataStoreOfflineSyncLocalDataSource(context)
+        DataStoreOfflineSyncLocalDataSource(appContext)
 
     private val matchEventRepository = MatchEventRepository()
     private val matchRepository = MatchRepository()
@@ -78,9 +81,11 @@ class OfflineSyncRepository(
 
                             notificationRepository.createNotification(
                                 title = notificationTitleForOfflineEvent(
+                                    context = appContext,
                                     eventType = payload.eventType
                                 ),
                                 message = notificationMessageForOfflineEvent(
+                                    context = appContext,
                                     payload = payload,
                                     teamAName = match?.teamAName,
                                     teamBName = match?.teamBName
@@ -120,10 +125,50 @@ class OfflineSyncRepository(
                                 )
 
                                 if (match != null) {
-                                    notificationRepository.createNotification(
-                                        title = finishMatchNotificationTitle(match),
-                                        message = finishMatchNotificationMessage(match)
-                                    )
+                                    val isDraw = match.scoreA == match.scoreB
+
+                                    if (isDraw) {
+                                        notificationRepository.createNotification(
+                                            title = "",
+                                            message = "",
+                                            notificationType = "MATCH_DRAW",
+                                            data = mapOf(
+                                                "teamAName" to match.teamAName,
+                                                "teamBName" to match.teamBName,
+                                                "scoreA" to match.scoreA.toString(),
+                                                "scoreB" to match.scoreB.toString()
+                                            )
+                                        )
+                                    } else {
+                                        val winnerName: String
+                                        val loserName: String
+                                        val winnerScore: Int
+                                        val loserScore: Int
+
+                                        if (match.scoreA > match.scoreB) {
+                                            winnerName = match.teamAName
+                                            loserName = match.teamBName
+                                            winnerScore = match.scoreA
+                                            loserScore = match.scoreB
+                                        } else {
+                                            winnerName = match.teamBName
+                                            loserName = match.teamAName
+                                            winnerScore = match.scoreB
+                                            loserScore = match.scoreA
+                                        }
+
+                                        notificationRepository.createNotification(
+                                            title = "",
+                                            message = "",
+                                            notificationType = "MATCH_WIN",
+                                            data = mapOf(
+                                                "winnerName" to winnerName,
+                                                "loserName" to loserName,
+                                                "winnerScore" to winnerScore.toString(),
+                                                "loserScore" to loserScore.toString()
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -148,7 +193,7 @@ class OfflineSyncRepository(
                 } catch (e: Exception) {
                     markAsError(
                         id = operation.id,
-                        message = e.message ?: "Erro ao sincronizar operação offline"
+                        message = e.message ?: appContext.getString(R.string.offline_sync_error)
                     )
                 }
             }
@@ -174,93 +219,89 @@ class OfflineSyncRepository(
 }
 
 private fun notificationTitleForOfflineEvent(
+    context: Context,
     eventType: String
 ): String {
     return when (eventType) {
-        "Golo" -> "Golo sincronizado"
-        "Assistência" -> "Assistência sincronizada"
-        "Cartão amarelo" -> "Cartão amarelo sincronizado"
-        "Cartão vermelho" -> "Cartão vermelho sincronizado"
-        "Substituição" -> "Substituição sincronizada"
-        else -> "Evento sincronizado"
+        "Golo" -> context.getString(R.string.offline_sync_goal_title)
+        "Assistência" -> context.getString(R.string.offline_sync_assist_title)
+        "Cartão amarelo" -> context.getString(R.string.offline_sync_yellow_card_title)
+        "Cartão vermelho" -> context.getString(R.string.offline_sync_red_card_title)
+        "Substituição" -> context.getString(R.string.offline_sync_substitution_title)
+        else -> context.getString(R.string.offline_sync_event_title)
     }
 }
 
 private fun notificationMessageForOfflineEvent(
+    context: Context,
     payload: CreateMatchEventDto,
     teamAName: String?,
     teamBName: String?
 ): String {
     val teamName = when (payload.teamSide) {
-        "A" -> teamAName ?: "equipa A"
-        "B" -> teamBName ?: "equipa B"
-        else -> "equipa desconhecida"
+        "A" -> teamAName ?: context.getString(R.string.offline_sync_team_a)
+        "B" -> teamBName ?: context.getString(R.string.offline_sync_team_b)
+        else -> context.getString(R.string.offline_sync_unknown_team)
     }
 
-    val minuteText = payload.minute?.let { " ao minuto $it" } ?: ""
+    val minuteText = payload.minute?.let { minute ->
+        context.getString(R.string.offline_sync_minute_text, minute)
+    } ?: ""
 
     return when (payload.eventType) {
         "Golo" -> {
-            "Foi sincronizado um golo do(a) $teamName$minuteText que tinha sido registado offline."
+            context.getString(
+                R.string.offline_sync_goal_message,
+                teamName,
+                minuteText
+            )
         }
 
         "Assistência" -> {
-            "Foi sincronizada uma assistência do(a) $teamName$minuteText que tinha sido registada offline."
+            context.getString(
+                R.string.offline_sync_assist_message,
+                teamName,
+                minuteText
+            )
         }
 
         "Cartão amarelo" -> {
-            "Foi sincronizado um cartão amarelo do(a) $teamName$minuteText que tinha sido registado offline."
+            context.getString(
+                R.string.offline_sync_yellow_card_message,
+                teamName,
+                minuteText
+            )
         }
 
         "Cartão vermelho" -> {
-            "Foi sincronizado um cartão vermelho do(a) $teamName$minuteText que tinha sido registado offline."
+            context.getString(
+                R.string.offline_sync_red_card_message,
+                teamName,
+                minuteText
+            )
         }
 
         "Substituição" -> {
-            "Foi sincronizada uma substituição do(a) $teamName$minuteText que tinha sido registada offline."
+            context.getString(
+                R.string.offline_sync_substitution_message,
+                teamName,
+                minuteText
+            )
         }
 
         else -> {
-            "Foi sincronizado um evento de jogo do(a) $teamName$minuteText que tinha sido registado offline."
+            context.getString(
+                R.string.offline_sync_event_message,
+                teamName,
+                minuteText
+            )
         }
     }
 }
 
-private fun finishMatchNotificationTitle(
-    match: Match
-): String {
-    return when {
-        match.scoreA > match.scoreB -> {
-            "Vitória de ${match.teamAName}"
-        }
 
-        match.scoreB > match.scoreA -> {
-            "Vitória de ${match.teamBName}"
-        }
 
-        else -> {
-            "Empate no jogo"
-        }
-    }
-}
 
-private fun finishMatchNotificationMessage(
-    match: Match
-): String {
-    return when {
-        match.scoreA > match.scoreB -> {
-            "${match.teamAName} venceu ${match.teamBName} por ${match.scoreA} - ${match.scoreB}. Jogo terminado offline e sincronizado."
-        }
-
-        match.scoreB > match.scoreA -> {
-            "${match.teamBName} venceu ${match.teamAName} por ${match.scoreB} - ${match.scoreA}. Jogo terminado offline e sincronizado."
-        }
-
-        else -> {
-            "${match.teamAName} e ${match.teamBName} empataram ${match.scoreA} - ${match.scoreB}. Jogo terminado offline e sincronizado."
-        }
-    }
-}
 
 @Serializable
 data class OfflineProfileUpdatePayload(
