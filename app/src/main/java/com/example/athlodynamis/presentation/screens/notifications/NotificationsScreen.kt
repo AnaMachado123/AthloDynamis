@@ -378,7 +378,7 @@ private fun NotificationCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = localizedNotificationText(notification.title),
+                        text = localizedNotificationTitle(notification),
                         color = AthloColors.TextPrimary,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.ExtraBold,
@@ -395,8 +395,8 @@ private fun NotificationCard(
                 Spacer(modifier = Modifier.height(5.dp))
 
                 Text(
-                    text = localizedNotificationText(notification.message),
-                    color = AthloColors.TextSecondary,
+                    text = localizedNotificationTitle(notification),
+                    color = AthloColors.TextPrimary,
                     style = MaterialTheme.typography.bodySmall
                 )
 
@@ -544,4 +544,113 @@ private fun formatNotificationTime(createdAt: String?, noDateText: String): Stri
         .replace("Z", "")
 
     return cleanDate.take(16)
+}
+
+@Composable
+private fun localizedNotificationTitle(
+    notification: Notification
+): String {
+    val data = notification.data.orEmpty()
+
+    return when (notification.notificationType) {
+        "LIVE_GOAL" -> stringResource(
+            R.string.live_notification_goal_title,
+            data["teamName"].orEmpty()
+        )
+
+        "LIVE_ASSIST" -> stringResource(
+            R.string.live_notification_assist_title
+        )
+
+        "LIVE_YELLOW_CARD" -> stringResource(
+            R.string.live_notification_yellow_card_title
+        )
+
+        "LIVE_RED_CARD" -> stringResource(
+            R.string.live_notification_red_card_title
+        )
+
+        "LIVE_SUBSTITUTION" -> stringResource(
+            R.string.live_notification_substitution_title,
+            data["teamName"].orEmpty()
+        )
+
+        "MATCH_DRAW" -> stringResource(
+            R.string.offline_sync_draw_title
+        )
+
+        "MATCH_WIN" -> stringResource(
+            R.string.offline_sync_win_title,
+            data["winnerName"].orEmpty()
+        )
+
+        else -> localizedNotificationText(notification.title)
+    }
+}
+
+@Composable
+private fun localizedNotificationMessage(
+    notification: Notification
+): String {
+    val data = notification.data.orEmpty()
+
+    return when (notification.notificationType) {
+        "LIVE_GOAL" -> stringResource(
+            R.string.live_notification_goal_message,
+            data["playerName"].orEmpty(),
+            data["teamName"].orEmpty(),
+            data["minute"]?.toIntOrNull() ?: 0,
+            data["teamAName"].orEmpty(),
+            data["scoreA"]?.toIntOrNull() ?: 0,
+            data["scoreB"]?.toIntOrNull() ?: 0,
+            data["teamBName"].orEmpty()
+        )
+
+        "LIVE_ASSIST" -> stringResource(
+            R.string.live_notification_assist_message,
+            data["playerName"].orEmpty(),
+            data["teamName"].orEmpty(),
+            data["minute"]?.toIntOrNull() ?: 0
+        )
+
+        "LIVE_YELLOW_CARD" -> stringResource(
+            R.string.live_notification_yellow_card_message,
+            data["playerName"].orEmpty(),
+            data["teamName"].orEmpty(),
+            data["minute"]?.toIntOrNull() ?: 0
+        )
+
+        "LIVE_RED_CARD" -> stringResource(
+            R.string.live_notification_red_card_message,
+            data["playerName"].orEmpty(),
+            data["teamName"].orEmpty(),
+            data["minute"]?.toIntOrNull() ?: 0
+        )
+
+        "LIVE_SUBSTITUTION" -> stringResource(
+            R.string.live_notification_substitution_message,
+            data["teamName"].orEmpty(),
+            data["minute"]?.toIntOrNull() ?: 0,
+            data["playerName"].orEmpty(),
+            data["secondaryPlayerName"].orEmpty()
+        )
+
+        "MATCH_WIN" -> stringResource(
+            R.string.offline_sync_win_message,
+            data["winnerName"].orEmpty(),
+            data["loserName"].orEmpty(),
+            data["winnerScore"]?.toIntOrNull() ?: 0,
+            data["loserScore"]?.toIntOrNull() ?: 0
+        )
+
+        "MATCH_DRAW" -> stringResource(
+            R.string.offline_sync_draw_message,
+            data["teamAName"].orEmpty(),
+            data["teamBName"].orEmpty(),
+            data["scoreA"]?.toIntOrNull() ?: 0,
+            data["scoreB"]?.toIntOrNull() ?: 0
+        )
+
+        else -> localizedNotificationText(notification.message)
+    }
 }
