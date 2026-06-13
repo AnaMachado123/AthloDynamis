@@ -42,11 +42,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -57,6 +59,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.athlodynamis.R
+import com.example.athlodynamis.data.repository.MatchRepository
+import com.example.athlodynamis.domain.model.Match
 import com.example.athlodynamis.domain.model.Tournament
 import com.example.athlodynamis.presentation.components.AthloBottomBar
 import com.example.athlodynamis.presentation.components.AthloColors
@@ -64,6 +68,7 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.navigation.Screen
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import kotlinx.coroutines.launch
 
 private const val FILTER_ALL = "Todos"
 private const val FILTER_SCHEDULED = "Agendado"
@@ -82,10 +87,16 @@ fun EventsScreen(
 ) {
     val tournamentsViewModel: TournamentsViewModel = viewModel()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val allTournaments by tournamentsViewModel.tournaments.collectAsState()
     val isLoading by tournamentsViewModel.isLoading.collectAsState()
     val error by tournamentsViewModel.error.collectAsState()
+
+    var allMatches by remember {
+        mutableStateOf<List<Match>>(emptyList())
+    }
 
     var searchText by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(FILTER_ALL) }
@@ -106,6 +117,10 @@ fun EventsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 tournamentsViewModel.loadTournaments()
+
+                scope.launch {
+                    allMatches = MatchRepository(context).getAllMatches()
+                }
             }
         }
 
@@ -116,20 +131,61 @@ fun EventsScreen(
         }
     }
 
+    val liveTournamentIds = allMatches
+        .filter { match ->
+            match.status.equals("A decorrer", ignoreCase = true) ||
+                    match.status.equals("Live", ignoreCase = true)
+        }
+        .map { match ->
+            match.tournamentId.toString()
+        }
+        .toSet()
+
     fun matchesSearchAndFilter(tournament: Tournament): Boolean {
         val matchesSearch =
-            tournament.name.contains(searchText, ignoreCase = true) ||
+            searchText.isBlank() ||
+                    tournament.name.contains(searchText, ignoreCase = true) ||
                     tournament.sport.contains(searchText, ignoreCase = true)
 
         val matchesFilter = when (selectedFilter) {
             FILTER_ALL -> true
-            FILTER_SCHEDULED -> tournament.status == FILTER_SCHEDULED
-            FILTER_LIVE -> tournament.status == FILTER_LIVE
-            FILTER_PREPARING -> tournament.status == FILTER_PREPARING
-            SPORT_FOOTBALL -> tournament.sport == SPORT_FOOTBALL
-            SPORT_BASKETBALL -> tournament.sport == SPORT_BASKETBALL
-            SPORT_TENNIS -> tournament.sport == SPORT_TENNIS
-            SPORT_VOLLEYBALL -> tournament.sport == SPORT_VOLLEYBALL
+
+            FILTER_SCHEDULED -> {
+                tournament.status.equals(FILTER_SCHEDULED, ignoreCase = true) ||
+                        tournament.status.equals("Scheduled", ignoreCase = true)
+            }
+
+            FILTER_LIVE -> {
+                tournament.id in liveTournamentIds ||
+                        tournament.status.equals(FILTER_LIVE, ignoreCase = true) ||
+                        tournament.status.equals("Live", ignoreCase = true)
+            }
+
+            FILTER_PREPARING -> {
+                tournament.status.equals(FILTER_PREPARING, ignoreCase = true) ||
+                        tournament.status.equals("Preparing", ignoreCase = true)
+            }
+
+            SPORT_FOOTBALL -> {
+                tournament.sport.equals(SPORT_FOOTBALL, ignoreCase = true) ||
+                        tournament.sport.equals("Football", ignoreCase = true)
+            }
+
+            SPORT_BASKETBALL -> {
+                tournament.sport.equals(SPORT_BASKETBALL, ignoreCase = true) ||
+                        tournament.sport.equals("Basketball", ignoreCase = true)
+            }
+
+            SPORT_TENNIS -> {
+                tournament.sport.equals(SPORT_TENNIS, ignoreCase = true) ||
+                        tournament.sport.equals("Tennis", ignoreCase = true)
+            }
+
+            SPORT_VOLLEYBALL -> {
+                tournament.sport.equals(SPORT_VOLLEYBALL, ignoreCase = true) ||
+                        tournament.sport.equals("Volleyball", ignoreCase = true)
+            }
+
             else -> true
         }
 
@@ -785,13 +841,23 @@ private fun localizedSportName(sport: String): String {
 
 @Composable
 private fun localizedStatusName(status: String): String {
-    return when (status) {
-        FILTER_SCHEDULED -> stringResource(R.string.filter_scheduled)
-        FILTER_LIVE -> stringResource(R.string.filter_live)
-        FILTER_PREPARING -> stringResource(R.string.filter_preparing)
+    return when {
+        status.equals(FILTER_SCHEDULED, ignoreCase = true) ||
+                status.equals("Scheduled", ignoreCase = true) ->
+            stringResource(R.string.filter_scheduled)
+
+        status.equals(FILTER_LIVE, ignoreCase = true) ||
+                status.equals("Live", ignoreCase = true) ->
+            stringResource(R.string.filter_live)
+
+        status.equals(FILTER_PREPARING, ignoreCase = true) ||
+                status.equals("Preparing", ignoreCase = true) ->
+            stringResource(R.string.filter_preparing)
+
         else -> status
     }
 }
+
 @Composable
 fun localizedTournamentFormat(format: String): String {
     return when (format.lowercase()) {
@@ -826,19 +892,37 @@ private fun sportTextColor(sport: String): Color {
 }
 
 private fun statusColor(status: String): Color {
-    return when (status) {
-        FILTER_LIVE -> AthloColors.SuccessBg
-        FILTER_PREPARING -> AthloColors.WarningBg
-        FILTER_SCHEDULED -> Color(0xFFD7EBFF)
+    return when {
+        status.equals(FILTER_LIVE, ignoreCase = true) ||
+                status.equals("Live", ignoreCase = true) ->
+            AthloColors.SuccessBg
+
+        status.equals(FILTER_PREPARING, ignoreCase = true) ||
+                status.equals("Preparing", ignoreCase = true) ->
+            AthloColors.WarningBg
+
+        status.equals(FILTER_SCHEDULED, ignoreCase = true) ||
+                status.equals("Scheduled", ignoreCase = true) ->
+            Color(0xFFD7EBFF)
+
         else -> AthloColors.NeutralBg
     }
 }
 
 private fun statusTextColor(status: String): Color {
-    return when (status) {
-        FILTER_LIVE -> Color(0xFF4D8B4A)
-        FILTER_PREPARING -> Color(0xFF9A6B22)
-        FILTER_SCHEDULED -> AthloColors.Blue
+    return when {
+        status.equals(FILTER_LIVE, ignoreCase = true) ||
+                status.equals("Live", ignoreCase = true) ->
+            Color(0xFF4D8B4A)
+
+        status.equals(FILTER_PREPARING, ignoreCase = true) ||
+                status.equals("Preparing", ignoreCase = true) ->
+            Color(0xFF9A6B22)
+
+        status.equals(FILTER_SCHEDULED, ignoreCase = true) ||
+                status.equals("Scheduled", ignoreCase = true) ->
+            AthloColors.Blue
+
         else -> AthloColors.TextSecondary
     }
 }
