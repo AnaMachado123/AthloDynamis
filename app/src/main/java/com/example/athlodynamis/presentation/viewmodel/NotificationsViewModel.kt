@@ -50,6 +50,8 @@ class NotificationsViewModel : ViewModel() {
         title: String,
         message: String,
         userId: String? = null,
+        notificationType: String? = null,
+        data: Map<String, String>? = null,
         onSuccess: () -> Unit = {}
     ) {
         viewModelScope.launch {
@@ -57,7 +59,9 @@ class NotificationsViewModel : ViewModel() {
                 repository.createNotification(
                     title = title,
                     message = message,
-                    userId = userId
+                    userId = userId,
+                    notificationType = notificationType,
+                    data = data
                 )
 
                 loadNotifications()
