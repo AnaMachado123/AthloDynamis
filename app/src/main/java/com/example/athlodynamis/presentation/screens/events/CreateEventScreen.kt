@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
@@ -25,14 +26,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,6 +61,9 @@ import com.example.athlodynamis.presentation.components.AthloRadius
 import com.example.athlodynamis.presentation.components.AthloUserRole
 import com.example.athlodynamis.presentation.viewmodel.NotificationsViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 private const val STATUS_PREPARING = "Em preparação"
 
@@ -71,6 +81,7 @@ private data class ChoiceOption(
     val label: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
     navController: NavController,
@@ -91,8 +102,14 @@ fun CreateEventScreen(
     var selectedFormat by remember { mutableStateOf("") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
+    var startDateMillis by remember { mutableStateOf<Long?>(null) }
+    var endDateMillis by remember { mutableStateOf<Long?>(null) }
     var location by remember { mutableStateOf("") }
     var maxTeams by remember { mutableStateOf("") }
+
+    val todayMillis = remember {
+        todayStartMillis()
+    }
 
     val sportOptions = listOf(
         ChoiceOption(SPORT_TENNIS_VALUE, stringResource(R.string.sport_tennis)),
@@ -128,7 +145,19 @@ fun CreateEventScreen(
 
     val canSave = eventName.isNotBlank() &&
             selectedSport.isNotBlank() &&
-            selectedFormat.isNotBlank()
+            selectedFormat.isNotBlank() &&
+            startDate.isNotBlank() &&
+            endDate.isNotBlank()
+
+    LaunchedEffect(startDateMillis) {
+        val start = startDateMillis
+        val end = endDateMillis
+
+        if (start != null && end != null && end < start) {
+            endDate = ""
+            endDateMillis = null
+        }
+    }
 
     LaunchedEffect(tournamentCreated) {
         if (tournamentCreated) {
@@ -205,19 +234,29 @@ fun CreateEventScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(modifier = Modifier.weight(1f)) {
                             FieldLabel(stringResource(R.string.create_event_start_date))
-                            AthloTextField(
+
+                            AthloDatePickerField(
                                 value = startDate,
-                                onValueChange = { startDate = it },
-                                placeholder = stringResource(R.string.create_event_date_hint)
+                                placeholder = stringResource(R.string.create_event_date_hint),
+                                minDateMillis = todayMillis,
+                                onDateSelected = { selectedMillis ->
+                                    startDateMillis = selectedMillis
+                                    startDate = formatDate(selectedMillis)
+                                }
                             )
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
                             FieldLabel(stringResource(R.string.create_event_end_date))
-                            AthloTextField(
+
+                            AthloDatePickerField(
                                 value = endDate,
-                                onValueChange = { endDate = it },
-                                placeholder = stringResource(R.string.create_event_date_hint)
+                                placeholder = stringResource(R.string.create_event_date_hint),
+                                minDateMillis = startDateMillis ?: todayMillis,
+                                onDateSelected = { selectedMillis ->
+                                    endDateMillis = selectedMillis
+                                    endDate = formatDate(selectedMillis)
+                                }
                             )
                         }
                     }
@@ -257,8 +296,8 @@ fun CreateEventScreen(
                     tournamentsViewModel.createTournament(
                         name = eventName.trim(),
                         sport = selectedSport,
-                        startDate = startDate.trim().ifBlank { null },
-                        endDate = endDate.trim().ifBlank { null },
+                        startDate = startDate.trim(),
+                        endDate = endDate.trim(),
                         status = STATUS_PREPARING,
                         format = selectedFormat,
                         rules = null,
@@ -420,6 +459,105 @@ private fun AthloTextField(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AthloDatePickerField(
+    value: String,
+    placeholder: String,
+    minDateMillis: Long,
+    onDateSelected: (Long) -> Unit
+) {
+    var showDatePicker by remember {
+        mutableStateOf(false)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .clickable {
+                showDatePicker = true
+            }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = value.ifBlank { placeholder },
+                color = if (value.isBlank()) {
+                    AthloColors.TextMuted
+                } else {
+                    AthloColors.TextPrimary
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = placeholder,
+                tint = AthloColors.TextMuted
+            )
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = null,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= minDateMillis
+                }
+            }
+        )
+
+        DatePickerDialog(
+            onDismissRequest = {
+                showDatePicker = false
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            onDateSelected(selectedMillis)
+                            showDatePicker = false
+                        }
+                    }
+                ) {
+                    Text(
+                        text = "OK",
+                        color = AthloColors.Blue,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.create_event_cancel),
+                        color = AthloColors.TextSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState
+            )
+        }
+    }
+}
+
 @Composable
 private fun AthloDropdown(
     selectedValue: String,
@@ -534,4 +672,25 @@ private fun ChoicePill(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+private fun todayStartMillis(): Long {
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+
+    return calendar.timeInMillis
+}
+
+private fun formatDate(
+    millis: Long
+): String {
+    val formatter = SimpleDateFormat(
+        "yyyy-MM-dd",
+        Locale.getDefault()
+    )
+
+    return formatter.format(millis)
 }

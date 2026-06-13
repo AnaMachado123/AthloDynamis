@@ -24,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +45,11 @@ enum class AthloUserRole {
     ADMIN
 }
 
+private object AthloNotificationBadgeState {
+    var showBottomBadge by mutableStateOf(false)
+    var acknowledgedUnreadCount by mutableIntStateOf(0)
+}
+
 @Composable
 fun AthloBottomBar(
     navController: NavController,
@@ -52,10 +60,21 @@ fun AthloBottomBar(
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val unreadCount by notificationsViewModel.unreadCount.collectAsState()
 
-    LaunchedEffect(currentRoute, currentUserId) {
+    LaunchedEffect(currentUserId) {
         notificationsViewModel.loadNotifications(
             currentUserId = currentUserId
         )
+    }
+
+    LaunchedEffect(unreadCount, currentRoute) {
+        if (currentRoute == Screen.Notifications.route) {
+            AthloNotificationBadgeState.showBottomBadge = false
+            AthloNotificationBadgeState.acknowledgedUnreadCount = unreadCount
+        } else {
+            if (unreadCount > AthloNotificationBadgeState.acknowledgedUnreadCount) {
+                AthloNotificationBadgeState.showBottomBadge = true
+            }
+        }
     }
 
     NavigationBar(
@@ -166,13 +185,16 @@ fun AthloBottomBar(
         NavigationBarItem(
             selected = currentRoute == Screen.Notifications.route,
             onClick = {
+                AthloNotificationBadgeState.showBottomBadge = false
+                AthloNotificationBadgeState.acknowledgedUnreadCount = unreadCount
+
                 navController.navigate(Screen.Notifications.route) {
                     launchSingleTop = true
                 }
             },
             icon = {
                 NotificationIconWithBadge(
-                    showBadge = unreadCount > 0 &&
+                    showBadge = AthloNotificationBadgeState.showBottomBadge &&
                             currentRoute != Screen.Notifications.route
                 )
             },

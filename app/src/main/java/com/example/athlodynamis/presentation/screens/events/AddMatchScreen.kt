@@ -21,19 +21,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +68,8 @@ import com.example.athlodynamis.presentation.viewmodel.MatchesViewModel
 import com.example.athlodynamis.presentation.viewmodel.TeamsViewModel
 import com.example.athlodynamis.presentation.viewmodel.TournamentsViewModel
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 private const val MATCH_STATUS_SCHEDULED = "Agendado"
 
@@ -70,6 +78,7 @@ private data class TeamOption(
     val name: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMatchScreen(
     navController: NavController,
@@ -178,15 +187,19 @@ fun AddMatchScreen(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     FieldLabel(stringResource(R.string.add_match_time_label))
-                    AthloTextField(
+
+                    AthloTimePickerField(
                         value = matchTime,
-                        onValueChange = { matchTime = it },
-                        placeholder = stringResource(R.string.add_match_time_hint)
+                        placeholder = stringResource(R.string.add_match_time_hint),
+                        onTimeSelected = { selectedTime ->
+                            matchTime = selectedTime
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
                     FieldLabel(stringResource(R.string.add_match_location_label))
+
                     AthloTextField(
                         value = location,
                         onValueChange = { location = it },
@@ -196,6 +209,7 @@ fun AddMatchScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     FieldLabel(stringResource(R.string.add_match_team_1_label))
+
                     TeamDropdown(
                         selectedTeam = teamA,
                         placeholder = stringResource(R.string.add_match_team_1_hint),
@@ -208,6 +222,7 @@ fun AddMatchScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     FieldLabel(stringResource(R.string.add_match_team_2_label))
+
                     TeamDropdown(
                         selectedTeam = teamB,
                         placeholder = stringResource(R.string.add_match_team_2_hint),
@@ -237,7 +252,11 @@ fun AddMatchScreen(
                     val selectedTeamB = teamB
                     val selectedTournamentId = tournamentId
 
-                    if (selectedTeamA != null && selectedTeamB != null && selectedTournamentId != null) {
+                    if (
+                        selectedTeamA != null &&
+                        selectedTeamB != null &&
+                        selectedTournamentId != null
+                    ) {
                         matchesViewModel.createMatch(
                             CreateMatchDto(
                                 tournamentId = selectedTournamentId,
@@ -430,6 +449,122 @@ private fun AthloTextField(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AthloTimePickerField(
+    value: String,
+    placeholder: String,
+    onTimeSelected: (String) -> Unit
+) {
+    var showTimePicker by remember {
+        mutableStateOf(false)
+    }
+
+    val now = remember {
+        Calendar.getInstance()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .clickable {
+                showTimePicker = true
+            }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = value.ifBlank { placeholder },
+                color = if (value.isBlank()) {
+                    AthloColors.TextMuted
+                } else {
+                    AthloColors.TextPrimary
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = placeholder,
+                tint = AthloColors.TextMuted
+            )
+        }
+    }
+
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = now.get(Calendar.HOUR_OF_DAY),
+            initialMinute = now.get(Calendar.MINUTE),
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = {
+                showTimePicker = false
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.add_match_time_label),
+                    color = AthloColors.TextPrimary,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TimePicker(
+                        state = timePickerState
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedTime = formatTime(
+                            hour = timePickerState.hour,
+                            minute = timePickerState.minute
+                        )
+
+                        onTimeSelected(selectedTime)
+                        showTimePicker = false
+                    }
+                ) {
+                    Text(
+                        text = "OK",
+                        color = AthloColors.Blue,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showTimePicker = false
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.add_match_cancel),
+                        color = AthloColors.TextSecondary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+}
+
 @Composable
 private fun TeamDropdown(
     selectedTeam: TeamOption?,
@@ -504,5 +639,17 @@ private fun ErrorText(text: String) {
         color = Color(0xFFCC1F2F),
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.SemiBold
+    )
+}
+
+private fun formatTime(
+    hour: Int,
+    minute: Int
+): String {
+    return String.format(
+        Locale.getDefault(),
+        "%02d:%02d",
+        hour,
+        minute
     )
 }
